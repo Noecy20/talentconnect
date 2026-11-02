@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, langswitch, themetoggle with context %}
+{% set ep = request.endpoint or '' %}
+{% macro link(endpoint, icon, label, paid=False) -%}
+  {% set locked = paid and not current_user.has_access %}
+  <a href="{{ url_for(endpoint) }}" class="nav-link {% if ep == endpoint or ('.' in ep and ep.split('.')[0] == endpoint.split('.')[0] and ep.split('.')[1].startswith(endpoint.split('.')[1].rstrip('s')) and endpoint.split('.')[1] != 'dashboard') %}active{% endif %}">
+    <i data-lucide="{{ icon }}" class="w-[18px] h-[18px]"></i><span>{{ label }}</span>
+    {% if locked %}<i data-lucide="lock" class="w-3.5 h-3.5 lock"></i>{% endif %}
+  </a>
+{%- endmacro %}
+
+{% block body %}
+<div class="flex min-h-screen" x-data="{side:false}">
+  <!-- Sidebar -->
+  <aside class="sidebar flex flex-col lg:sticky lg:top-0 lg:h-screen" :class="{ 'open': side }">
+    <div class="px-5 pt-5 pb-3 flex items-center gap-2.5">
+      <img src="{{ url_for('static', filename='img/logo-mark.png') }}" class="w-10 h-10 object-contain" alt="">
+      <a href="{{ url_for('main.dashboard') }}" class="font-display text-[1.35rem] font-bold leading-none">
+        <span style="color:var(--ink-2)">Talent</span><span class="text-terra-500">Connect</span></a>
+      <button class="ml-auto lg:hidden muted" @click="side=false"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+      {% if current_user.role == 'candidate' %}
+        <div class="nav-section">{{ t('Espace candidat') }}</div>
+        {{ link('candidate.dashboard', 'layout-dashboard', t('Tableau de bord')) }}
+        {{ link('candidate.cv_builder', 'file-text', t('CV Builder')) }}
+        {{ link('candidate.profile', 'user-round', t('Mon profil')) }}
+        <div class="nav-section">{{ t('Emploi') }}</div>
+        {{ link('candidate.jobs', 'briefcase', t('Offres pour moi'), True) }}
+        {{ link('candidate.applications', 'send', t('Mes candidatures'), True) }}
+        {{ link('candidate.sponsorships', 'handshake', t('Mes parrainages'), True) }}
+        {{ link('main.market', 'map', t('Métiers qui recrutent'), True) }}
+        <div class="nav-section">{{ t('Évoluer') }}</div>
+        {{ link('candidate.orientation', 'compass', t('Orientation'), True) }}
+        {{ link('assistant.mine', 'bot', t('Mon assistant IA'), True) }}
+      {% elif current_user.role == 'recruiter' %}
+        <div class="nav-section">{{ t('Espace recruteur') }}</div>
+        {{ link('recruiter.dashboard', 'layout-dashboard', t('Tableau de bord')) }}
+        {{ link('recruiter.company', 'building-2', t('Mon entreprise')) }}
+        <div class="nav-section">{{ t('Recrutement') }}</div>
+        {{ link('recruiter.jobs', 'briefcase', t('Mes offres'), True) }}
+        {{ link('recruiter.talents', 'search', t('Trouver des talents'), True) }}
+        {{ link('recruiter.pool', 'sparkles', t('Vivier seconde chance'), True) }}
+        {{ link('recruiter.templates', 'mail', t('Modèles de messages'), True) }}
+        {{ link('main.market', 'map', t('Marché de l\'emploi'), True) }}
+        {{ link('assistant.mine', 'bot', t('Assistant entreprise'), True) }}
+      {% elif current_user.role == 'sponsor' %}
+        <div class="nav-section">{{ t('Espace parrain') }}</div>
+        {{ link('sponsor.dashboard', 'layout-dashboard', t('Tableau de bord')) }}
+        {{ link('sponsor.eligibility', 'shield-check', t('Mon éligibilité')) }}
+        {{ link('assistant.mine', 'bot', t('Mon assistant IA')) }}
+      {% elif current_user.role == 'admin' %}
+        <div class="nav-section">{{ t('Administration') }}</div>
+        {{ link('admin.dashboard', 'layout-dashboard', t('Vue d\'ensemble')) }}
+        {{ link('admin.users', 'users', t('Utilisateurs & accès')) }}
+        {{ link('admin.payments', 'wallet', t('Paiements')) }}
+        {{ link('admin.plans', 'tags', t('Formules & prix')) }}
+        {{ link('admin.sponsors', 'shield-check', t('Parrains')) }}
+        {{ link('admin.companies', 'building-2', t('Entreprises')) }}
+        {{ link('admin.settings', 'sliders-horizontal', t('Réglages des modèles')) }}
+        {{ link('main.market', 'map', t('Marché de l\'emploi')) }}
+      {% endif %}
+      <div class="nav-section">{{ t('Communication') }}</div>
+      <a href="{{ url_for('messages.inbox') }}" class="nav-link {% if ep.startswith('messages.') %}active{% endif %}">
+        <i data-lucide="inbox" class="w-[18px] h-[18px]"></i><span>{{ t('Messages') }}</span>
+        {% if unread_count %}<span class="ml-auto chip chip-terra !py-0.5">{{ unread_count }}</span>{% endif %}
+      </a>
+    </nav>
+    {% if current_user.role in ['candidate','recruiter'] %}
+    <div class="p-3">
+      {% if current_user.has_access %}
+        <div class="rounded-2xl p-4 text-sm" style="background:linear-gradient(135deg,rgba(47,133,90,.1),rgba(47,133,90,.03));border:1px solid rgba(47,133,90,.2)">
+          <div class="font-semibold flex items-center gap-2" style="color:var(--success)"><i data-lucide="badge-check" class="w-4 h-4"></i>{{ t('Accès Premium actif') }}</div>
+          {% if current_user.access_until %}<div class="muted text-xs mt-1">{{ t('jusqu\'au') }} {{ current_user.access_until|datefr }}</div>{% endif %}
+        </div>
+      {% else %}
+        <div class="rounded-2xl p-4 text-white bg-grad relative overflow-hidden">
+          <div class="blob w-28 h-28 -right-6 -top-6" style="background:#F0A060"></div>
+          <div class="relative font-display font-semibold">{{ t('Débloquez tout TalentConnect') }}</div>
+          <p class="relative text-xs text-white/80 mt-1">{{ t('Offres, parrainages, IA et bien plus.') }}</p>
+          <a href="{{ url_for('billing.pricing') }}" class="relative btn btn-sm mt-3 bg-white text-terra-700 hover:bg-cream">{{ t('Voir les formules') }}</a>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </aside>
+  <div x-show="side" x-cloak @click="side=false" class="fixed inset-0 bg-black/30 z-50 lg:hidden"></div>
+
+  <!-- Main -->
+  <div class="flex-1 min-w-0 flex flex-col">
+    <header class="sticky top-0 z-40 glass border-b" style="border-color:var(--line)">
+      <div class="flex items-center gap-3 px-4 sm:px-8 h-16">
+        <button class="lg:hidden btn btn-ghost btn-icon" @click="side=true"><i data-lucide="menu" class="w-5 h-5"></i></button>
+        <div class="min-w-0">
+          <h1 class="font-display text-lg sm:text-xl font-semibold truncate">{% block page_title %}{% endblock %}</h1>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          {{ langswitch() }}
+          {{ themetoggle() }}
+          <a href="{{ url_for('messages.inbox') }}" class="btn btn-ghost btn-icon relative">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            {% if unread_count %}<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-terra-500 text-white text-[10px] grid place-items-center">{{ unread_count }}</span>{% endif %}
+          </a>
+          <div x-data="{o:false}" class="relative">
+            <button @click="o=!o" class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-[var(--bg-2)]">
+              {{ avatar(current_user, 34) }}
+              <span class="hidden md:block text-sm font-semibold max-w-[140px] truncate">{{ current_user.full_name }}</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 muted"></i>
+            </button>
+            <div x-show="o" @click.outside="o=false" x-cloak x-transition class="absolute right-0 mt-2 card shadow-lg p-1.5 w-56 z-50">
+              <div class="px-3 py-2"><div class="text-sm font-semibold truncate">{{ current_user.full_name }}</div><div class="text-xs muted truncate">{{ current_user.email }}</div></div>
+              <div class="divider my-1"></div>
+              <a href="{{ url_for('auth.account') }}" class="nav-link !py-2"><i data-lucide="settings" class="w-4 h-4"></i>{{ t('Mon compte') }}</a>
+              {% if current_user.role in ['candidate','recruiter'] %}<a href="{{ url_for('billing.pricing') }}" class="nav-link !py-2"><i data-lucide="credit-card" class="w-4 h-4"></i>{{ t('Abonnement') }}</a>{% endif %}
+              <a href="{{ url_for('auth.logout') }}" class="nav-link !py-2 !text-red-600"><i data-lucide="log-out" class="w-4 h-4"></i>{{ t('Déconnexion') }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px] w-full mx-auto">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

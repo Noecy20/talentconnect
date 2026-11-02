@@ -1,0 +1,177 @@
+{% extends "layouts/public.html" %}
+{% block title %}{{ t('Connectez les talents aux entreprises') }}{% endblock %}
+{% block content %}
+<!-- HERO -->
+<section class="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+  <div class="absolute inset-0 pattern opacity-60"></div>
+  <div class="blob w-[420px] h-[420px] -top-20 -left-24" style="background:#F3B48C"></div>
+  <div class="blob w-[380px] h-[380px] top-40 -right-20" style="background:#D86730;opacity:.25"></div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-[1.1fr_1fr] gap-14 items-center">
+    <div>
+      <a href="{{ url_for('main.cv_free') }}" class="reveal inline-flex items-center gap-2 chip chip-terra !py-1.5 !px-3">
+        <span class="w-2 h-2 rounded-full bg-terra-500 animate-pulse"></span>{{ t('La suite de CVFlash, déjà adopté sur LinkedIn') }}<i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></a>
+      <h1 class="reveal font-display text-[2.6rem] sm:text-6xl lg:text-[4.2rem] font-bold leading-[1.02] mt-6">
+        {{ t('Votre talent mérite') }}<br><span class="text-grad">{{ t('une réponse.') }}</span>
+        <span class="font-serif-accent block text-[0.62em] mt-3" style="color:var(--ink-2)">{{ t('Et une recommandation qui compte.') }}</span>
+      </h1>
+      <p class="reveal text-lg muted mt-6 max-w-xl leading-relaxed">{{ t('Créez un CV compatible ATS, faites-vous parrainer par ceux qui ont travaillé avec vous, découvrez les offres faites pour vous — et recevez toujours une réponse. Les recruteurs, eux, trouvent des talents dont la compétence est garantie.') }}</p>
+      <div class="reveal flex flex-wrap gap-3 mt-9">
+        <a href="{{ url_for('auth.register', role='candidate') }}" class="btn btn-primary btn-lg">{{ t('Je cherche un emploi') }}<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+        <a href="{{ url_for('auth.register', role='recruiter') }}" class="btn btn-dark btn-lg">{{ t('Je recrute') }}</a>
+      </div>
+      <div class="reveal flex items-center gap-6 mt-10 text-sm muted">
+        <div class="flex items-center gap-2"><i data-lucide="file-check-2" class="w-4 h-4 text-terra-500"></i>{{ t('CV ATS gratuit') }}</div>
+        <div class="flex items-center gap-2"><i data-lucide="globe-2" class="w-4 h-4 text-terra-500"></i>{{ t('Tous pays, toutes devises') }}</div>
+        <div class="hidden sm:flex items-center gap-2"><i data-lucide="mail-check" class="w-4 h-4 text-terra-500"></i>{{ t('Accusé de réception garanti') }}</div>
+      </div>
+    </div>
+
+    <!-- Visuel : cartes flottantes -->
+    <div class="relative h-[480px] hidden md:block">
+      <div class="absolute inset-x-8 top-6 card p-6 float" style="box-shadow:var(--shadow-lg)">
+        <div class="flex items-center gap-3">
+          <span class="avatar w-12 h-12 text-base">AK</span>
+          <div class="flex-1"><div class="font-display font-semibold">Aïcha Koné</div><div class="text-xs muted">Data Analyst · Abidjan</div></div>
+          <span class="badge-level lvl-gold"><i data-lucide="award" class="w-3 h-3"></i>{{ t('Parrainée') }}</span>
+        </div>
+        <div class="mt-5 grid grid-cols-3 gap-3 text-center">
+          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold text-terra-600">92%</div><div class="text-[11px] muted">{{ t('Compatibilité') }}</div></div>
+          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold" style="color:var(--success)">78%</div><div class="text-[11px] muted">{{ t('Chance d\'appel') }}</div></div>
+          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold" style="color:var(--ink-2)">3</div><div class="text-[11px] muted">{{ t('Parrains') }}</div></div>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-1.5"><span class="chip chip-terra">Power BI ✓3</span><span class="chip chip-terra">SQL ✓2</span><span class="chip">Python</span><span class="chip">Leadership ✓2</span></div>
+      </div>
+      <div class="absolute -left-2 bottom-16 card px-4 py-3 flex items-center gap-3 w-72 float" style="animation-delay:-2s;box-shadow:var(--shadow-lg)">
+        <div class="w-10 h-10 rounded-xl grid place-items-center" style="background:rgba(47,133,90,.12);color:var(--success)"><i data-lucide="mail-check" class="w-5 h-5"></i></div>
+        <div><div class="text-sm font-semibold">{{ t('Accusé de réception envoyé') }}</div><div class="text-xs muted">Orange CI · {{ t('à l\'instant') }}</div></div>
+      </div>
+      <div class="absolute right-0 bottom-0 card p-4 w-64 float" style="animation-delay:-4s;box-shadow:var(--shadow-lg)">
+        <div class="text-xs font-semibold muted uppercase tracking-wider">{{ t('Tri IA · 48 candidatures') }}</div>
+        <div class="mt-3 space-y-2 text-sm">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-terra-500"></span>{{ t('Entretien') }}<span class="ml-auto font-bold">9</span></div>
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--gold)"></span>{{ t('Seconde chance') }}<span class="ml-auto font-bold">17</span></div>
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--muted)"></span>{{ t('Refus + conseils') }}<span class="ml-auto font-bold">22</span></div>
+        </div>
+        <div class="btn btn-primary btn-sm w-full mt-3">{{ t('Envoyer les 48 réponses') }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="max-w-6xl mx-auto px-4 sm:px-6 -mt-6">
+  <div class="card grid grid-cols-2 md:grid-cols-4 divide-x" style="--tw-divide-opacity:1;border-color:var(--line)">
+    {% for v, l in [(stats.candidates, t('Talents inscrits')), (stats.companies, t('Entreprises')), (stats.sponsors, t('Parrains certifiés')), (stats.jobs, t('Offres actives'))] %}
+    <div class="p-6 text-center reveal" style="border-color:var(--line)"><div class="stat-value text-terra-600"><span data-count="{{ v }}">0</span>+</div><div class="text-sm muted mt-1">{{ l }}</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- PROBLEMES -> SOLUTIONS -->
+<section id="candidats" class="max-w-7xl mx-auto px-4 sm:px-6 pt-28">
+  <div class="max-w-2xl reveal">
+    <span class="chip chip-terra">{{ t('Pour les candidats') }}</span>
+    <h2 class="font-display text-4xl sm:text-5xl font-bold mt-4">{{ t('Fini les candidatures') }} <span class="font-serif-accent text-terra-500">{{ t('sans réponse') }}</span>.</h2>
+    <p class="muted text-lg mt-4">{{ t('Chercher un emploi ne devrait pas être un saut dans le vide. TalentConnect vous guide, vous recommande et vous répond.') }}</p>
+  </div>
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+    {% for icon, title, text in [
+      ('file-text', t('CV Builder ATS'), t('Les modèles CVFlash, gratuits : format français, canadien et version ATS. Votre CV alimente directement votre profil.')),
+      ('target', t('Offres faites pour vous'), t('Les offres sont déjà filtrées selon votre filière, votre ville et vos compétences, avec un score de compatibilité.')),
+      ('trending-up', t('Votre chance d\'être appelé'), t('Avant de postuler, vous voyez votre probabilité d\'être contacté — et comment l\'augmenter.')),
+      ('handshake', t('Parrainages vérifiés'), t('Envoyez un lien à un ancien manager : sa recommandation structurée apparaît sur votre fiche.')),
+      ('message-square-heart', t('Toujours une réponse'), t('Accusé de réception automatique, puis une réponse avec un retour constructif si ce n\'est pas cette fois.')),
+      ('compass', t('Orientation'), t('Un test d\'intérêts RIASEC pour découvrir les filières et métiers qui vous correspondent.'))] %}
+    <div class="card card-pad card-hover reveal group">
+      <div class="w-12 h-12 rounded-2xl grid place-items-center transition group-hover:scale-110 group-hover:rotate-3" style="background:linear-gradient(135deg,rgba(216,103,48,.16),rgba(216,103,48,.05));color:var(--terra)"><i data-lucide="{{ icon }}" class="w-6 h-6"></i></div>
+      <h3 class="font-display text-lg font-semibold mt-5">{{ title }}</h3>
+      <p class="muted text-sm mt-2 leading-relaxed">{{ text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- PARRAINAGE -->
+<section id="parrains" class="mt-28 relative overflow-hidden">
+  <div class="bg-grad">
+    <div class="absolute inset-0 pattern opacity-20"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-24 grid lg:grid-cols-2 gap-14 items-center text-white">
+      <div class="reveal">
+        <span class="chip !bg-white/15 !text-white !border-white/20">{{ t('Le parrainage') }}</span>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-4 leading-tight">{{ t('La confiance,') }}<br><span class="font-serif-accent text-[#FFD2B5]">{{ t('ça ne s\'invente pas.') }}</span></h2>
+        <p class="text-white/80 text-lg mt-5">{{ t('Comme une lettre de recommandation, mais vérifiée. On ne devient pas parrain comme ça : chaque parrain — directeur, manager ou entreprise entière — passe un test d\'éligibilité.') }}</p>
+        <div class="flex flex-wrap gap-3 mt-8">
+          <span class="badge-level lvl-gold !text-xs !px-3 !py-1.5">{{ t('Or') }} · 85+</span>
+          <span class="badge-level lvl-silver !text-xs !px-3 !py-1.5">{{ t('Argent') }} · 70+</span>
+          <span class="badge-level lvl-bronze !text-xs !px-3 !py-1.5">{{ t('Bronze') }} · 60+</span>
+        </div>
+        <a href="{{ url_for('auth.register', role='sponsor') }}" class="btn btn-lg mt-9 bg-white text-terra-700 hover:bg-cream">{{ t('Devenir parrain') }}<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+      </div>
+      <div class="grid gap-4">
+        {% for n, title, text in [
+          ('1', t('Le candidat envoie un lien'), t('À un manager, un directeur ou une entreprise avec qui il a travaillé.')),
+          ('2', t('Le parrain passe le test'), t('Poste, expérience, e-mail professionnel, LinkedIn… un score sur 100 décide de son éligibilité.')),
+          ('3', t('Il recommande, compétence par compétence'), t('Notes sur les compétences et soft skills, relation, période, texte libre.')),
+          ('4', t('Sa réputation est en jeu'), t('Si ses candidats sont embauchés, sa crédibilité monte. Sinon, elle baisse.'))] %}
+        <div class="reveal flex gap-4 items-start rounded-2xl p-5 bg-white/10 border border-white/15 backdrop-blur">
+          <div class="w-10 h-10 rounded-xl bg-white text-terra-700 font-display font-bold grid place-items-center flex-none">{{ n }}</div>
+          <div><div class="font-display font-semibold text-lg">{{ title }}</div><p class="text-white/75 text-sm mt-1">{{ text }}</p></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECRUTEURS -->
+<section id="recruteurs" class="max-w-7xl mx-auto px-4 sm:px-6 pt-28">
+  <div class="grid lg:grid-cols-2 gap-14 items-center">
+    <div class="reveal order-2 lg:order-1">
+      <div class="card p-5" style="box-shadow:var(--shadow-lg)">
+        <div class="flex items-center justify-between"><div class="font-display font-semibold">{{ t('Analyste financier') }} · 36 {{ t('candidatures') }}</div><span class="chip chip-green">{{ t('Tri IA prêt') }}</span></div>
+        <div class="grid grid-cols-3 gap-3 mt-4">
+          {% for label, color, names in [(t('Entretien'), 'var(--terra)', ['Koffi A. · 88%', 'Mariam D. · 81%', 'Yao B. · 76%']), (t('Seconde chance'), 'var(--gold)', ['Ama T. · 64%', 'Paul N. · 58%']), (t('Refus'), 'var(--muted)', ['Eric Z. · 31%', 'Fanta K. · 28%'])] %}
+          <div class="rounded-xl p-3" style="background:var(--bg-2)">
+            <div class="text-xs font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:{{ color }}"></span>{{ label }}</div>
+            {% for n in names %}<label class="flex items-center gap-2 mt-2 text-xs card px-2 py-1.5"><input type="checkbox" checked class="check !w-3.5 !h-3.5">{{ n }}</label>{% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="flex gap-2 mt-4"><span class="btn btn-primary btn-sm flex-1">{{ t('Envoyer toutes les réponses') }}</span><span class="btn btn-ghost btn-sm">{{ t('Modifier') }}</span></div>
+      </div>
+    </div>
+    <div class="reveal order-1 lg:order-2">
+      <span class="chip chip-terra">{{ t('Pour les recruteurs') }}</span>
+      <h2 class="font-display text-4xl sm:text-5xl font-bold mt-4">{{ t('Pensé avec le') }} <span class="font-serif-accent text-terra-500">{{ t('vrai quotidien') }}</span> {{ t('d\'un recruteur.') }}</h2>
+      <ul class="mt-8 space-y-4">
+        {% for icon, text in [
+          ('inbox', t('Accusé de réception automatique pour chaque candidature.')),
+          ('sparkles', t('L\'IA répartit les candidats : entretien, seconde chance, refus. Vous cochez, elle envoie tout d\'un coup.')),
+          ('kanban-square', t('Pipeline visuel par glisser-déposer, de la réception à l\'embauche.')),
+          ('shield-check', t('Compétences confirmées par des parrains vérifiés : un minimum de confiance avant même l\'entretien.')),
+          ('users-round', t('Vivier « seconde chance » reproposé automatiquement sur vos prochaines offres.')),
+          ('bot', t('Interrogez l\'assistant IA d\'un candidat pour en savoir plus en quelques secondes.'))] %}
+        <li class="flex gap-3"><span class="w-9 h-9 rounded-xl grid place-items-center flex-none" style="background:rgba(216,103,48,.12);color:var(--terra)"><i data-lucide="{{ icon }}" class="w-4 h-4"></i></span><span class="pt-1.5">{{ text }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="max-w-6xl mx-auto px-4 sm:px-6 pt-28">
+  <div class="reveal relative overflow-hidden rounded-[28px] p-10 sm:p-16 text-center" style="background:var(--brown)">
+    <div class="blob w-80 h-80 -top-20 -left-10" style="background:#D86730;opacity:.5"></div>
+    <div class="blob w-72 h-72 -bottom-24 right-0" style="background:#F0A060;opacity:.35"></div>
+    <div class="relative">
+      <img src="{{ url_for('static', filename='img/logo-mark.png') }}" class="w-20 mx-auto mb-6 float" alt="">
+      <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">{{ t('Votre prochain poste commence ici.') }}</h2>
+      <p class="text-white/75 mt-4 max-w-xl mx-auto">{{ t('Commencez gratuitement avec le CV Builder, puis débloquez les offres, les parrainages et l\'IA quand vous êtes prêt.') }}</p>
+      <div class="flex flex-wrap justify-center gap-3 mt-8">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ t('Créer mon compte') }}</a>
+        <a href="{{ url_for('main.cv_free') }}" class="btn btn-lg bg-white/10 text-white border-white/20 hover:bg-white/20">{{ t('Essayer le CV Builder') }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ lang_dir }}" x-data="theme()" :class="{ 'dark': dark }">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TalentConnect{% endblock %} · TalentConnect</title>
+  <meta name="description" content="{{ t('TalentConnect — la plateforme qui connecte les talents aux entreprises : CV ATS, parrainages, offres et recrutement assisté par IA.') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">  {# composants #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">  {# utilitaires : priment sur les composants #}
+  <script>
+    // thème avant affichage pour éviter le flash
+    (function(){ try{ var d = localStorage.getItem('tc-dark'); if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); }catch(e){} })();
+    function theme(){ return { dark: document.documentElement.classList.contains('dark'),
+      toggle(){ this.dark=!this.dark; try{ localStorage.setItem('tc-dark', this.dark?'1':'0') }catch(e){} } } }
+  </script>
+  {% block head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}' class="min-h-screen">
+  {% block body %}{% endblock %}
+
+  {# ---------- notifications ---------- #}
+  <div class="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)]">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div x-data="{show:true}" x-show="show" x-init="setTimeout(()=>show=false,5500)" x-transition.opacity.duration.400ms
+           class="toast card px-4 py-3 flex items-start gap-3 shadow-lg" style="box-shadow:var(--shadow-lg)">
+        <span class="mt-0.5 {% if cat=='success' %}text-green-600{% elif cat in ['danger','error'] %}text-red-600{% elif cat=='warning' %}text-amber-600{% else %}text-terra-500{% endif %}">
+          <i data-lucide="{% if cat=='success' %}check-circle-2{% elif cat in ['danger','error'] %}x-circle{% elif cat=='warning' %}alert-triangle{% else %}info{% endif %}" class="w-5 h-5"></i>
+        </span>
+        <p class="text-sm flex-1">{{ msg }}</p>
+        <button @click="show=false" class="muted hover:opacity-70"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='vendor/alpine.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/lucide.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

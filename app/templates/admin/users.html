@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import avatar with context %}
+{% block title %}{{ t('Utilisateurs') }}{% endblock %}
+{% block page_title %}{{ t('Utilisateurs & accès') }}{% endblock %}
+{% block content %}
+<form class="card card-pad mb-5 flex flex-wrap gap-3">
+  <input name="q" value="{{ f.q }}" class="input flex-1 min-w-[200px]" placeholder="{{ t('Nom ou e-mail') }}">
+  <select name="role" class="select w-auto"><option value="">{{ t('Tous les rôles') }}</option>{% for r, l in [('candidate', t('Candidats')), ('recruiter', t('Recruteurs')), ('sponsor', t('Parrains')), ('admin', 'Admins')] %}<option value="{{ r }}" {% if r==f.role %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  <select name="access" class="select w-auto"><option value="">{{ t('Accès : tous') }}</option><option value="yes" {% if f.access=='yes' %}selected{% endif %}>{{ t('Avec accès') }}</option><option value="no" {% if f.access=='no' %}selected{% endif %}>{{ t('Sans accès') }}</option></select>
+  <button class="btn btn-dark">{{ t('Filtrer') }}</button>
+</form>
+<div class="card"><div class="scroll-x"><table class="table">
+  <thead><tr><th>{{ t('Utilisateur') }}</th><th>{{ t('Rôle') }}</th><th>{{ t('Pays') }}</th><th>{{ t('Accès') }}</th><th>{{ t('Inscrit') }}</th><th class="text-right">{{ t('Actions') }}</th></tr></thead>
+  <tbody>
+  {% for u in pag.items %}
+  <tr class="{% if not u.is_active_account %}opacity-50{% endif %}">
+    <td><div class="flex items-center gap-3">{{ avatar(u, 34) }}<div><div class="font-semibold">{{ u.full_name }}</div><div class="text-xs muted">{{ u.email }}</div></div></div></td>
+    <td><span class="chip">{{ {'candidate': t('Candidat'), 'recruiter': t('Recruteur'), 'sponsor': t('Parrain'), 'admin': 'Admin'}[u.role] }}</span></td>
+    <td class="text-sm">{{ country_name(u.country_code) }}{% if u.city %}<div class="text-xs muted">{{ u.city }}</div>{% endif %}</td>
+    <td>{% if u.role in ['admin','sponsor'] %}<span class="chip">{{ t('Inclus') }}</span>{% elif u.has_access %}<span class="chip chip-green">{{ t('Actif') }}{% if u.access_until %} · {{ u.access_until|datefr('short') }}{% else %} · ∞{% endif %}</span>{% else %}<span class="chip chip-red">{{ t('Bloqué') }}</span>{% endif %}</td>
+    <td class="text-sm muted">{{ u.created_at|datefr('short') }}</td>
+    <td class="text-right">
+      <div class="inline-flex gap-1.5 items-center" x-data="{o:false}">
+        {% if u.role in ['candidate','recruiter'] %}
+          {% if u.has_access %}
+          <form method="post" action="{{ url_for('admin.user_access', uid=u.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="revoke"><button class="btn btn-danger btn-sm">{{ t('Retirer l\'accès') }}</button></form>
+          {% else %}
+          <div class="relative">
+            <button type="button" @click="o=!o" class="btn btn-success btn-sm">{{ t('Donner l\'accès') }}</button>
+            <form x-show="o" @click.outside="o=false" x-cloak method="post" action="{{ url_for('admin.user_access', uid=u.id) }}" class="absolute right-0 top-10 z-30 card p-3 w-56 text-left space-y-2 shadow-xl">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="grant">
+              <label class="label">{{ t('Durée') }}</label>
+              <select name="days" class="select"><option value="30">30 {{ t('jours') }}</option><option value="90">90 {{ t('jours') }}</option><option value="365">1 {{ t('an') }}</option><option value="0">{{ t('Illimité') }}</option></select>
+              <button class="btn btn-primary btn-sm w-full">{{ t('Valider') }}</button>
+            </form>
+          </div>
+          {% endif %}
+        {% endif %}
+        {% if u.id != current_user.id %}
+        <form method="post" action="{{ url_for('admin.user_access', uid=u.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="toggle_active">
+          <button class="btn btn-ghost btn-sm btn-icon" title="{{ t('Activer / désactiver le compte') }}"><i data-lucide="{{ 'user-x' if u.is_active_account else 'user-check' }}" class="w-4 h-4"></i></button></form>
+        {% endif %}
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% if pag.pages > 1 %}
+  <div class="flex justify-center gap-2 p-4">
+    {% for p in pag.iter_pages() %}{% if p %}<a href="{{ url_for('admin.users', page=p, **f) }}" class="btn btn-sm {% if p==pag.page %}btn-primary{% else %}btn-ghost{% endif %}">{{ p }}</a>{% else %}<span class="muted">…</span>{% endif %}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

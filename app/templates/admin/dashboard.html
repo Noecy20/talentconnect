@@ -1,0 +1,70 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import avatar with context %}
+{% block title %}{{ t('Administration') }}{% endblock %}
+{% block page_title %}{{ t('Vue d\'ensemble') }}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+  {% for icon, val, label, sub, color in [
+    ('user-round', counts.candidate, t('Candidats'), paid.candidate ~ ' ' ~ t('avec accès'), 'var(--terra)'),
+    ('briefcase', counts.recruiter, t('Recruteurs'), paid.recruiter ~ ' ' ~ t('avec accès'), '#2B6CB0'),
+    ('handshake', counts.sponsor, t('Parrains'), sponsorships ~ ' ' ~ t('parrainages actifs'), '#D9A441'),
+    ('shield', counts.admin, t('Admins'), jobs ~ ' ' ~ t('offres ouvertes'), 'var(--brown-2)')] %}
+  <div class="card card-pad stat reveal">
+    <div class="stat-icon" style="color:{{ color }};background:color-mix(in srgb, {{ color }} 14%, transparent)"><i data-lucide="{{ icon }}" class="w-5 h-5"></i></div>
+    <div class="stat-value mt-4" data-count="{{ val }}">0</div>
+    <div class="text-sm font-semibold mt-1">{{ label }}</div><div class="text-xs muted">{{ sub }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid md:grid-cols-3 gap-4 mt-4">
+  <a href="{{ url_for('admin.payments') }}" class="card card-pad card-hover flex items-center gap-4">
+    <div class="w-12 h-12 rounded-2xl grid place-items-center" style="background:rgba(47,133,90,.12);color:var(--success)"><i data-lucide="wallet" class="w-6 h-6"></i></div>
+    <div class="flex-1"><div class="text-sm muted">{{ t('Revenus confirmés') }}</div>
+      <div class="font-display text-xl font-bold">{% for cur, amt in revenue.items() %}{{ money(amt, cur) }}{% if not loop.last %} · {% endif %}{% else %}0{% endfor %}</div></div>
+  </a>
+  <a href="{{ url_for('admin.payments') }}" class="card card-pad card-hover flex items-center gap-4 {% if pending_payments %}!border-terra-400{% endif %}">
+    <div class="w-12 h-12 rounded-2xl grid place-items-center bg-terra-500 text-white"><i data-lucide="clock" class="w-6 h-6"></i></div>
+    <div class="flex-1"><div class="text-sm muted">{{ t('Paiements à valider') }}</div><div class="font-display text-xl font-bold">{{ pending_payments }}</div></div>
+    <i data-lucide="arrow-right" class="w-4 h-4 muted"></i></a>
+  <a href="{{ url_for('admin.sponsors') }}" class="card card-pad card-hover flex items-center gap-4">
+    <div class="w-12 h-12 rounded-2xl grid place-items-center" style="background:rgba(217,164,65,.18);color:#8A6116"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
+    <div class="flex-1"><div class="text-sm muted">{{ t('Parrains en revue') }} · {{ t('signalements') }}</div><div class="font-display text-xl font-bold">{{ pending_sponsors }} · {{ flagged }}</div></div>
+    <i data-lucide="arrow-right" class="w-4 h-4 muted"></i></a>
+</div>
+
+<div class="grid xl:grid-cols-[1.6fr_1fr] gap-6 mt-6">
+  <div class="card card-pad"><h3 class="font-display font-semibold">{{ t('Inscriptions — 30 derniers jours') }}</h3><canvas id="signups" height="120" class="mt-4"></canvas></div>
+  <div class="card card-pad"><h3 class="font-display font-semibold">{{ t('Utilisateurs par pays') }}</h3><canvas id="countries" height="200" class="mt-4"></canvas></div>
+</div>
+
+<div class="card mt-6">
+  <div class="px-5 py-4 flex items-center justify-between border-b" style="border-color:var(--line)"><h3 class="font-display font-semibold">{{ t('Derniers inscrits') }}</h3><a href="{{ url_for('admin.users') }}" class="text-sm font-semibold text-terra-600">{{ t('Gérer') }}</a></div>
+  <div class="scroll-x"><table class="table"><tbody>
+  {% for u in recent %}<tr>
+    <td><div class="flex items-center gap-3">{{ avatar(u, 34) }}<div><div class="font-semibold">{{ u.full_name }}</div><div class="text-xs muted">{{ u.email }}</div></div></div></td>
+    <td><span class="chip">{{ {'candidate': t('Candidat'), 'recruiter': t('Recruteur'), 'sponsor': t('Parrain'), 'admin': 'Admin'}[u.role] }}</span></td>
+    <td>{{ country_name(u.country_code) }}</td>
+    <td>{% if u.has_access %}<span class="chip chip-green">{{ t('Accès') }}</span>{% else %}<span class="chip">{{ t('Gratuit') }}</span>{% endif %}</td>
+    <td class="text-sm muted text-right">{{ u.created_at|ago }}</td>
+  </tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+<script>
+  const css = getComputedStyle(document.documentElement), muted = css.getPropertyValue('--muted'), line = css.getPropertyValue('--line');
+  Chart.defaults.font.family = 'Plus Jakarta Sans';
+  new Chart(document.getElementById('signups'), { type: 'bar',
+    data: { labels: {{ days|tojson }}, datasets: [
+      { label: {{ t('Candidats')|tojson }}, data: {{ signups.candidate|tojson }}, backgroundColor: '#D86730', borderRadius: 4 },
+      { label: {{ t('Recruteurs')|tojson }}, data: {{ signups.recruiter|tojson }}, backgroundColor: '#5A2C19', borderRadius: 4 },
+      { label: {{ t('Parrains')|tojson }}, data: {{ signups.sponsor|tojson }}, backgroundColor: '#D9A441', borderRadius: 4 } ] },
+    options: { plugins: { legend: { position: 'bottom', labels: { color: muted, usePointStyle: true } } },
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { color: muted, maxTicksLimit: 10 } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0, color: muted }, grid: { color: line } } } } });
+  new Chart(document.getElementById('countries'), { type: 'doughnut',
+    data: { labels: {{ countries|map('first')|map('string')|list|tojson }}, datasets: [{ data: {{ countries|map('last')|list|tojson }},
+      backgroundColor: ['#D86730','#5A2C19','#E08B5A','#A04222','#F3D2B6','#D9A441','#7E3520','#EAB089'], borderWidth: 0 }] },
+    options: { cutout: '62%', plugins: { legend: { position: 'right', labels: { color: muted, usePointStyle: true } } } } });
+</script>
+{% endblock %}

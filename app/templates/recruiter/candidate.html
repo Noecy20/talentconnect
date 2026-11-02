@@ -1,0 +1,110 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import avatar, level, ring, status with context %}
+{% block title %}{{ cand.full_name }}{% endblock %}
+{% block page_title %}{{ cand.full_name }}{% endblock %}
+{% block content %}
+<div class="grid xl:grid-cols-[1fr_380px] gap-6 items-start">
+  <div class="space-y-6">
+    <div class="card overflow-hidden">
+      <div class="h-24 bg-grad relative"><div class="absolute inset-0 pattern opacity-20"></div></div>
+      <div class="px-6 pb-6 -mt-10 relative">
+        <div class="flex flex-wrap items-end gap-4">
+          <span class="rounded-full border-4" style="border-color:var(--surface)">{{ avatar(cand, 84) }}</span>
+          <div class="flex-1 min-w-[200px] pb-1">
+            <h1 class="font-display text-2xl font-bold">{{ cand.full_name }}</h1>
+            <p class="muted">{{ cp.headline }}</p>
+          </div>
+          {% if sps %}<span class="badge-level lvl-gold !text-xs !py-1.5 !px-3"><i data-lucide="handshake" class="w-3.5 h-3.5"></i>{{ sps|length }} {{ t('parrain(s)') }}</span>{% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          <span class="chip"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ cand.city }}, {{ country_name(cand.country_code) }}</span>
+          {% if cp.field %}<span class="chip">{{ cp.field }}</span>{% endif %}
+          <span class="chip"><i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i>{{ edu_label(cp.education_level) }}</span>
+          <span class="chip"><i data-lucide="clock" class="w-3.5 h-3.5"></i>{{ cp.years_experience|nb }} {{ t('an(s)') }}</span>
+          {% if cp.open_to_international %}<span class="chip chip-blue"><i data-lucide="plane" class="w-3.5 h-3.5"></i>{{ t('Mobilité internationale') }}</span>{% endif %}
+        </div>
+        {% if cp.summary %}<p class="mt-5 leading-relaxed">{{ cp.summary }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card card-pad">
+      <h2 class="font-display font-semibold text-lg">{{ t('Compétences & passeport') }}</h2>
+      <p class="text-xs muted">{{ t('✓n = nombre de parrains ayant confirmé la compétence') }}</p>
+      <div class="flex flex-wrap gap-1.5 mt-4">
+        {% for s in cp.skills or [] %}<span class="chip {% if s in passport %}chip-terra{% endif %}">{{ s }}{% if s in passport %} <b>✓{{ passport[s].count }}</b>{% endif %}</span>{% endfor %}
+      </div>
+      {% if cp.soft_skills %}<div class="flex flex-wrap gap-1.5 mt-3">{% for s in cp.soft_skills %}<span class="chip {% if s in passport %}chip-terra{% endif %}">{{ s }}{% if s in passport %} ✓{{ passport[s].count }}{% endif %}</span>{% endfor %}</div>{% endif %}
+      {% if cp.languages %}<div class="flex flex-wrap gap-1.5 mt-3">{% for l in cp.languages %}<span class="chip chip-blue">{{ l.name }} · {{ l.level }}</span>{% endfor %}</div>{% endif %}
+    </div>
+
+    <div>
+      <h2 class="font-display font-semibold text-lg mb-3">{{ t('Parrainages') }} <span class="muted text-sm font-normal">· {{ t('force') }} {{ strength }}%</span></h2>
+      {% for s in sps %}{% set sp = s.sponsor.sponsor %}
+      <div class="card card-pad mb-3">
+        <div class="flex items-start gap-3">
+          {{ avatar(s.sponsor, 42) }}
+          <div class="flex-1"><div class="flex flex-wrap items-center gap-2"><b>{{ s.sponsor.full_name }}</b>{{ level(sp.level) }}<span class="chip !py-0.5">{{ t('Réputation') }} {{ sp.reputation|round|int }}</span></div>
+            <div class="text-sm muted">{{ sp.position }} · {{ sp.organization }}</div>
+            <div class="text-sm mt-1">{{ s.relation }} · {{ s.period }}</div></div>
+          <form method="post" action="{{ url_for('recruiter.flag_sponsorship', sid=s.id) }}" onsubmit="return confirm({{ t('Signaler ce parrainage comme douteux ?')|js }})"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm btn-icon" title="{{ t('Signaler') }}"><i data-lucide="flag" class="w-4 h-4"></i></button></form>
+        </div>
+        {% if s.recommendation %}<blockquote class="mt-3 pl-4 border-l-4 border-terra-300 font-serif-accent leading-relaxed">« {{ s.recommendation }} »</blockquote>{% endif %}
+        <div class="flex flex-wrap gap-1.5 mt-3">{% for k, v in (s.skill_ratings or {}).items() %}<span class="chip chip-terra">{{ k }} {{ '★' * v|int }}</span>{% endfor %}{% for k, v in (s.soft_ratings or {}).items() %}<span class="chip">{{ k }} {{ '★' * v|int }}</span>{% endfor %}</div>
+        {% if s.would_rehire %}<div class="text-xs mt-3" style="color:var(--success)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> {{ t('Retravaillerait volontiers avec ce candidat') }}</div>{% endif %}
+      </div>
+      {% else %}<div class="card card-pad text-sm muted">{{ t('Aucun parrainage pour le moment.') }}</div>{% endfor %}
+    </div>
+
+    {% if a and a.cover_letter %}
+    <div class="card card-pad"><h2 class="font-display font-semibold text-lg mb-3">{{ t('Lettre de motivation') }}</h2><p class="whitespace-pre-line text-[0.95rem] leading-relaxed">{{ a.cover_letter }}</p></div>
+    {% endif %}
+    {% if cp.cv_data and cp.cv_data.exp %}
+    <div class="card card-pad"><h2 class="font-display font-semibold text-lg mb-3">{{ t('Expériences (CV)') }}</h2>
+      {% for e in cp.cv_data.exp %}<div class="pl-4 border-l-2 border-terra-300 mb-4"><div class="font-semibold">{{ e.title }}</div><div class="text-sm muted">{{ e.org }} · {{ e.date }}</div>
+        <ul class="text-sm mt-1 space-y-0.5">{% for b in e.bul or [] %}<li>• {{ b }}</li>{% endfor %}</ul></div>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    {% if a %}
+    <div class="card card-pad">
+      <div class="text-xs muted uppercase tracking-wider font-bold">{{ job.title }}</div>
+      <div class="flex justify-around mt-4">
+        <div class="text-center">{{ ring(a.match_score, 92) }}<div class="text-xs mt-1 font-semibold">{{ t('Compatibilité') }}</div></div>
+        <div class="text-center">{{ ring(strength, 92, '', '#D9A441') }}<div class="text-xs mt-1 font-semibold">{{ t('Parrainage') }}</div></div>
+      </div>
+      <div class="mt-4 text-sm"><b>{{ t('Avis IA :') }}</b> <span class="muted">{{ a.ai_reason }}</span></div>
+      <div class="mt-3">{{ t('Statut') }} : {{ status(a.status) }}</div>
+      <form method="post" action="{{ url_for('recruiter.set_status', app_id=a.id) }}" class="mt-5 space-y-2" x-data="{s:'interview'}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="notify" value="1">
+        <select name="status" x-model="s" class="select">
+          <option value="interview">{{ t('Inviter en entretien') }}</option><option value="shortlisted">{{ t('Présélectionner') }}</option>
+          <option value="offer">{{ t('Faire une offre') }}</option><option value="hired">{{ t('Embauché 🎉') }}</option>
+          <option value="second_chance">{{ t('Seconde chance (vivier)') }}</option><option value="rejected">{{ t('Refuser avec retour constructif') }}</option>
+        </select>
+        <input name="note" x-show="s=='interview'" class="input text-sm" placeholder="{{ t('Date, lieu, lien visio…') }}">
+        <button class="btn btn-primary w-full">{{ t('Valider et notifier') }}</button>
+      </form>
+    </div>
+    {% elif my_jobs %}
+    <form method="post" action="{{ url_for('recruiter.invite', user_id=cand.id) }}" class="card card-pad space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3 class="font-display font-semibold">{{ t('Inviter à postuler') }}</h3>
+      <select name="job_id" class="select">{% for j in my_jobs %}<option value="{{ j.id }}">{{ j.title }}</option>{% endfor %}</select>
+      <textarea name="message" class="textarea !min-h-[80px]" placeholder="{{ t('Message personnel (facultatif)') }}"></textarea>
+      <button class="btn btn-primary w-full"><i data-lucide="send" class="w-4 h-4"></i>{{ t('Envoyer l\'invitation') }}</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('assistant.chat', user_id=cand.id) }}" class="card card-pad card-hover flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl grid place-items-center bg-grad text-white"><i data-lucide="bot" class="w-5 h-5"></i></div>
+      <div class="flex-1"><div class="font-display font-semibold">{{ t('Interroger son assistant IA') }}</div><div class="text-xs muted">{{ t('Posez vos questions sur son parcours') }}</div></div>
+      <i data-lucide="arrow-right" class="w-4 h-4 muted"></i></a>
+    {% if msgs %}
+    <div class="card card-pad"><h3 class="font-display font-semibold mb-3">{{ t('Historique des messages') }}</h3>
+      {% for m in msgs %}<div class="text-sm py-2 border-b last:border-0" style="border-color:var(--line)"><div class="font-semibold">{{ m.subject }}</div><div class="text-xs muted">{{ m.created_at|datefr('time') }} · {{ {'sent':'✉️ ' ~ t('envoyé'), 'skipped': t('dans l\'app'), 'failed': '⚠️ ' ~ t('échec e-mail'), 'pending': '…'}[m.email_status] }}</div></div>{% endfor %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

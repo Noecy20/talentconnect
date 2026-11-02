@@ -1,0 +1,13 @@
+{% extends "layouts/public.html" %}
+{% block title %}{{ t('Tarifs') }}{% endblock %}
+{% block content %}
+<section class="relative pt-32 pb-10 overflow-hidden">
+  <div class="absolute inset-0 pattern opacity-50"></div>
+  <div class="relative max-w-3xl mx-auto text-center px-4">
+    <span class="chip chip-terra">{{ t('Tarifs') }}</span>
+    <h1 class="font-display text-4xl sm:text-5xl font-bold mt-4">{{ t('Commencez gratuitement.') }} <span class="font-serif-accent text-terra-500">{{ t('Passez à la vitesse supérieure') }}</span> {{ t('quand vous voulez.') }}</h1>
+    <p class="muted text-lg mt-4">{{ t('Paiement par Mobile Money, carte ou virement. Les parrains utilisent TalentConnect gratuitement.') }}</p>
+  </div>
+</section>
+<section class="px-4">{% include "billing/_plans.html" %}</section>
+{% endblock %}

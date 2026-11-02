@@ -1,0 +1,9 @@
+{
+  "name": "talentconnect-assets",
+  "private": true,
+  "scripts": {
+    "css": "tailwindcss -c tailwind.config.js -i app/static/css/tailwind.src.css -o app/static/css/tailwind.css --minify",
+    "css:watch": "tailwindcss -c tailwind.config.js -i app/static/css/tailwind.src.css -o app/static/css/tailwind.css --watch"
+  },
+  "devDependencies": { "tailwindcss": "3.4.10" }
+}

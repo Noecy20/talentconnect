@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import ring, level with context %}
+{% block title %}{{ t('Mon éligibilité') }}{% endblock %}
+{% block page_title %}{{ t('Test d\'éligibilité parrain') }}{% endblock %}
+{% block content %}
+<div class="grid xl:grid-cols-[1fr_380px] gap-6 items-start">
+  <form method="post" class="card card-pad space-y-5" x-data="{kind: '{{ sp.kind }}'}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <h2 class="font-display text-xl font-semibold">{{ t('Parlez-nous de vous') }}</h2>
+      <p class="text-sm muted mt-1">{{ t('Ces informations déterminent votre score d\'éligibilité. Elles sont vérifiables : soyez précis.') }}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      {% for k, icon, label in [('individual','user-round',t('Une personne')),('company','building-2',t('Une entreprise'))] %}
+      <label class="cursor-pointer"><input type="radio" name="kind" value="{{ k }}" x-model="kind" class="sr-only">
+        <div class="card p-4 flex items-center gap-3 transition" :class="kind=='{{ k }}' ? '!border-terra-500 ring-4 ring-terra-500/10' : ''">
+          <i data-lucide="{{ icon }}" class="w-5 h-5" :class="kind=='{{ k }}' ? 'text-terra-500' : 'muted'"></i><span class="font-semibold text-sm">{{ label }}</span></div></label>
+      {% endfor %}
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="label" x-text="kind=='company' ? {{ t('Représentant — fonction')|js }} : {{ t('Poste actuel')|js }}"></label><input name="position" value="{{ sp.position }}" class="input" required></div>
+      <div><label class="label" x-text="kind=='company' ? {{ t('Raison sociale')|js }} : {{ t('Entreprise / organisation')|js }}"></label><input name="organization" value="{{ sp.organization }}" class="input" required></div>
+      <div x-show="kind=='individual'"><label class="label">{{ t('Niveau hiérarchique') }}</label>
+        <select name="seniority" class="select">{% for s in seniorities %}<option value="{{ s }}" {% if s==sp.seniority %}selected{% endif %}>{{ seniority_label(s) }}</option>{% endfor %}</select></div>
+      <div x-show="kind=='company'" x-cloak><label class="label">{{ t('N° RCCM / immatriculation') }}</label><input name="registration_number" value="{{ sp.registration_number }}" class="input"></div>
+      <div><label class="label" x-text="kind=='company' ? {{ t('Années d\'existence')|js }} : {{ t('Années d\'expérience')|js }}"></label><input type="number" min="0" name="years_experience" value="{{ sp.years_experience }}" class="input"></div>
+      <div><label class="label">{{ t('Niveau d\'études') }}</label>
+        <select name="education_level" class="select">{% for c, r in levels %}<option value="{{ c }}" {% if c==sp.education_level %}selected{% endif %}>{{ edu_label(c) }}</option>{% endfor %}</select></div>
+      <div><label class="label" x-text="kind=='company' ? {{ t('Nombre d\'employés')|js }} : {{ t('Personnes encadrées')|js }}"></label><input type="number" min="0" name="team_size" value="{{ sp.team_size }}" class="input"></div>
+      <div><label class="label">{{ t('E-mail professionnel') }}</label><input type="email" name="professional_email" value="{{ sp.professional_email }}" class="input" placeholder="prenom.nom@entreprise.com"><p class="help">{{ t('Une adresse au domaine de l\'entreprise rapporte plus de points qu\'une adresse Gmail.') }}</p></div>
+      <div><label class="label">{{ t('Site web de l\'organisation') }}</label><input name="organization_website" value="{{ sp.organization_website }}" class="input" placeholder="entreprise.com"></div>
+      <div class="sm:col-span-2"><label class="label">{{ t('Profil LinkedIn') }}</label><input name="linkedin" value="{{ sp.linkedin }}" class="input" placeholder="https://linkedin.com/in/..."></div>
+      <div class="sm:col-span-2"><label class="label">{{ t('Présentation') }}</label><textarea name="bio" class="textarea" placeholder="{{ t('Votre parcours en quelques lignes.') }}">{{ sp.bio }}</textarea></div>
+    </div>
+    <button class="btn btn-primary btn-lg">{{ t('Calculer mon éligibilité') }}</button>
+  </form>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <div class="card card-pad text-center">
+      {% if sp.status == 'draft' %}
+        <i data-lucide="shield-question" class="w-10 h-10 mx-auto text-terra-500"></i>
+        <h3 class="font-display font-semibold mt-3">{{ t('Pas encore évalué') }}</h3>
+        <p class="text-sm muted mt-1">{{ t('Remplissez le formulaire pour obtenir votre score.') }}</p>
+      {% else %}
+        <div class="flex justify-center">{{ ring(sp.eligibility_score, 128, '', '#D86730' if sp.status!='rejected' else '#C0392B') }}</div>
+        <div class="mt-3">
+          {% if sp.status == 'approved' %}<span class="chip chip-green">{{ t('Parrain certifié') }}</span> {{ level(sp.level) }}
+          {% elif sp.status == 'pending_review' %}<span class="chip chip-gold">{{ t('En revue par l\'admin') }}</span>
+          {% else %}<span class="chip chip-red">{{ t('Critères non atteints') }}</span>{% endif %}
+        </div>
+        {% if sp.eligibility_breakdown %}
+        <div class="text-left mt-5 space-y-2">
+          {% for k, v in sp.eligibility_breakdown.items() %}
+          <div class="flex justify-between text-sm"><span class="muted">{{ t(k) }}</span><b>+{{ v }}</b></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="card card-pad text-sm">
+      <h3 class="font-display font-semibold mb-3">{{ t('Les règles') }}</h3>
+      <ul class="space-y-2 muted">
+        <li>• <b class="text-[var(--ink)]">{{ auto }}+</b> : {{ t('validation automatique') }}</li>
+        <li>• <b class="text-[var(--ink)]">{{ minimum }}–{{ auto - 1 }}</b> : {{ t('revue par l\'équipe TalentConnect') }}</li>
+        <li>• <b class="text-[var(--ink)]">&lt; {{ minimum }}</b> : {{ t('non éligible pour le moment') }}</li>
+        <li>• {{ t('Niveaux : Or 85+, Argent 70+, Bronze') }}</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "layouts/public.html" %}
+{% from "_macros.html" import avatar, level with context %}
+{% block title %}{{ t('Parrainage') }} · {{ cand.full_name }}{% endblock %}
+{% block content %}
+<section class="relative pt-28 pb-16 overflow-hidden">
+  <div class="absolute inset-0 pattern opacity-50"></div>
+  <div class="blob w-96 h-96 -top-24 -right-24" style="background:#F3B48C"></div>
+  <div class="relative max-w-3xl mx-auto px-4">
+    <div class="card card-pad text-center reveal" style="box-shadow:var(--shadow-lg)">
+      <div class="flex justify-center">{{ avatar(cand, 84) }}</div>
+      <p class="chip chip-terra mt-5">{{ t('Demande de parrainage') }}</p>
+      <h1 class="font-display text-3xl font-bold mt-3">{{ t('{name} sollicite votre recommandation', name=cand.full_name) }}</h1>
+      <p class="muted mt-2">{{ cp.headline if cp }}{% if cp and cp.field %} · {{ cp.field }}{% endif %}</p>
+      {% if req.message %}<blockquote class="font-serif-accent text-lg mt-6 max-w-xl mx-auto">« {{ req.message }} »</blockquote>{% endif %}
+      {% if req.relation %}<p class="text-sm muted mt-3"><i data-lucide="link-2" class="w-4 h-4 inline"></i> {{ req.relation }}</p>{% endif %}
+    </div>
+
+    {% if not current_user.is_authenticated %}
+      <div class="card card-pad mt-6 reveal">
+        <h2 class="font-display text-xl font-semibold">{{ t('Comment ça marche ?') }}</h2>
+        <ol class="mt-4 space-y-3 text-sm">
+          <li class="flex gap-3"><span class="w-7 h-7 rounded-lg bg-terra-500 text-white grid place-items-center font-bold flex-none">1</span>{{ t('Créez votre compte parrain (gratuit).') }}</li>
+          <li class="flex gap-3"><span class="w-7 h-7 rounded-lg bg-terra-500 text-white grid place-items-center font-bold flex-none">2</span>{{ t('Passez le test d\'éligibilité : poste, expérience, e-mail professionnel… (2 minutes).') }}</li>
+          <li class="flex gap-3"><span class="w-7 h-7 rounded-lg bg-terra-500 text-white grid place-items-center font-bold flex-none">3</span>{{ t('Recommandez le candidat compétence par compétence.') }}</li>
+        </ol>
+        <div class="flex flex-wrap gap-3 mt-6">
+          <a href="{{ url_for('auth.register', role='sponsor', next=request.path) }}" class="btn btn-primary">{{ t('Devenir parrain') }}</a>
+          <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-ghost">{{ t('J\'ai déjà un compte') }}</a>
+        </div>
+      </div>
+    {% elif not sp %}
+      <div class="card card-pad mt-6 text-center"><p>{{ t('Seuls les comptes parrains peuvent recommander un candidat.') }}</p></div>
+    {% elif sp.status in ['draft', 'rejected'] %}
+      <div class="card card-pad mt-6 text-center">
+        <i data-lucide="shield-check" class="w-9 h-9 mx-auto text-terra-500"></i>
+        <h2 class="font-display text-xl font-semibold mt-3">{% if sp.status == 'rejected' %}{{ t('Votre profil ne remplit pas encore les critères') }}{% else %}{{ t('Première étape : le test d\'éligibilité') }}{% endif %}</h2>
+        <p class="muted text-sm mt-1">{{ t('On ne devient pas parrain comme ça : cela garantit la valeur de chaque recommandation.') }}</p>
+        <a href="{{ url_for('sponsor.eligibility', next=request.path) }}" class="btn btn-primary mt-5">{{ t('Passer le test') }}</a>
+      </div>
+    {% else %}
+      {% set skills = (cp.skills or [])[:8] if cp else [] %}
+      {% set softs = (cp.soft_skills or [])[:6] if cp else [] %}
+      <form method="post" class="card card-pad mt-6 space-y-5 reveal">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if sp.status == 'pending_review' %}<div class="chip chip-gold">{{ t('Votre dossier est en revue : la recommandation sera publiée dès validation.') }}</div>{% endif %}
+        <h2 class="font-display text-xl font-semibold">{{ t('Votre recommandation') }}</h2>
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-3"><label class="label">{{ t('Votre relation professionnelle') }}</label><input name="relation" class="input" required value="{{ req.relation }}" placeholder="{{ t('Ex : J\'étais son manager direct') }}"></div>
+          <div class="sm:col-span-2"><label class="label">{{ t('Organisation') }}</label><input name="organization" class="input" value="{{ sp.organization }}"></div>
+          <div><label class="label">{{ t('Période') }}</label><input name="period" class="input" placeholder="2021 – 2024"></div>
+        </div>
+        {% for group, items, prefix in [(t('Compétences'), skills, 'skill_'), (t('Soft skills'), softs, 'soft_')] if items %}
+        <div>
+          <label class="label">{{ group }} <span class="muted font-normal">— {{ t('notez uniquement ce que vous avez constaté') }}</span></label>
+          <div class="space-y-2">
+          {% for s in items %}
+            <div class="flex items-center gap-3 rounded-xl px-3 py-2" style="background:var(--bg-2)" x-data="{v:0}">
+              <span class="flex-1 text-sm font-medium">{{ s }}</span>
+              <input type="hidden" name="{{ prefix }}{{ s }}" :value="v">
+              <div class="flex gap-0.5">{% for n in range(1,6) %}<button type="button" @click="v = (v=={{ n }} ? 0 : {{ n }})" class="text-xl leading-none transition" :class="v >= {{ n }} ? 'text-terra-500 scale-110' : 'opacity-25'">★</button>{% endfor %}</div>
+            </div>
+          {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        <div><label class="label">{{ t('Recommandation') }}</label><textarea name="recommendation" class="textarea" required minlength="40" placeholder="{{ t('Ce que vous avez apprécié, une réalisation marquante, pourquoi vous le/la recommandez…') }}"></textarea></div>
+        <label class="flex items-center gap-3 text-sm"><input type="checkbox" name="would_rehire" class="check" checked>{{ t('Je retravaillerais volontiers avec cette personne') }}</label>
+        <p class="text-xs muted">{{ t('Votre réputation de parrain évolue selon le parcours des candidats recommandés.') }}</p>
+        <button class="btn btn-primary btn-lg w-full">{{ t('Publier ma recommandation') }}</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

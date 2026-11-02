@@ -1,0 +1,82 @@
+{% macro tags(name, value, placeholder='', suggestions=[]) -%}
+<div x-data='tagInput({{ (value|join(', ') if value is iterable and value is not string else (value or ''))|tojson }}, {{ suggestions|tojson }})' class="relative">
+  <div class="input flex flex-wrap gap-1.5 items-center min-h-[48px] cursor-text" @click="$refs.i.focus()">
+    <template x-for="(tg,i) in tags" :key="tg+i">
+      <span class="chip chip-terra">
+        <span x-text="tg"></span>
+        <button type="button" @click.stop="remove(i)" class="opacity-60 hover:opacity-100">&times;</button>
+      </span>
+    </template>
+    <input x-ref="i" x-model="draft" @keydown="key($event)" @blur="add()" class="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1" placeholder="{{ placeholder }}">
+  </div>
+  <div x-show="filtered.length" x-cloak class="absolute z-30 mt-1 w-full card shadow-lg p-1">
+    <template x-for="s in filtered"><button type="button" @mousedown.prevent="add(s)" class="block w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-[var(--bg-2)]" x-text="s"></button></template>
+  </div>
+  <input type="hidden" name="{{ name }}" :value="joined">
+</div>
+{%- endmacro %}
+
+{% macro location(country='CI', city='', country_name='country_code', city_name='city', required=False) -%}
+<div x-data='cityPicker({{ country|tojson }}, {{ city|tojson }})' class="grid sm:grid-cols-2 gap-4">
+  <div>
+    <label class="label">{{ t('Pays') }}</label>
+    <select name="{{ country_name }}" x-model="country" class="select">
+      {% for code, name in countries() %}<option value="{{ code }}" {% if code==country %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="label">{{ t('Ville') }}</label>
+    <input name="{{ city_name }}" x-model="city" list="cities-{{ city_name }}" class="input" placeholder="{{ t('Commencez à taper…') }}" {% if required %}required{% endif %}>
+    <datalist id="cities-{{ city_name }}"><template x-for="c in list"><option :value="c.name"></option></template></datalist>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro ring(value, size=84, label='', color='var(--terra)') -%}
+<div class="tc-ring" style="--p:{{ value }};--s:{{ size }}px;--c:{{ color }}"><span style="font-size:{{ (size/4.2)|round|int }}px">{{ value }}<small style="font-size:.55em">%</small></span></div>
+{%- if label %}<div class="text-xs muted mt-1 text-center">{{ label }}</div>{% endif %}
+{%- endmacro %}
+
+{% set STATUS_LABELS = {
+  'received': ('Reçue', 'chip'), 'shortlisted': ('Présélection', 'chip chip-blue'),
+  'second_chance': ('Seconde chance', 'chip chip-gold'), 'interview': ('Entretien', 'chip chip-terra'),
+  'offer': ('Offre', 'chip chip-green'), 'hired': ('Embauché', 'chip chip-green'), 'rejected': ('Non retenue', 'chip chip-red') } %}
+
+{% macro status(s) -%}
+{% set m = STATUS_LABELS.get(s, (s, 'chip')) %}<span class="{{ m[1] }}">{{ t(m[0]) }}</span>
+{%- endmacro %}
+
+{% macro level(l) -%}
+{% if l %}<span class="badge-level lvl-{{ l }}"><i data-lucide="award" class="w-3 h-3"></i>{{ {'gold': t('Or'), 'silver': t('Argent'), 'bronze': t('Bronze')}[l] }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro avatar(user, size=40) -%}
+<span class="avatar" style="width:{{ size }}px;height:{{ size }}px;font-size:{{ (size/2.6)|int }}px">{{ user.initials }}</span>
+{%- endmacro %}
+
+{% macro empty(icon, title, text='', action_url=None, action_label=None) -%}
+<div class="card card-pad text-center py-14">
+  <div class="mx-auto w-14 h-14 rounded-2xl grid place-items-center mb-4" style="background:rgba(216,103,48,.1);color:var(--terra)"><i data-lucide="{{ icon }}" class="w-7 h-7"></i></div>
+  <h3 class="font-display text-lg font-semibold">{{ title }}</h3>
+  {% if text %}<p class="muted text-sm mt-1 max-w-md mx-auto">{{ text }}</p>{% endif %}
+  {% if action_url %}<a href="{{ action_url }}" class="btn btn-primary mt-5">{{ action_label }}</a>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro langswitch() -%}
+<div x-data="{o:false}" class="relative">
+  <button type="button" @click="o=!o" class="btn btn-ghost btn-sm"><i data-lucide="languages" class="w-4 h-4"></i><span class="uppercase">{{ lang }}</span></button>
+  <div x-show="o" @click.outside="o=false" x-cloak x-transition class="absolute right-0 mt-2 card shadow-lg p-1 w-44 z-50">
+    {% for code, l in languages.items() %}
+    <a href="{{ url_for('main.set_language', code=code, next=request.full_path) }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[var(--bg-2)] {% if code==lang %}font-bold text-terra-600{% endif %}">
+      <span>{{ l.flag }}</span>{{ l.name }}</a>
+    {% endfor %}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro themetoggle() -%}
+<button type="button" @click="toggle()" class="btn btn-ghost btn-icon" title="{{ t('Mode sombre') }}">
+  <i data-lucide="moon" class="w-4 h-4" x-show="!dark"></i><i data-lucide="sun" class="w-4 h-4" x-show="dark" x-cloak></i>
+</button>
+{%- endmacro %}

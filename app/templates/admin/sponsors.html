@@ -1,0 +1,48 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import avatar, level, ring with context %}
+{% block title %}{{ t('Parrains') }}{% endblock %}
+{% block page_title %}{{ t('Parrains') }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap gap-2 mb-5">
+  {% for s, l in [('pending_review', t('En revue')), ('approved', t('Certifiés')), ('rejected', t('Refusés')), ('draft', t('Non évalués')), ('all', t('Tous'))] %}
+  <a href="{{ url_for('admin.sponsors', status=s) }}" class="btn btn-sm {% if status==s %}btn-primary{% else %}btn-ghost{% endif %}">{{ l }}</a>{% endfor %}
+</div>
+<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+{% for sp in sps %}
+  <div class="card card-pad">
+    <div class="flex items-center gap-3">{{ avatar(sp.user, 44) }}
+      <div class="flex-1 min-w-0"><div class="font-semibold truncate">{{ sp.user.full_name }}</div><div class="text-xs muted truncate">{{ sp.position }} · {{ sp.organization }}</div></div>
+      {{ ring(sp.eligibility_score or 0, 56) }}</div>
+    <div class="flex flex-wrap gap-1.5 mt-3">
+      <span class="chip">{{ t('Entreprise') if sp.kind=='company' else seniority_label(sp.seniority) }}</span>
+      <span class="chip">{{ sp.years_experience }} {{ t('ans') }}</span>{{ level(sp.level) }}
+      <span class="chip">{{ t('Réputation') }} {{ sp.reputation|round|int }}</span>
+    </div>
+    <div class="text-xs mt-3 space-y-1">
+      {% if sp.professional_email %}<div><i data-lucide="mail" class="w-3.5 h-3.5 inline muted"></i> {{ sp.professional_email }}</div>{% endif %}
+      {% if sp.linkedin %}<div><i data-lucide="linkedin" class="w-3.5 h-3.5 inline muted"></i> <a href="{{ sp.linkedin }}" target="_blank" class="text-terra-600 underline">LinkedIn</a></div>{% endif %}
+      {% if sp.organization_website %}<div><i data-lucide="globe" class="w-3.5 h-3.5 inline muted"></i> {{ sp.organization_website }}</div>{% endif %}
+      {% if sp.registration_number %}<div>RCCM : {{ sp.registration_number }}</div>{% endif %}
+    </div>
+    {% if sp.status != 'approved' %}
+    <div class="flex gap-2 mt-4">
+      <form method="post" action="{{ url_for('admin.sponsor_action', sid=sp.id, action='approve') }}" class="flex-1"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success btn-sm w-full">{{ t('Certifier') }}</button></form>
+      {% if sp.status != 'rejected' %}<form method="post" action="{{ url_for('admin.sponsor_action', sid=sp.id, action='reject') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger btn-sm">{{ t('Refuser') }}</button></form>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+{% else %}<p class="muted">{{ t('Aucun dossier.') }}</p>{% endfor %}
+</div>
+
+{% if flagged %}
+<h2 class="font-display text-lg font-semibold mt-10 mb-3">{{ t('Parrainages signalés par des recruteurs') }}</h2>
+<div class="card"><table class="table"><tbody>
+{% for s in flagged %}<tr>
+  <td><b>{{ s.sponsor.full_name }}</b> → {{ s.candidate.full_name }}<div class="text-xs muted">{{ s.recommendation[:120] }}…</div></td>
+  <td class="text-right"><div class="inline-flex gap-2">
+    <form method="post" action="{{ url_for('admin.sponsorship_action', sid=s.id, action='restore') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success btn-sm">{{ t('Rétablir') }}</button></form>
+    <form method="post" action="{{ url_for('admin.sponsorship_action', sid=s.id, action='revoke') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger btn-sm">{{ t('Révoquer') }}</button></form>
+  </div></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+{% endblock %}

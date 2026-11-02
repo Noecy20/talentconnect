@@ -1,0 +1,29 @@
+{% extends "layouts/app.html" %}
+{% from "_macros.html" import location with context %}
+{% block title %}{{ t('Mon compte') }}{% endblock %}
+{% block page_title %}{{ t('Mon compte') }}{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-[2fr_1fr] gap-6">
+  <form method="post" class="card card-pad space-y-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 class="font-display text-lg font-semibold">{{ t('Informations personnelles') }}</h2>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="label">{{ t('Prénom') }}</label><input name="first_name" value="{{ current_user.first_name }}" class="input"></div>
+      <div><label class="label">{{ t('Nom') }}</label><input name="last_name" value="{{ current_user.last_name }}" class="input"></div>
+      <div><label class="label">{{ t('Téléphone') }}</label><input name="phone" value="{{ current_user.phone }}" class="input"></div>
+      <div><label class="label">{{ t('Langue de l\'application') }}</label>
+        <select name="language" class="select">{% for code, l in languages.items() %}<option value="{{ code }}" {% if code==current_user.language %}selected{% endif %}>{{ l.flag }} {{ l.name }}</option>{% endfor %}</select></div>
+    </div>
+    {{ location(current_user.country_code, current_user.city) }}
+    <p class="help">{{ t('Votre pays détermine la devise affichée et les villes proposées.') }} {{ t('Devise :') }} <b>{{ currency_for(current_user.country_code) }}</b></p>
+    <button class="btn btn-primary">{{ t('Enregistrer') }}</button>
+  </form>
+  <form method="post" class="card card-pad space-y-4 h-fit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="password">
+    <h2 class="font-display text-lg font-semibold">{{ t('Mot de passe') }}</h2>
+    <div><label class="label">{{ t('Mot de passe actuel') }}</label><input type="password" name="current" class="input" required></div>
+    <div><label class="label">{{ t('Nouveau mot de passe') }}</label><input type="password" name="new" minlength="8" class="input" required></div>
+    <button class="btn btn-dark w-full">{{ t('Changer le mot de passe') }}</button>
+  </form>
+</div>
+{% endblock %}

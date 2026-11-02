@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ code }}{% endblock %}
+{% block body %}
+<div class="min-h-screen grid place-items-center px-6 relative overflow-hidden">
+  <div class="absolute inset-0 pattern opacity-50"></div>
+  <div class="relative text-center">
+    <img src="{{ url_for('static', filename='img/logo-mark.png') }}" class="w-24 mx-auto float" alt="">
+    <div class="font-display text-8xl font-bold text-grad mt-6">{{ code }}</div>
+    <p class="text-lg muted mt-2">{{ message }}</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary mt-8">{{ t('Retour à l\'accueil') }}</a>
+  </div>
+</div>
+{% endblock %}
