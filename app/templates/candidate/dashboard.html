@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% from "_macros.html" import ring, status, empty with context %}
 {% block title %}{{ t('Tableau de bord') }}{% endblock %}
-{% block page_title %}{{ t('Bonjour') }} {{ current_user.first_name or current_user.full_name }} 👋{% endblock %}
+{% block page_title %}{{ t('Bonjour') }} {{ current_user.first_name or current_user.full_name }}{% endblock %}
 {% block content %}
 <div class="grid xl:grid-cols-[1.4fr_1fr] gap-6">
   <!-- Employabilité -->
@@ -45,6 +45,20 @@
     {% endfor %}
   </div>
 </div>
+
+<!-- Suivi des candidatures -->
+<a href="{{ url_for('tracker.board') }}" class="card card-pad mt-6 flex flex-col md:flex-row md:items-center gap-5 card-hover">
+  <div class="flex items-center gap-3 md:w-64 shrink-0">
+    <div class="w-12 h-12 rounded-2xl grid place-items-center bg-terra-600 text-white"><i data-lucide="kanban-square" class="w-6 h-6"></i></div>
+    <div><div class="font-display font-semibold">{{ t('Mon suivi de candidatures') }}</div><div class="text-xs muted">{{ t('Toutes vos candidatures, ici et ailleurs') }}</div></div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+    {% for v, l in [(jat.sent, t('Envoyées')), (jat.responses, t('Réponses')), (jat.interviews, t('Entretiens')), (jat.response_rate ~ ' %', t('Taux de réponse'))] %}
+    <div class="rounded-xl px-3 py-2" style="background:var(--bg-2)"><div class="font-display text-xl font-extrabold">{{ v }}</div><div class="text-xs muted">{{ l }}</div></div>
+    {% endfor %}
+  </div>
+  {% if jat.due %}<span class="chip chip-gold shrink-0"><i data-lucide="bell-ring" class="w-3.5 h-3.5"></i>{{ t('{n} relance(s) à faire', n=jat.due|length) }}</span>{% endif %}
+</a>
 
 <!-- Offres recommandées -->
 <div class="mt-8">

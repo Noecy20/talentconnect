@@ -44,7 +44,7 @@
         </div>
         <div class="flex items-center gap-1.5 mt-2.5">
           <span class="chip chip-terra !text-[11px] !py-0.5">{{ a.match_score }}%</span>
-          {% if a.ai_group == 'interview' %}<span class="chip chip-green !text-[11px] !py-0.5">IA ✓</span>{% endif %}
+          {% if a.ai_group == 'interview' %}<span class="chip chip-green !text-[11px] !py-0.5"><i data-lucide="sparkles" class="w-3 h-3"></i>IA</span>{% endif %}
           <span class="ml-auto text-[11px] muted">{{ a.created_at|ago }}</span>
         </div>
       </div>

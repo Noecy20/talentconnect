@@ -40,6 +40,27 @@ def register_cli(app):
         _seed(app)
         click.echo("✓ Données de démo créées. Mot de passe de tous les comptes démo : Demo1234!")
 
+    @app.cli.command("send-reminders")
+    def send_reminders():
+        """Envoie (par e-mail et dans l'app) les relances du jour. À planifier chaque matin (cron Render)."""
+        from datetime import date
+        from .models import TrackedApplication, User, FINAL_STAGES
+        from .services import mailer
+        due = TrackedApplication.query.filter(TrackedApplication.next_followup <= date.today(),
+                                              TrackedApplication.archived.is_(False)).all()
+        by_user = {}
+        for x in due:
+            if x.stage not in FINAL_STAGES:
+                by_user.setdefault(x.user_id, []).append(x)
+        for uid, items in by_user.items():
+            u = db.session.get(User, uid)
+            lines = "\n".join(f"• {x.title} — {x.company} (relance prévue le {x.next_followup:%d/%m})" for x in items)
+            mailer.send(u, f"{len(items)} relance(s) à faire aujourd'hui",
+                        f"Bonjour {u.first_name},\n\nVoici les candidatures à relancer :\n{lines}\n\n"
+                        f"Un message court et poli suffit : rappelez le poste, votre motivation et votre disponibilité.",
+                        kind="system", sync=True)
+        click.echo(f"Relances envoyées à {len(by_user)} candidat(s).")
+
     @app.cli.command("translate")
     @click.argument("lang")
     def translate(lang):
@@ -148,6 +169,9 @@ def _seed(app):
         co.sector, co.size, co.website, co.description, co.verified = sector, size, web, desc, True
         co.registration_number = f"RCCM-{cc}-{random.randint(10000, 99999)}"
         u.recruiter.position = "Responsable recrutement"
+        u.recruiter.work_email, u.recruiter.work_email_verified = f"{_slug(fn, ln)}@{web}", True
+        u.recruiter.verification_status, u.recruiter.verification_method = "verified", "email_domain"
+        u.recruiter.verified_at = datetime.utcnow()
         u.grant_access(90)
         recs.append(u)
     db.session.commit()
@@ -285,6 +309,50 @@ def _seed(app):
         if a.status == "second_chance":
             a.feedback = scoring.refusal_feedback(a)
             db.session.add(TalentPool(company_id=a.job.company_id, candidate_id=a.candidate_id, source_job_id=a.job_id, note=a.ai_reason or ""))
+    db.session.commit()
+
+    # --- suivi des candidatures (JAT) : synchronisation + exemples externes
+    from .models import MobilityProject, CVVersion, TrackedApplication
+    from .services import tracker as tsvc
+    for a in Application.query.all():
+        tsvc.sync_application(a)
+    db.session.commit()
+    aicha = cands[0]
+    p_abj = MobilityProject(user_id=aicha.id, name="Abidjan", country_code="CI", city="Abidjan", target_role="Data Analyst", color="#D86730")
+    p_qc = MobilityProject(user_id=aicha.id, name="Québec 2027", country_code="CA", city="Québec", target_role="Analyste BI", color="#2B6CB0")
+    db.session.add_all([p_abj, p_qc])
+    db.session.flush()
+    v1 = CVVersion(user_id=aicha.id, name="CV Data Analyst — Abidjan", data={})
+    v2 = CVVersion(user_id=aicha.id, name="CV Analyste BI — format canadien", data={"template": "ca_classique"})
+    db.session.add_all([v1, v2])
+    db.session.flush()
+    for tr in TrackedApplication.query.filter_by(user_id=aicha.id).all():
+        tr.project_id = p_abj.id
+    today = datetime.utcnow().date()
+    ext = [
+        ("Analyste BI", "Desjardins", "Lévis", "CA", "LinkedIn", "sent", 12, p_qc, v2, "Marie Tremblay", "Conseillère en acquisition de talents"),
+        ("Data Analyst junior", "Ville de Québec", "Québec", "CA", "Guichet-Emplois", "interview", 20, p_qc, v2, "Julie Gagnon", "RH"),
+        ("Analyste de données", "Intact Assurance", "Québec", "CA", "Indeed", "to_apply", 0, p_qc, None, "", ""),
+        ("Business Analyst", "MTN Côte d'Ivoire", "Abidjan", "CI", "Emploi.ci", "waiting", 9, p_abj, v1, "Koné Ibrahim", "Talent Acquisition"),
+        ("Data Engineer", "Société Générale CI", "Abidjan", "CI", "Site carrière", "identified", 0, p_abj, None, "", ""),
+        ("Analyste reporting", "SIB", "Abidjan", "CI", "LinkedIn", "refused", 30, p_abj, v1, "", ""),
+    ]
+    for title, company, city, cc, source, stage, ago, proj, ver, cname, crole in ext:
+        tr = TrackedApplication(user_id=aicha.id, title=title, company=company, city=city, country_code=cc, source=source,
+                                stage="identified", project_id=proj.id, cv_version_id=ver.id if ver else None,
+                                contact_name=cname, contact_role=crole, url="https://example.com/offre",
+                                deadline=today + timedelta(days=random.randint(2, 20)) if stage in ("identified", "to_apply") else None,
+                                created_at=datetime.utcnow() - timedelta(days=ago + 3))
+        db.session.add(tr)
+        db.session.flush()
+        tsvc.add_event(tr, "stage", "Ajoutée au suivi", at=datetime.utcnow() - timedelta(days=ago + 3))
+        if stage != "identified":
+            tsvc.set_stage(tr, stage)
+            if tr.applied_at:
+                tr.applied_at = today - timedelta(days=ago)
+                tr.next_followup = tr.applied_at + timedelta(days=7) if stage in ("sent", "waiting") else tr.next_followup
+        if stage == "interview":
+            tsvc.add_event(tr, "call", "Appel de Julie Gagnon : entretien Teams prévu jeudi 10 h (heure de Québec).")
     db.session.commit()
 
     # --- paiements

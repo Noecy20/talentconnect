@@ -24,7 +24,9 @@
   </div>
   <div x-show="role=='recruiter'" x-cloak><label class="label">{{ t('Entreprise') }}</label><input name="company_name" class="input" placeholder="{{ t('Nom de votre entreprise') }}"></div>
   <div><label class="label">{{ t('E-mail') }}</label><input name="email" type="email" required class="input"></div>
-  <div><label class="label">{{ t('Mot de passe') }}</label><input name="password" type="password" minlength="8" required class="input" placeholder="{{ t('8 caractères minimum') }}"></div>
+  <div><label class="label">{{ t('Mot de passe') }}</label><div class="relative" x-data="{show:false}"><input name="password" :type="show ? 'text' : 'password'" minlength="8" required placeholder="{{ t('8 caractères minimum') }}" class="input pr-11">
+      <button type="button" @click="show=!show" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg muted hover:text-[var(--ink)]" :aria-label="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}" :title="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}">
+        <span x-show="!show"><i data-lucide="eye" class="w-4 h-4"></i></span><span x-show="show" x-cloak><i data-lucide="eye-off" class="w-4 h-4"></i></span></button></div></div>
   {{ location('CI', '') }}
   <button class="btn btn-primary btn-lg w-full">{{ t('Créer mon compte') }}<i data-lucide="sparkles" class="w-4 h-4"></i></button>
 </form>

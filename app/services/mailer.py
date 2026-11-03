@@ -76,7 +76,7 @@ def dispatch(message_ids, sync=False):
         threading.Thread(target=_worker, args=(app, list(message_ids)), daemon=True).start()
 
 
-def send(recipient, subject, body, kind="custom", sender=None, application=None, email=None, defer=False):
+def send(recipient, subject, body, kind="custom", sender=None, application=None, email=None, defer=False, sync=False):
     """Crée le message dans l'app et déclenche l'e-mail. Renvoie le Message."""
     m = Message(
         sender_id=sender.id if sender else None,
@@ -88,7 +88,7 @@ def send(recipient, subject, body, kind="custom", sender=None, application=None,
     db.session.add(m)
     db.session.commit()
     if not defer:
-        dispatch([m.id])
+        dispatch([m.id], sync=sync)
     return m
 
 

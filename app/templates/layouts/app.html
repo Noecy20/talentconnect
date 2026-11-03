@@ -9,15 +9,17 @@
   </a>
 {%- endmacro %}
 
+{% block nav_mode %}{% endblock %}
 {% block body %}
-<div class="flex min-h-screen" x-data="{side:false}">
+{% set collapsed = self.nav_mode()|trim == 'collapsed' %}
+<div class="flex min-h-screen {% if collapsed %}nav-collapsed{% endif %}" x-data="{side:false}">
   <!-- Sidebar -->
   <aside class="sidebar flex flex-col lg:sticky lg:top-0 lg:h-screen" :class="{ 'open': side }">
     <div class="px-5 pt-5 pb-3 flex items-center gap-2.5">
       <img src="{{ url_for('static', filename='img/logo-mark.png') }}" class="w-10 h-10 object-contain" alt="">
       <a href="{{ url_for('main.dashboard') }}" class="font-display text-[1.35rem] font-bold leading-none">
         <span style="color:var(--ink-2)">Talent</span><span class="text-terra-500">Connect</span></a>
-      <button class="ml-auto lg:hidden muted" @click="side=false"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <button class="ml-auto {% if not collapsed %}lg:hidden{% endif %} muted" @click="side=false"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <nav class="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
       {% if current_user.role == 'candidate' %}
@@ -27,6 +29,10 @@
         {{ link('candidate.profile', 'user-round', t('Mon profil')) }}
         <div class="nav-section">{{ t('Emploi') }}</div>
         {{ link('candidate.jobs', 'briefcase', t('Offres pour moi'), True) }}
+        <a href="{{ url_for('tracker.board') }}" class="nav-link {% if ep.startswith('tracker.') %}active{% endif %}">
+          <i data-lucide="kanban-square" class="w-[18px] h-[18px]"></i><span>{{ t('Mon suivi') }}</span>
+          {% if not current_user.has_access %}<i data-lucide="lock" class="w-3.5 h-3.5 lock"></i>{% endif %}
+        </a>
         {{ link('candidate.applications', 'send', t('Mes candidatures'), True) }}
         {{ link('candidate.sponsorships', 'handshake', t('Mes parrainages'), True) }}
         {{ link('main.market', 'map', t('Métiers qui recrutent'), True) }}
@@ -37,6 +43,10 @@
         <div class="nav-section">{{ t('Espace recruteur') }}</div>
         {{ link('recruiter.dashboard', 'layout-dashboard', t('Tableau de bord')) }}
         {{ link('recruiter.company', 'building-2', t('Mon entreprise')) }}
+        <a href="{{ url_for('recruiter.verification') }}" class="nav-link {% if ep == 'recruiter.verification' %}active{% endif %}">
+          <i data-lucide="shield-check" class="w-[18px] h-[18px]"></i><span>{{ t('Vérification') }}</span>
+          {% if current_user.recruiter and not current_user.recruiter.is_verified %}<span class="ml-auto w-2 h-2 rounded-full bg-terra-600"></span>{% endif %}
+        </a>
         <div class="nav-section">{{ t('Recrutement') }}</div>
         {{ link('recruiter.jobs', 'briefcase', t('Mes offres'), True) }}
         {{ link('recruiter.talents', 'search', t('Trouver des talents'), True) }}
@@ -56,6 +66,7 @@
         {{ link('admin.payments', 'wallet', t('Paiements')) }}
         {{ link('admin.plans', 'tags', t('Formules & prix')) }}
         {{ link('admin.sponsors', 'shield-check', t('Parrains')) }}
+        {{ link('admin.recruiters', 'badge-check', t('Recruteurs à vérifier')) }}
         {{ link('admin.companies', 'building-2', t('Entreprises')) }}
         {{ link('admin.settings', 'sliders-horizontal', t('Réglages des modèles')) }}
         {{ link('main.market', 'map', t('Marché de l\'emploi')) }}
@@ -84,16 +95,30 @@
     </div>
     {% endif %}
   </aside>
-  <div x-show="side" x-cloak @click="side=false" class="fixed inset-0 bg-black/30 z-50 lg:hidden"></div>
+  <div x-show="side" x-cloak @click="side=false" class="fixed inset-0 bg-black/30 z-50 {% if not collapsed %}lg:hidden{% endif %}"></div>
 
   <!-- Main -->
   <div class="flex-1 min-w-0 flex flex-col">
     <header class="sticky top-0 z-40 glass border-b" style="border-color:var(--line)">
       <div class="flex items-center gap-3 px-4 sm:px-8 h-16">
-        <button class="lg:hidden btn btn-ghost btn-icon" @click="side=true"><i data-lucide="menu" class="w-5 h-5"></i></button>
+        <button class="{% if not collapsed %}lg:hidden{% endif %} btn btn-ghost btn-icon" @click="side=true"><i data-lucide="menu" class="w-5 h-5"></i></button>
+        {% if collapsed %}
+        <a href="{{ url_for('main.dashboard') }}" class="flex items-center gap-2 shrink-0">
+          <img src="{{ url_for('static', filename='img/logo-mark.png') }}" class="w-8 h-8 object-contain" alt="">
+          <span class="hidden sm:inline font-display font-bold"><span style="color:var(--ink-2)">Talent</span><span class="text-terra-600">Connect</span></span>
+        </a>
+        {% if current_user.role == 'candidate' %}
+        <nav class="hidden lg:flex items-center gap-1 ml-4 text-sm font-semibold">
+          {% for ep, label in [('candidate.dashboard', t('Tableau de bord')), ('candidate.cv_builder', t('CV Builder')), ('candidate.profile', t('Mon profil')), ('candidate.jobs', t('Offres')), ('tracker.board', t('Mon suivi')), ('messages.inbox', t('Messages'))] %}
+          <a href="{{ url_for(ep) }}" class="px-3 py-2 rounded-lg {% if request.endpoint == ep %}bg-[var(--bg-2)] text-terra-700{% else %}muted hover:text-[var(--ink)]{% endif %}">{{ label }}</a>
+          {% endfor %}
+        </nav>
+        {% endif %}
+        {% else %}
         <div class="min-w-0">
           <h1 class="font-display text-lg sm:text-xl font-semibold truncate">{% block page_title %}{% endblock %}</h1>
         </div>
+        {% endif %}
         <div class="ml-auto flex items-center gap-2">
           {{ langswitch() }}
           {{ themetoggle() }}
@@ -118,9 +143,11 @@
         </div>
       </div>
     </header>
+    {% block main %}
     <main class="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px] w-full mx-auto">
       {% block content %}{% endblock %}
     </main>
+    {% endblock %}
   </div>
 </div>
 {% endblock %}

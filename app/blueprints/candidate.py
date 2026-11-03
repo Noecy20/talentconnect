@@ -54,8 +54,11 @@ def dashboard():
         recos = recommended_jobs(limit=4)
     sponsors = Sponsorship.query.filter_by(candidate_id=u.id, status="active").count()
     msgs = Message.query.filter_by(recipient_id=u.id).order_by(Message.created_at.desc()).limit(5).all()
+    from ..models import TrackedApplication
+    from ..services import tracker as tracker_svc
+    jat = tracker_svc.stats(TrackedApplication.query.filter_by(user_id=u.id, archived=False).all())
     return render_template("candidate/dashboard.html", score=score, actions=actions, apps=apps[:5], by_status=by_status,
-                           total_apps=len(apps), recos=recos, sponsors=sponsors, msgs=msgs,
+                           total_apps=len(apps), recos=recos, sponsors=sponsors, msgs=msgs, jat=jat,
                            completeness=round(scoring.profile_completeness(u) * 100))
 
 
@@ -112,7 +115,7 @@ def profile():
         u.phone = f.get("phone", u.phone)
         db.session.commit()
         flash(t("Profil enregistré. Vos recommandations sont mises à jour."), "success")
-        return redirect(url_for("candidate.profile"))
+        return redirect(url_for("candidate.dashboard"))
     return render_template("candidate/profile.html", p=p, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
                            soft_suggestions=SOFT_SKILLS_SUGGESTIONS, field_suggestions=FIELDS_SUGGESTIONS,
                            skill_suggestions=orientation.skill_suggestions(g.lang),
@@ -122,7 +125,21 @@ def profile():
 
 @bp.route("/cv-builder")
 def cv_builder():
-    data = cp().cv_data or default_cv_from_profile(current_user)
+    frame = url_for("candidate.cv_builder_frame", version=request.args.get("version", type=int))
+    return render_template("candidate/cv_builder.html", frame_url=frame)
+
+
+@bp.route("/cv-builder/cadre")
+def cv_builder_frame():
+    """Contenu du CV Builder (affiché dans le cadre de la page TalentConnect)."""
+    data = None
+    vid = request.args.get("version", type=int)
+    if vid:
+        from ..models import CVVersion
+        v = db.session.get(CVVersion, vid)
+        if v and v.user_id == current_user.id:
+            data = v.data
+    data = data or cp().cv_data or default_cv_from_profile(current_user)
     return build_page(data, logged_in=True, csrf=generate_csrf())
 
 
@@ -142,6 +159,7 @@ def jobs():
     company = a.get("company", "").strip()
     contract = a.get("contract", "")
     level = a.get("level", "")
+    posted = a.get("posted", type=int) or 0
     query = Job.query.filter_by(status="open").join(Company)
     if country:
         query = query.filter(or_(Job.country_code == country, Job.remote.is_(True)))
@@ -157,6 +175,9 @@ def jobs():
         query = query.filter(Job.contract_type == contract)
     if level:
         query = query.filter(Job.education_level == level)
+    if posted:
+        from datetime import datetime, timedelta
+        query = query.filter(Job.created_at >= datetime.utcnow() - timedelta(days=posted))
     results = recommended_jobs(jobs=query.order_by(Job.created_at.desc()).limit(300).all())
     if a.get("sort") == "recent":
         results.sort(key=lambda x: x["job"].created_at, reverse=True)
@@ -164,7 +185,7 @@ def jobs():
     tpl = "candidate/_job_list.html" if request.headers.get("HX-Request") else "candidate/jobs.html"
     return render_template(tpl, results=results, applied=applied, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
                            f=dict(country=country, field=field, city=city, q=q, company=company, contract=contract,
-                                  level=level, mode="me" if for_me else "all", sort=a.get("sort", "match")),
+                                  level=level, posted=posted, mode="me" if for_me else "all", sort=a.get("sort", "match")),
                            field_suggestions=FIELDS_SUGGESTIONS)
 
 

@@ -75,7 +75,7 @@ def user_access(uid):
     if action == "grant":
         days = to_int(request.form.get("days"), 0)
         u.grant_access(days or None)
-        mailer.send(u, t("Votre accès TalentConnect est activé 🎉"),
+        mailer.send(u, t("Votre accès TalentConnect est activé"),
                     t("Bonjour {name},\n\nVotre accès complet à TalentConnect est maintenant actif{until}. Bonne découverte !",
                       name=u.first_name, until=(" " + t("pour {d} jours", d=days)) if days else ""),
                     kind="system", sender=current_user)
@@ -259,3 +259,46 @@ def settings():
         return redirect(url_for("admin.settings"))
     keys = ("sponsor_auto_approve", "sponsor_min_score", "sponsor_max_per_year", "triage_interview", "triage_second_chance")
     return render_template("admin/settings.html", s={k: Setting.get(k) for k in keys}, w=Setting.get("match_weights"))
+
+
+# --------------------------------------------------------------------------- recruteurs (preuve d'appartenance)
+@bp.route("/recruteurs")
+def recruiters():
+    from ..models import RecruiterProfile
+    status = request.args.get("status", "pending")
+    q = RecruiterProfile.query
+    if status != "all":
+        q = q.filter_by(verification_status=status)
+    return render_template("admin/recruiters.html", rps=q.all(), status=status)
+
+
+@bp.route("/recruteurs/<int:rid>/<action>", methods=["POST"])
+def recruiter_action(rid, action):
+    from ..models import RecruiterProfile
+    rp = db.get_or_404(RecruiterProfile, rid)
+    if action == "approve":
+        rp.verification_status, rp.verified_at = "verified", datetime.utcnow()
+        rp.verification_method = rp.verification_method or "admin"
+        mailer.send(rp.user, t("Vous êtes recruteur vérifié"),
+                    t("Bonjour {name},\n\nVotre appartenance à {company} est confirmée. Vous pouvez publier vos offres.",
+                      name=rp.user.first_name, company=rp.company.name if rp.company else ""), kind="system", sender=current_user)
+    elif action == "reject":
+        rp.verification_status = "rejected"
+        rp.verification_note = request.form.get("note", "")
+        mailer.send(rp.user, t("Vérification recruteur refusée"),
+                    t("Bonjour {name},\n\nNous n'avons pas pu confirmer votre appartenance à l'entreprise. {note}",
+                      name=rp.user.first_name, note=rp.verification_note), kind="system", sender=current_user)
+    db.session.commit()
+    flash(t("Dossier mis à jour."), "success")
+    return redirect(request.referrer or url_for("admin.recruiters"))
+
+
+@bp.route("/recruteurs/<int:rid>/justificatif")
+def recruiter_proof(rid):
+    import os
+    from flask import send_from_directory, current_app
+    from ..models import RecruiterProfile
+    rp = db.get_or_404(RecruiterProfile, rid)
+    if not rp.proof_file:
+        abort(404)
+    return send_from_directory(os.path.join(current_app.config["UPLOAD_FOLDER"], "proofs"), rp.proof_file)

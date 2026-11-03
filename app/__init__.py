@@ -38,6 +38,7 @@ def create_app(config_class=Config):
     from .blueprints.assistant import bp as assistant_bp
     from .blueprints.messages import bp as messages_bp
     from .blueprints.api import bp as api_bp
+    from .blueprints.tracker import bp as tracker_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -49,6 +50,7 @@ def create_app(config_class=Config):
     app.register_blueprint(assistant_bp, url_prefix="/assistant")
     app.register_blueprint(messages_bp, url_prefix="/messages")
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(tracker_bp, url_prefix="/candidat/suivi")
 
     @app.before_request
     def _set_lang():

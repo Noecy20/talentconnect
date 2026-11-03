@@ -1,0 +1,59 @@
+{% extends "layouts/app.html" %}
+{% block title %}{{ t('Offres externes') }}{% endblock %}
+{% block page_title %}<a href="{{ url_for('tracker.board') }}" class="muted hover:text-terra-700"><i data-lucide="arrow-left" class="w-5 h-5 inline"></i></a> {{ t('Offres externes en temps réel') }}{% endblock %}
+{% block content %}
+<form class="card card-pad grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+  <div class="relative lg:col-span-2"><i data-lucide="search" class="w-4 h-4 muted absolute left-3 top-1/2 -translate-y-1/2"></i><input name="q" value="{{ f.q }}" required class="input !pl-9" placeholder="{{ t('Poste, mot-clé…') }}"></div>
+  <input name="where" value="{{ f.where }}" class="input" placeholder="{{ t('Ville (ex : Montréal)') }}">
+  <select name="country" class="select">{% for code, name in countries() %}<option value="{{ code }}" {% if code==f.country %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+  <div class="flex gap-2"><select name="days" class="select">{% for d, l in [(0, t('Toutes dates')), (1, t('24 h')), (3, t('3 jours')), (7, t('1 semaine')), (30, t('1 mois'))] %}<option value="{{ d }}" {% if f.days==d %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <button class="btn btn-primary"><i data-lucide="search" class="w-4 h-4"></i></button></div>
+</form>
+
+{% if not providers %}
+<div class="card card-pad mt-6">
+  <div class="flex items-start gap-3"><i data-lucide="plug" class="w-6 h-6 text-terra-600 shrink-0"></i>
+    <div><h2 class="font-display text-lg">{{ t('Aucune source externe connectée') }}</h2>
+      <p class="text-sm muted mt-1">{{ t('L\'administrateur peut activer des API officielles d\'offres d\'emploi dans le fichier .env : JSearch (annonces de LinkedIn, Indeed, Glassdoor… via Google for Jobs), Adzuna ou Jooble.') }}</p>
+      <p class="text-sm mt-3">{{ t('En attendant, ajoutez une offre vue ailleurs en collant simplement son lien :') }}</p>
+      <form method="post" action="{{ url_for('tracker.import_url') }}" class="flex gap-2 mt-2 max-w-xl"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input name="url" required class="input" placeholder="https://…"><button class="btn btn-dark shrink-0">{{ t('Importer') }}</button></form>
+    </div></div>
+</div>
+{% else %}
+<p class="text-xs muted mt-4">{{ t('Sources connectées :') }} {{ providers|join(', ') }}</p>
+{% for e in errors %}<p class="text-xs text-[#C0392B]">{{ e }}</p>{% endfor %}
+{% if f.q %}
+<div class="text-sm muted mt-4 mb-3"><b class="text-[var(--ink)]">{{ results|length }}</b> {{ t('offre(s) trouvée(s)') }}</div>
+<div class="grid md:grid-cols-2 gap-4">
+  {% for r in results %}
+  <div class="card card-pad flex flex-col">
+    <div class="flex items-start gap-3">
+      <div class="w-11 h-11 rounded-xl grid place-items-center font-bold text-white shrink-0" style="background:linear-gradient(135deg,var(--terra),var(--brown))">{{ (r.company or r.title)[:1] }}</div>
+      <div class="flex-1 min-w-0"><h3 class="font-display font-semibold leading-snug">{{ r.title }}</h3><p class="text-sm muted truncate">{{ r.company }}{% if r.city %} · {{ r.city }}{% endif %}</p></div>
+    </div>
+    <div class="flex flex-wrap gap-1.5 mt-3">
+      <span class="chip"><i data-lucide="globe" class="w-3 h-3"></i>{{ r.source }}</span>
+      {% if r.posted %}<span class="chip"><i data-lucide="clock" class="w-3 h-3"></i>{{ r.posted }}</span>{% endif %}
+      {% if r.salary %}<span class="chip chip-green">{{ r.salary }}</span>{% endif %}
+      {% if r.contract %}<span class="chip">{{ r.contract }}</span>{% endif %}
+    </div>
+    {% if r.description %}<p class="text-sm muted mt-3 line-clamp-3">{{ r.description }}</p>{% endif %}
+    <div class="flex gap-2 mt-4 pt-3 border-t mt-auto" style="border-color:var(--line)">
+      {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm"><i data-lucide="external-link" class="w-4 h-4"></i>{{ t('Voir') }}</a>{% endif %}
+      {% if r.url in tracked %}<span class="chip chip-green ml-auto"><i data-lucide="check" class="w-3.5 h-3.5"></i>{{ t('Dans mon suivi') }}</span>
+      {% else %}
+      <form method="post" action="{{ url_for('tracker.new') }}" class="ml-auto flex gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="quick" value="1"><input type="hidden" name="stage" value="identified">
+        {% for k in ['title','company','city','country_code','salary','contract','url','source','description'] %}<input type="hidden" name="{{ k }}" value="{{ r[k] or '' }}">{% endfor %}
+        {% if projects %}<select name="project_id" class="select !py-1.5 text-xs w-auto"><option value="">{{ t('Sans projet') }}</option>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select>{% endif %}
+        <button class="btn btn-primary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i>{{ t('Suivre') }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -24,7 +24,7 @@
   {% set o = outcomes[s.id] %}
   <div class="card card-pad reveal">
     <div class="flex items-center gap-3">{{ avatar(s.candidate, 44) }}<div class="flex-1 min-w-0"><div class="font-semibold truncate">{{ s.candidate.full_name }}</div><div class="text-xs muted truncate">{{ s.candidate.candidate.headline if s.candidate.candidate }}</div></div>
-      {% if o.hired %}<span class="chip chip-green">{{ t('Embauché') }} 🎉</span>{% elif s.status=='pending' %}<span class="chip chip-gold">{{ t('En attente') }}</span>{% endif %}</div>
+      {% if o.hired %}<span class="chip chip-green"><i data-lucide="party-popper" class="w-3.5 h-3.5"></i>{{ t('Embauché') }}</span>{% elif s.status=='pending' %}<span class="chip chip-gold">{{ t('En attente') }}</span>{% endif %}</div>
     <div class="grid grid-cols-2 gap-2 mt-4 text-center">
       <div class="rounded-xl p-2" style="background:var(--bg-2)"><div class="font-display font-bold text-lg">{{ o.apps }}</div><div class="text-[11px] muted">{{ t('Candidatures') }}</div></div>
       <div class="rounded-xl p-2" style="background:var(--bg-2)"><div class="font-display font-bold text-lg text-terra-600">{{ o.interviews }}</div><div class="text-[11px] muted">{{ t('Entretiens') }}</div></div>

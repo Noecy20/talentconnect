@@ -149,6 +149,23 @@ class RecruiterProfile(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"))
     position = db.Column(db.String(160), default="")
+    # Preuve d'appartenance à l'entreprise
+    work_email = db.Column(db.String(255), default="")
+    work_email_verified = db.Column(db.Boolean, default=False)
+    email_code = db.Column(db.String(12))
+    email_code_sent_at = db.Column(db.DateTime)
+    linkedin = db.Column(db.String(255), default="")
+    proof_type = db.Column(db.String(40))          # attestation|badge|contrat|mandat
+    proof_file = db.Column(db.String(255))
+    proof_uploaded_at = db.Column(db.DateTime)
+    verification_status = db.Column(db.String(20), default="unverified")  # unverified|pending|verified|rejected
+    verification_method = db.Column(db.String(30))  # email_domain|document|admin
+    verification_note = db.Column(db.String(255), default="")
+    verified_at = db.Column(db.DateTime)
+
+    @property
+    def is_verified(self):
+        return self.verification_status == "verified"
 
 
 # --------------------------------------------------------------------------- Parrainage
@@ -420,3 +437,107 @@ class Setting(db.Model):
             db.session.add(row)
         else:
             row.value = value
+
+
+# --------------------------------------------------------------------------- Suivi des candidatures (JAT)
+TRACKER_STAGES = [
+    ("identified", "Offre identifiée"), ("to_analyze", "À analyser"), ("to_apply", "À postuler"),
+    ("prepared", "Candidature préparée"), ("sent", "Candidature envoyée"), ("waiting", "En attente"),
+    ("interview", "Entretien"), ("test", "Test technique"), ("offer", "Offre reçue"),
+    ("accepted", "Acceptée"), ("refused", "Refusée"),
+]
+STAGE_KEYS = [k for k, _ in TRACKER_STAGES]
+SENT_STAGES = {"sent", "waiting", "interview", "test", "offer", "accepted", "refused"}
+FINAL_STAGES = {"accepted", "refused"}
+
+
+class MobilityProject(db.Model):
+    """Projet de mobilité professionnelle / géographique (ex. Abidjan, Québec)."""
+    __tablename__ = "mobility_projects"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    country_code = db.Column(db.String(2), default="CI")
+    city = db.Column(db.String(120), default="")
+    target_role = db.Column(db.String(160), default="")
+    color = db.Column(db.String(9), default="#D86730")
+    notes = db.Column(db.Text, default="")
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=now)
+
+
+class CVVersion(db.Model):
+    """Version personnalisée du CV (instantané du CV Builder)."""
+    __tablename__ = "cv_versions"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(160), nullable=False)
+    data = db.Column(db.JSON)
+    created_at = db.Column(db.DateTime, default=now)
+
+
+class TrackedApplication(db.Model):
+    """Une opportunité suivie par le candidat, sur TalentConnect ou ailleurs (LinkedIn, Indeed, site carrière…)."""
+    __tablename__ = "tracked_applications"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("mobility_projects.id"), index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
+    application_id = db.Column(db.Integer, db.ForeignKey("applications.id"), unique=True)
+    title = db.Column(db.String(200), nullable=False)
+    company = db.Column(db.String(200), default="")
+    city = db.Column(db.String(120), default="")
+    country_code = db.Column(db.String(2), default="")
+    salary = db.Column(db.String(120), default="")
+    contract = db.Column(db.String(30), default="")
+    url = db.Column(db.String(1000), default="")
+    source = db.Column(db.String(60), default="")
+    description = db.Column(db.Text, default="")
+    stage = db.Column(db.String(20), default="identified", index=True)
+    priority = db.Column(db.Integer, default=2)           # 1 haute, 2 normale, 3 basse
+    applied_at = db.Column(db.Date)
+    deadline = db.Column(db.Date)
+    next_followup = db.Column(db.Date, index=True)
+    contact_name = db.Column(db.String(160), default="")
+    contact_role = db.Column(db.String(160), default="")
+    contact_email = db.Column(db.String(255), default="")
+    contact_phone = db.Column(db.String(60), default="")
+    cv_version_id = db.Column(db.Integer, db.ForeignKey("cv_versions.id"))
+    cv_file = db.Column(db.String(255))
+    cover_letter = db.Column(db.Text, default="")
+    notes = db.Column(db.Text, default="")
+    archived = db.Column(db.Boolean, default=False)
+    stage_changed_at = db.Column(db.DateTime, default=now)
+    created_at = db.Column(db.DateTime, default=now, index=True)
+    updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    project = db.relationship("MobilityProject")
+    job = db.relationship("Job")
+    application = db.relationship("Application")
+    cv_version = db.relationship("CVVersion")
+    events = db.relationship("TrackerEvent", backref="tracker", cascade="all, delete-orphan",
+                             order_by="TrackerEvent.at.desc()", lazy="dynamic")
+
+    @property
+    def stage_label(self):
+        return dict(TRACKER_STAGES).get(self.stage, self.stage)
+
+    @property
+    def is_sent(self):
+        return self.stage in SENT_STAGES
+
+    @property
+    def followup_due(self):
+        from datetime import date
+        return bool(self.next_followup and self.next_followup <= date.today() and self.stage not in FINAL_STAGES)
+
+
+class TrackerEvent(db.Model):
+    """Historique : changement d'étape, échange avec le recruteur, relance, entretien…"""
+    __tablename__ = "tracker_events"
+    id = db.Column(db.Integer, primary_key=True)
+    tracker_id = db.Column(db.Integer, db.ForeignKey("tracked_applications.id"), nullable=False, index=True)
+    kind = db.Column(db.String(20), default="note")  # stage|note|email|call|meeting|interview|followup
+    content = db.Column(db.Text, default="")
+    at = db.Column(db.DateTime, default=now)
+    created_at = db.Column(db.DateTime, default=now)

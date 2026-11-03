@@ -3,6 +3,14 @@
 {% block title %}{{ t('Tableau de bord') }}{% endblock %}
 {% block page_title %}{{ co.name }}{% endblock %}
 {% block content %}
+{% if not current_user.recruiter.is_verified %}
+<a href="{{ url_for('recruiter.verification') }}" class="card card-pad mb-6 flex flex-col sm:flex-row sm:items-center gap-4 !border-[#D9A441] hover:shadow-md transition">
+  <div class="w-12 h-12 rounded-2xl grid place-items-center bg-[#FBF1DC] text-[#8A6116] shrink-0"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
+  <div class="flex-1"><div class="font-display font-semibold">{{ t("Vérifiez votre appartenance à l'entreprise") }}</div>
+    <p class="text-sm muted">{{ t('E-mail professionnel ou justificatif : obligatoire pour publier des offres.') }}</p></div>
+  <span class="btn btn-primary">{{ t('Me faire vérifier') }}</span>
+</a>
+{% endif %}
 {% if not current_user.has_access %}
 <div class="card card-pad mb-6 flex flex-col sm:flex-row items-center gap-4 bg-grad text-white !border-0">
   <i data-lucide="lock-open" class="w-8 h-8"></i>

@@ -43,6 +43,12 @@ class Config:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     LLM_MODEL = os.getenv("LLM_MODEL", "claude-sonnet-4-5")
 
+    # Offres externes en temps réel via API officielles (facultatif)
+    JSEARCH_API_KEY = os.getenv("JSEARCH_API_KEY", "")
+    ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
+    ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
+    JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")
+
     # Compte admin créé au premier lancement
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@talentconnect.app")
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Admin123!")

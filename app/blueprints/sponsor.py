@@ -50,7 +50,7 @@ def invitation(token):
         db.session.add(s)
         req.status = "completed"
         db.session.commit()
-        mailer.send(cand, t("{name} vous a parrainé(e) sur TalentConnect 🎉", name=current_user.full_name),
+        mailer.send(cand, t("{name} vous a parrainé(e) sur TalentConnect", name=current_user.full_name),
                     t("Bonne nouvelle ! {name} vient de publier une recommandation pour vous. Elle apparaît désormais sur votre fiche, visible des recruteurs.", name=current_user.full_name),
                     kind="sponsorship", sender=current_user)
         flash(t("Merci ! Votre recommandation a été enregistrée."), "success")

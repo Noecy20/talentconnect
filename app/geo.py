@@ -7,7 +7,11 @@ from babel import Locale
 from babel.numbers import format_currency, format_decimal, get_currency_symbol, get_territory_currencies
 import geonamescache
 
-_gc = geonamescache.GeonamesCache()
+try:
+    # Villes de plus de 5 000 habitants (base GeoNames, ~69 000 villes dans le monde)
+    _gc = geonamescache.GeonamesCache(min_city_population=5000)
+except TypeError:  # anciennes versions de geonamescache
+    _gc = geonamescache.GeonamesCache()
 
 # Pays mis en avant en tête de liste
 PRIORITY = ["CI", "SN", "CM", "BF", "ML", "TG", "BJ", "GN", "NE", "GA", "CG", "CD", "MA", "TN", "DZ",
@@ -58,7 +62,7 @@ def money(amount, currency="XOF", lang="fr"):
 
 
 @lru_cache(maxsize=256)
-def cities(code, limit=400):
+def cities(code, limit=2000):
     rows = [c for c in _gc.get_cities().values() if c["countrycode"] == code]
     rows.sort(key=lambda c: -c["population"])
     return [{"name": c["name"], "lat": c["latitude"], "lng": c["longitude"]} for c in rows[:limit]]

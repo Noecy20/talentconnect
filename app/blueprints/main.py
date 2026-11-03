@@ -52,6 +52,11 @@ def cv_free():
     """CV Builder public et gratuit (comme CVFlash)."""
     if current_user.is_authenticated and current_user.role == "candidate":
         return redirect(url_for("candidate.cv_builder"))
+    return render_template("main/cv_free.html")
+
+
+@bp.route("/cv/cadre")
+def cv_frame():
     return build_page(None, logged_in=False)
 
 

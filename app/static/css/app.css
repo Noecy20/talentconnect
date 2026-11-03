@@ -3,8 +3,8 @@
    ========================================================================== */
 :root{
   --bg:#FBF5EC; --bg-2:#F6EADB; --surface:#FFFFFF; --surface-2:#FDF8F2;
-  --ink:#2E1A10; --ink-2:#5A2C19; --muted:#8B6B57; --line:#EEDFCD; --line-2:#E4CDB4;
-  --terra:#D86730; --terra-600:#C2532A; --terra-700:#A04222; --brown:#5A2C19; --brown-2:#7E3520;
+  --ink:#24140B; --ink-2:#4A2414; --muted:#5F4636; --line:#EEDFCD; --line-2:#E4CDB4;
+  --terra:#D86730; --terra-600:#B04A1F; --terra-700:#8E3A1B; --brown:#5A2C19; --brown-2:#7E3520;
   --sand:#F3D2B6; --cream:#FAF1E3; --gold:#D9A441; --success:#2F855A; --danger:#C0392B; --info:#2B6CB0;
   --shadow-sm:0 1px 2px rgba(90,44,25,.06),0 1px 1px rgba(90,44,25,.04);
   --shadow:0 10px 30px -12px rgba(90,44,25,.22),0 2px 6px rgba(90,44,25,.06);
@@ -19,9 +19,10 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
-h1,h2,h3,h4,.font-display{font-family:'Outfit',system-ui,sans-serif;letter-spacing:-.02em}
-.font-serif-accent{font-family:'Fraunces',serif;font-style:italic;font-weight:500}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+h1,h2,h3,h4,.font-display{font-family:'Inter',system-ui,sans-serif;letter-spacing:-.022em;font-weight:700}
+.btn,.label,.nav-link.active,.chip{font-family:'Inter',system-ui,sans-serif}
+.font-serif-accent{font-family:'Inter',system-ui,sans-serif;font-style:normal;font-weight:800;color:var(--terra-600)}
 a{color:inherit}
 ::selection{background:var(--terra);color:#fff}
 
@@ -89,12 +90,12 @@ input[type=range]{accent-color:var(--terra)}
 /* ---------- stats / progress ---------- */
 .stat{position:relative;overflow:hidden}
 .stat .stat-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(216,103,48,.12);color:var(--terra)}
-.stat-value{font-family:'Outfit',system-ui,sans-serif;font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.03em}
+.stat-value{font-family:'Inter',system-ui,sans-serif;font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.03em}
 .progress{height:8px;border-radius:999px;background:var(--bg-2);overflow:hidden}
 .progress>span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--terra),#F0A060);transition:width 1s cubic-bezier(.2,.8,.2,1)}
 .tc-ring{--p:0;--c:var(--terra);width:var(--s,84px);height:var(--s,84px);border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--bg-2) 0);position:relative}
 .tc-ring::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--surface)}
-.tc-ring>span{position:relative;z-index:1;font-family:'Outfit',system-ui,sans-serif;font-weight:700}
+.tc-ring>span{position:relative;z-index:1;font-family:'Inter',system-ui,sans-serif;font-weight:700}
 
 /* ---------- tables ---------- */
 .table{width:100%;border-collapse:separate;border-spacing:0;font-size:.88rem}
@@ -145,3 +146,7 @@ input[type=range]{accent-color:var(--terra)}
 .likert label:hover{border-color:var(--terra)}
 @media (max-width:1023px){.sidebar{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .3s}.sidebar.open{transform:none}}
 .grid>*{min-width:0} /* évite les débordements des textes tronqués dans les grilles */
+.star-on svg,.star-on{fill:currentColor}
+/* Navigation repliée (pages plein écran : CV Builder) */
+.nav-collapsed .sidebar{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .3s;height:100vh}
+.nav-collapsed .sidebar.open{transform:none}

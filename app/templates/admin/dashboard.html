@@ -54,7 +54,7 @@
 <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
 <script>
   const css = getComputedStyle(document.documentElement), muted = css.getPropertyValue('--muted'), line = css.getPropertyValue('--line');
-  Chart.defaults.font.family = 'Plus Jakarta Sans';
+  Chart.defaults.font.family = 'Inter';
   new Chart(document.getElementById('signups'), { type: 'bar',
     data: { labels: {{ days|tojson }}, datasets: [
       { label: {{ t('Candidats')|tojson }}, data: {{ signups.candidate|tojson }}, backgroundColor: '#D86730', borderRadius: 4 },

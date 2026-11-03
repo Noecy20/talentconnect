@@ -35,6 +35,7 @@
   </div>
 </header>
 <main>{% block content %}{% endblock %}</main>
+{% block footer %}
 <footer class="border-t mt-24" style="border-color:var(--line);background:var(--surface)">
   <div class="max-w-7xl mx-auto px-6 py-14 grid md:grid-cols-4 gap-10">
     <div class="md:col-span-2">
@@ -50,6 +51,7 @@
       <a href="{{ url_for('auth.login') }}" class="block muted hover:text-terra-600">{{ t('Connexion') }}</a>
       <a href="{{ url_for('auth.register') }}" class="block muted hover:text-terra-600">{{ t('Inscription') }}</a></div>
   </div>
-  <div class="text-center text-xs muted pb-8">© {{ now.year }} TalentConnect · {{ t('Fait avec passion à Abidjan') }} 🧡</div>
+  <div class="text-center text-xs muted pb-8">© {{ now.year }} TalentConnect · {{ t('Fait avec passion à Abidjan') }}</div>
 </footer>
+{% endblock %}
 {% endblock %}

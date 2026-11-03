@@ -60,12 +60,20 @@
 
   // Villes selon le pays (autocomplétion)
   window.cityPicker = function (country, city) {
+    const norm = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     return {
-      country: country || 'CI', city: city || '', list: [],
+      country: country || 'CI', city: city || '', list: [], q: '', open: false, loading: false,
       async load() {
+        this.loading = true;
         try { const r = await fetch('/api/cities/' + this.country); this.list = await r.json(); } catch (e) { this.list = []; }
+        this.loading = false;
+        this.$nextTick(() => window.lucide && lucide.createIcons());
       },
-      init() { this.load(); this.$watch('country', () => { this.city = ''; this.load(); }); }
+      get filtered() { const q = norm(this.q); return (q ? this.list.filter(c => norm(c.name).includes(q)) : this.list).slice(0, 80); },
+      get exact() { const q = norm(this.q); return this.list.some(c => norm(c.name) === q); },
+      choose(name) { this.city = name; this.q = ''; this.open = false; },
+      pickFirst() { if (this.filtered.length) this.choose(this.filtered[0].name); else if (this.q) this.choose(this.q); },
+      init() { this.load(); this.$watch('country', () => { this.city = ''; this.load(); }); this.$watch('open', v => v && this.$nextTick(() => window.lucide && lucide.createIcons())); }
     };
   };
 })();

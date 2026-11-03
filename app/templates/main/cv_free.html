@@ -1,0 +1,8 @@
+{% extends "layouts/public.html" %}
+{% block title %}{{ t('CV Builder gratuit') }}{% endblock %}
+{% block content %}
+<div class="pt-[72px]">
+  <iframe src="{{ url_for('main.cv_frame') }}" title="{{ t('CV Builder') }}" class="block w-full border-0" style="height:calc(100vh - 72px)"></iframe>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}

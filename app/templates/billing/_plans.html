@@ -18,7 +18,7 @@
   {% endif %}
   {% for p in plans %}
   <div class="card card-pad flex flex-col reveal relative {% if p.highlighted %}!border-terra-500 ring-4 ring-terra-500/10 md:-translate-y-2{% endif %}" style="{% if p.highlighted %}box-shadow:var(--shadow-lg){% endif %}" x-data="{pay:false}">
-    {% if p.highlighted %}<span class="absolute -top-3 left-1/2 -translate-x-1/2 chip !bg-terra-500 !text-white !border-terra-500">★ {{ t('Recommandé') }}</span>{% endif %}
+    {% if p.highlighted %}<span class="absolute -top-3 left-1/2 -translate-x-1/2 chip !bg-terra-500 !text-white !border-terra-500"><i data-lucide="star" class="w-3 h-3"></i>{{ t('Recommandé') }}</span>{% endif %}
     <div class="font-display font-semibold text-lg">{{ p.name }}</div>
     <div class="font-display text-4xl font-bold mt-3">{{ money(p.price, p.currency) }}</div>
     <p class="text-sm muted mt-2">{% if p.duration_days %}{{ t('pour {d} jours', d=p.duration_days) }}{% else %}{{ t('accès illimité') }}{% endif %}{% if p.description %} · {{ p.description }}{% endif %}</p>

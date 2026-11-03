@@ -10,17 +10,17 @@ L'application est écrite en Flask avec PostgreSQL. Elle est multilingue (FR / E
 
 **Prérequis :** Python 3.11 ou plus récent, et PostgreSQL (facultatif pour un premier test).
 
-```bat
-cd %USERPROFILE%\Desktop\TalentConnect
-lancer.bat
+Dans le terminal de VS Code, ouvert dans le dossier TalentConnect :
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+python run.py
 ```
 
-Le script `lancer.bat` :
-
-1. crée l'environnement virtuel ;
-2. installe les dépendances ;
-3. copie `.env.example` vers `.env` ;
-4. lance l'app sur **http://localhost:5000**.
+L'app s'ouvre sur **http://localhost:5000**. Les fois suivantes, seules `.\venv\Scripts\Activate.ps1` et `python run.py` sont nécessaires.
 
 Sans `DATABASE_URL`, l'app utilise une base SQLite locale, ce qui suffit pour tester tout de suite.
 
@@ -33,14 +33,12 @@ Sans `DATABASE_URL`, l'app utilise une base SQLite locale, ce qui suffit pour te
 **Données de démonstration** (12 candidats, 6 entreprises, 16 offres, des parrainages, des paiements) :
 
 ```bat
-venv\Scripts\activate
-set FLASK_APP=run.py
-flask seed-demo
+flask --app run.py seed-demo
 ```
 
 | Rôle | E-mail | Mot de passe |
 |---|---|---|
-| Admin | `admin@talentconnect.app` | `Admin123!` (modifiable dans `.env`) |
+| Admin | `admin@talentconnect.app` | la valeur de `ADMIN_PASSWORD` dans `.env` (`ChangezMoi123!` par défaut). Pour le changer : `flask --app run.py create-admin admin@talentconnect.app NouveauMotDePasse` |
 | Candidate | `aicha.kone@demo.tc` | `Demo1234!` |
 | Recruteur | `awa.traore@demo.tc` (Orange CI) | `Demo1234!` |
 | Parrain | `kouadio.nguessan@demo.tc` | `Demo1234!` |
@@ -100,6 +98,47 @@ flask seed-demo
 - **Réglages des modèles** : seuils de parrainage et de tri, pondération du score de compatibilité.
 
 > **Paywall** : tant que l'admin n'a pas donné l'accès (directement ou via un paiement validé), un candidat ou un recruteur ne voit que le CV Builder et son profil. Les parrains et les admins y ont accès gratuitement.
+
+---
+
+### Suivi des candidatures (Job Application Tracking)
+
+Menu **Mon suivi**, côté candidat. Il centralise toute la recherche d'emploi, sur TalentConnect comme ailleurs.
+
+- **Kanban** à 11 étapes (Offre identifiée → À analyser → À postuler → Candidature préparée → Candidature envoyée → En attente → Entretien → Test technique → Offre reçue → Acceptée / Refusée), par glisser-déposer.
+- **Vue tableau** : filtres (projet, étape, source, recherche), tri (date, date limite, entreprise…) et **export CSV** (Excel).
+- **Ajout d'une offre** de trois façons :
+  - par **lien** : l'annonce est lue automatiquement grâce au format standard JobPosting. Pour LinkedIn, le lien est enregistré et on complète à la main ;
+  - par **saisie manuelle** ;
+  - depuis les **offres externes** (voir plus bas) ou les offres TalentConnect.
+- **Synchronisation automatique** : une candidature envoyée sur TalentConnect apparaît dans le suivi, et chaque décision du recruteur fait avancer la carte.
+- **Par candidature** : entreprise, poste, lieu, rémunération, contrat, lien, source, date limite, contact RH (nom, fonction, e-mail, téléphone), **version de CV** ou fichier joint, **lettre de motivation** (générable), notes et priorité.
+- **Historique des échanges** : notes, e-mails, appels, rendez-vous, entretiens, relances et changements d'étape.
+- **Relances** : un rappel est posé automatiquement 7 jours après l'envoi, avec un bouton « J'ai relancé ». La commande `flask --app run.py send-reminders` envoie chaque matin les relances du jour par e-mail ; sur Render, planifiez-la dans un *Cron Job*.
+- **Statistiques** : candidatures envoyées, réponses reçues, entretiens obtenus, taux de réponse, offres acceptées.
+- **Projets de mobilité** (par exemple Abidjan et Québec 2027), chacun avec ses candidatures, sa couleur et ses statistiques.
+- **Versions de CV** : dans le CV Builder, le bouton « Enregistrer comme version » permet d'associer la bonne version à chaque candidature.
+
+### Offres externes en temps réel (sans scraping)
+
+LinkedIn interdit le scraping dans ses conditions d'utilisation et poursuit les sociétés qui le pratiquent. TalentConnect passe donc par des **API officielles**, activées dès que la clé est dans `.env` :
+
+| Fournisseur | Variable(s) | Couverture |
+|---|---|---|
+| JSearch (RapidAPI) | `JSEARCH_API_KEY` | Google for Jobs : annonces publiées sur LinkedIn, Indeed, Glassdoor, sites carrière… |
+| Adzuna | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | France, Canada, Royaume-Uni, États-Unis… |
+| Jooble | `JOOBLE_API_KEY` | Très large, international |
+
+Vérifiez les tarifs et quotas de chaque fournisseur avant la mise en production.
+
+### Vérification des recruteurs
+
+Pour publier une offre, un recruteur doit prouver qu'il travaille dans l'entreprise. Deux méthodes sont possibles :
+
+1. **E-mail professionnel** : un code est envoyé à son adresse. Si le domaine correspond au site de l'entreprise, la validation est automatique.
+2. **Justificatif** (attestation employeur, badge, contrat, mandat de recrutement), vérifié par l'admin dans *Recruteurs à vérifier*.
+
+Le badge « Recruteur vérifié » s'affiche ensuite sur ses offres. Les recruteurs déjà inscrits avant cette mise à jour apparaissent comme « Non vérifiés » : l'admin peut les valider en un clic.
 
 ---
 

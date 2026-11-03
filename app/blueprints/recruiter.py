@@ -122,6 +122,9 @@ def _fill_job(job, f):
 @bp.route("/offres/nouvelle", methods=["GET", "POST"])
 @access_required
 def job_new():
+    if not current_user.recruiter.is_verified:
+        flash(t("Avant de publier une offre, prouvez que vous travaillez bien pour cette entreprise."), "warning")
+        return redirect(url_for("recruiter.verification"))
     co = company()
     job = Job(company_id=co.id, recruiter_id=current_user.id, country_code=co.country_code, city=co.city,
               currency=geo.currency_for(co.country_code), skills=[], soft_skills=[], languages=[])
@@ -189,6 +192,7 @@ def set_status(app_id):
         if new in ("interview", "offer", "rejected", "second_chance"):
             a.decided_at = a.decided_at or datetime.utcnow()
         db.session.commit()
+        hiring._sync(a)
     if request.headers.get("HX-Request"):
         return jsonify(ok=True)
     flash(t("Statut mis à jour."), "success")
@@ -379,3 +383,92 @@ def templates():
         return redirect(url_for("recruiter.templates"))
     tpls = {k: mailer.get_template(k, co.id) for k in kinds}
     return render_template("recruiter/templates.html", tpls=tpls)
+
+
+# --------------------------------------------------------------------------- preuve d'appartenance à l'entreprise
+PROOF_TYPES = [("attestation", "Attestation de travail / employeur"), ("badge", "Badge ou carte professionnelle"),
+               ("contrat", "Contrat ou bulletin de paie (montants masqués)"), ("mandat", "Mandat de recrutement signé")]
+ALLOWED_PROOF = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
+
+
+def _domain(value):
+    import re as _re
+    v = (value or "").lower().strip()
+    if "@" in v:
+        v = v.split("@", 1)[1]
+    v = _re.sub(r"^https?://", "", v).split("/")[0]
+    return v[4:] if v.startswith("www.") else v
+
+
+def _try_auto_verify(rp):
+    """Vérification automatique : e-mail pro confirmé ET domaine identique au site de l'entreprise."""
+    co = rp.company
+    d_mail, d_site = _domain(rp.work_email), _domain(co.website if co else "")
+    if rp.work_email_verified and d_mail and d_site and (d_mail == d_site or d_mail.endswith("." + d_site)) \
+            and d_mail not in scoring.FREE_MAIL:
+        rp.verification_status, rp.verification_method, rp.verified_at = "verified", "email_domain", datetime.utcnow()
+        return True
+    return False
+
+
+@bp.route("/verification", methods=["GET", "POST"])
+def verification():
+    import os
+    import secrets as _secrets
+    from flask import current_app
+    rp = current_user.recruiter
+    co = rp.company
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "send_code":
+            email = request.form.get("work_email", "").strip().lower()
+            if "@" not in email or _domain(email) in scoring.FREE_MAIL:
+                flash(t("Utilisez votre adresse professionnelle (pas Gmail, Yahoo, Outlook…)."), "danger")
+            else:
+                rp.work_email, rp.work_email_verified = email, False
+                rp.email_code = f"{_secrets.randbelow(1000000):06d}"
+                rp.email_code_sent_at = datetime.utcnow()
+                db.session.commit()
+                mailer.send(None, t("Votre code de vérification TalentConnect"),
+                            t("Bonjour,\n\nVoici votre code pour confirmer que vous travaillez chez {company} : {code}\n\nIl est valable 30 minutes.",
+                              company=co.name, code=rp.email_code), kind="system", email=email, sync=True)
+                if not current_app.config.get("MAIL_USERNAME"):
+                    flash(t("Mode test (e-mails non configurés) : votre code est {code}", code=rp.email_code), "info")
+                else:
+                    flash(t("Code envoyé à {email}.", email=email), "success")
+        elif action == "check_code":
+            code = request.form.get("code", "").strip()
+            fresh = rp.email_code_sent_at and (datetime.utcnow() - rp.email_code_sent_at) < timedelta(minutes=30)
+            if rp.email_code and fresh and code == rp.email_code:
+                rp.work_email_verified, rp.email_code = True, None
+                if _try_auto_verify(rp):
+                    flash(t("Bravo ! Votre e-mail correspond au domaine de {company} : vous êtes recruteur vérifié.", company=co.name), "success")
+                else:
+                    flash(t("E-mail professionnel confirmé. Ajoutez un justificatif pour finaliser la vérification."), "success")
+                db.session.commit()
+            else:
+                flash(t("Code incorrect ou expiré."), "danger")
+        elif action == "upload":
+            f = request.files.get("proof")
+            ext = os.path.splitext(f.filename or "")[1].lower() if f else ""
+            if not f or ext not in ALLOWED_PROOF:
+                flash(t("Format accepté : PDF, PNG ou JPG (5 Mo maximum)."), "danger")
+            else:
+                folder = os.path.join(current_app.config["UPLOAD_FOLDER"], "proofs")
+                os.makedirs(folder, exist_ok=True)
+                name = f"{current_user.id}_{_secrets.token_hex(8)}{ext}"
+                f.save(os.path.join(folder, name))
+                rp.proof_file, rp.proof_type = name, request.form.get("proof_type", "attestation")
+                rp.proof_uploaded_at = datetime.utcnow()
+                rp.linkedin = request.form.get("linkedin", rp.linkedin or "").strip()
+                if rp.verification_status != "verified":
+                    rp.verification_status, rp.verification_method = "pending", "document"
+                db.session.commit()
+                for admin in User.query.filter_by(role="admin").all():
+                    mailer.send(admin, t("Recruteur à vérifier"),
+                                t("{name} ({company}) a envoyé un justificatif d'appartenance à vérifier.",
+                                  name=current_user.full_name, company=co.name), kind="system")
+                flash(t("Justificatif envoyé. Notre équipe le vérifie sous 24 h."), "success")
+        return redirect(url_for("recruiter.verification"))
+    return render_template("recruiter/verification.html", rp=rp, co=co, proof_types=PROOF_TYPES,
+                           site_domain=_domain(co.website))

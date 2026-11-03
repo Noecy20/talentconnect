@@ -11,6 +11,7 @@
         <div class="w-20 h-20 rounded-3xl grid place-items-center font-display text-3xl font-bold text-white border-4 shadow-lg" style="background:linear-gradient(135deg,var(--terra),var(--brown));border-color:var(--surface)">{{ job.company.name[:1] }}</div>
         <h1 class="font-display text-2xl sm:text-3xl font-bold mt-4">{{ job.title }}</h1>
         <div class="muted mt-1 flex flex-wrap items-center gap-x-2">{{ job.company.name }}{% if job.company.verified %}<span class="chip chip-terra !py-0.5"><i data-lucide="badge-check" class="w-3 h-3"></i>{{ t('Vérifiée') }}</span>{% endif %}
+          {% if job.recruiter and job.recruiter.recruiter and job.recruiter.recruiter.is_verified %}<span class="chip chip-green !py-0.5"><i data-lucide="shield-check" class="w-3 h-3"></i>{{ t('Recruteur vérifié') }}</span>{% endif %}
           {% if response_rate is not none %}<span class="chip {% if response_rate >= 90 %}chip-green{% else %}chip{% endif %} !py-0.5"><i data-lucide="mail-check" class="w-3 h-3"></i>{{ t('Répond à') }} {{ response_rate }}%</span>{% endif %}</div>
         <div class="flex flex-wrap gap-2 mt-4">
           <span class="chip"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ job.city }}, {{ country_name(job.country_code) }}</span>
@@ -28,7 +29,7 @@
       <div class="leading-relaxed whitespace-pre-line text-[0.95rem]">{{ job.description }}</div>
       <h3 class="font-display font-semibold mt-6 mb-2">{{ t('Compétences recherchées') }}</h3>
       <div class="flex flex-wrap gap-1.5">
-        {% for s in job.skills or [] %}<span class="chip {% if s in d.skills_found %}chip-green{% else %}chip-red{% endif %}">{% if s in d.skills_found %}✓{% else %}✗{% endif %} {{ s }}</span>{% endfor %}
+        {% for s in job.skills or [] %}<span class="chip {% if s in d.skills_found %}chip-green{% else %}chip-red{% endif %}"><i data-lucide="{{ 'check' if s in d.skills_found else 'x' }}" class="w-3 h-3"></i>{{ s }}</span>{% endfor %}
       </div>
       {% if job.soft_skills %}<h3 class="font-display font-semibold mt-5 mb-2">{{ t('Soft skills') }}</h3>
       <div class="flex flex-wrap gap-1.5">{% for s in job.soft_skills %}<span class="chip {% if s in d.soft_found %}chip-green{% endif %}">{{ s }}</span>{% endfor %}</div>{% endif %}
@@ -75,6 +76,8 @@
         </div>
       {% else %}
         <button @click="open=true" x-show="!open" class="btn btn-primary btn-lg w-full"><i data-lucide="send" class="w-4 h-4"></i>{{ t('Postuler') }}</button>
+        <form x-show="!open" method="post" action="{{ url_for('tracker.from_job', job_id=job.id) }}" class="mt-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost w-full"><i data-lucide="bookmark-plus" class="w-4 h-4"></i>{{ t('Ajouter à mon suivi') }}</button></form>
         <form x-show="open" x-cloak x-transition method="post" action="{{ url_for('candidate.apply', job_id=job.id) }}" class="space-y-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="flex items-center justify-between"><label class="label !mb-0">{{ t('Lettre de motivation') }}</label>

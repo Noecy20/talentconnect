@@ -10,10 +10,10 @@ from flask_login import current_user
 TRANSLATIONS_DIR = os.path.join(os.path.dirname(__file__), "translations")
 
 LANGUAGES = {
-    "fr": {"name": "Français", "flag": "🇫🇷", "dir": "ltr"},
-    "en": {"name": "English", "flag": "🇬🇧", "dir": "ltr"},
-    "es": {"name": "Español", "flag": "🇪🇸", "dir": "ltr"},
-    "pt": {"name": "Português", "flag": "🇵🇹", "dir": "ltr"},
+    "fr": {"name": "Français", "dir": "ltr"},
+    "en": {"name": "English", "dir": "ltr"},
+    "es": {"name": "Español", "dir": "ltr"},
+    "pt": {"name": "Português", "dir": "ltr"},
 }
 
 _cache = {}
@@ -38,7 +38,7 @@ def available_languages():
         for fn in os.listdir(TRANSLATIONS_DIR):
             code = fn.rsplit(".", 1)[0]
             if fn.endswith(".json") and code not in langs:
-                langs[code] = {"name": code.upper(), "flag": "🌐", "dir": "rtl" if code in ("ar", "he", "fa") else "ltr"}
+                langs[code] = {"name": code.upper(), "dir": "rtl" if code in ("ar", "he", "fa") else "ltr"}
     return langs
 
 

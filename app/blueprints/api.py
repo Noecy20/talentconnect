@@ -27,6 +27,21 @@ def save_cv():
     return jsonify(ok=True)
 
 
+@bp.route("/cv/version", methods=["POST"])
+@login_required
+def save_cv_version():
+    """Enregistre le CV actuel comme version personnalisée (ex. « CV Data — Québec »)."""
+    from ..models import CVVersion
+    if current_user.role != "candidate":
+        return jsonify(ok=False), 403
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()[:160] or "Mon CV"
+    v = CVVersion(user_id=current_user.id, name=name, data=payload.get("data") or {})
+    db.session.add(v)
+    db.session.commit()
+    return jsonify(ok=True, id=v.id)
+
+
 def sync_profile_from_cv(cp, user, data):
     prof = data.get("profile") or {}
     if prof.get("role") and prof["role"] != "Intitulé de poste":

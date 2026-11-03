@@ -32,6 +32,7 @@ def apply(candidate, job, cover_letter=""):
                 kind="ack", sender=job.recruiter, application=a)
     a.ack_sent_at = datetime.utcnow()
     db.session.commit()
+    _sync(a)
     return a, True
 
 
@@ -78,6 +79,8 @@ def decide(applications, group, recruiter, note="", custom_subject=None, custom_
                         kind=group, sender=recruiter, application=a, defer=True)
         ids.append(m.id)
     db.session.commit()
+    for a in applications:
+        _sync(a)
     mailer.dispatch(ids)
     return len(ids)
 
@@ -89,6 +92,7 @@ def mark_hired(application):
     for s in Sponsorship.query.filter_by(candidate_id=application.candidate_id, status="active").all():
         scoring.update_reputation(s.sponsor_id, +5)
     db.session.commit()
+    _sync(application)
 
 
 def cover_letter(candidate, job):
@@ -115,3 +119,34 @@ def cover_letter(candidate, job):
             f"{cp.summary or ''}\n\n"
             f"Je serais ravi(e) d'échanger avec vous pour vous présenter ma motivation plus en détail.\n\n"
             f"Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\n{candidate.full_name}")
+
+
+def cover_letter_for(candidate, title, company, description=""):
+    """Lettre de motivation pour une offre externe (LinkedIn, site carrière…)."""
+    cp = candidate.candidate
+    ai = llm.generate(
+        "Tu rédiges des lettres de motivation professionnelles, sincères et concises (180-250 mots), "
+        "sans inventer de faits. Langue : celle de l'offre.",
+        f"Candidat : {candidate.full_name}, {cp.headline}. Résumé : {cp.summary}. Compétences : {cp.skills}. "
+        f"Soft skills : {cp.soft_skills}. Expérience : {cp.years_experience} ans.\n"
+        f"Offre : {title} chez {company}. Description : {description[:3000]}", max_tokens=700)
+    if ai:
+        return ai
+    skills = ", ".join((cp.skills or [])[:4])
+    soft = ", ".join((cp.soft_skills or [])[:3])
+    return (f"Madame, Monsieur,\n\n"
+            f"Votre offre « {title} »{' chez ' + company if company else ''} a retenu toute mon attention. "
+            f"{cp.headline or 'Professionnel(le) motivé(e)'}, je dispose de {cp.years_experience:g} an(s) d'expérience"
+            f"{' en ' + cp.field if cp.field else ''}.\n\n"
+            f"{('Je maîtrise notamment ' + skills + '. ') if skills else ''}"
+            f"{('Mes atouts — ' + soft + ' — me permettent de m’intégrer rapidement et de contribuer aux objectifs de votre équipe.') if soft else ''}\n\n"
+            f"{cp.summary or ''}\n\n"
+            f"Je serais ravi(e) d'échanger avec vous pour vous présenter ma motivation plus en détail.\n\n"
+            f"Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\n{candidate.full_name}")
+
+
+def _sync(application):
+    """Met à jour le suivi personnel (JAT) du candidat."""
+    from . import tracker
+    tracker.sync_application(application)
+    db.session.commit()

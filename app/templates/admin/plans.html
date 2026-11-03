@@ -7,7 +7,7 @@
   {% for p in plans %}
   <form method="post" class="card card-pad space-y-3 {% if not p.active %}opacity-60{% endif %}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ p.id }}">
-    <div class="flex items-center gap-2"><span class="chip {% if p.role=='recruiter' %}chip-blue{% else %}chip-terra{% endif %}">{{ t('Recruteur') if p.role=='recruiter' else t('Candidat') }}</span>{% if p.highlighted %}<span class="chip chip-gold">★ {{ t('Mise en avant') }}</span>{% endif %}</div>
+    <div class="flex items-center gap-2"><span class="chip {% if p.role=='recruiter' %}chip-blue{% else %}chip-terra{% endif %}">{{ t('Recruteur') if p.role=='recruiter' else t('Candidat') }}</span>{% if p.highlighted %}<span class="chip chip-gold"><i data-lucide="star" class="w-3 h-3"></i>{{ t('Mise en avant') }}</span>{% endif %}</div>
     <input name="name" value="{{ p.name }}" class="input font-semibold">
     <div class="grid grid-cols-[1fr_90px] gap-2"><input name="price" type="number" value="{{ p.price }}" class="input"><input name="currency" value="{{ p.currency }}" class="input uppercase" maxlength="3"></div>
     <div class="grid grid-cols-2 gap-2"><select name="role" class="select"><option value="candidate">{{ t('Candidat') }}</option><option value="recruiter" {% if p.role=='recruiter' %}selected{% endif %}>{{ t('Recruteur') }}</option></select>

@@ -38,7 +38,7 @@
       {% if r.strength %}<span class="chip chip-gold"><i data-lucide="handshake" class="w-3 h-3"></i>{{ r.strength }}%</span>{% endif %}
     </div>
     <div class="flex flex-wrap gap-1.5 mt-3">
-      {% for s in r.found %}<span class="chip chip-green">✓ {{ s }}{% if s in r.passport %} · {{ r.passport[s].count }}🤝{% endif %}</span>{% endfor %}
+      {% for s in r.found %}<span class="chip chip-green"><i data-lucide="check" class="w-3 h-3"></i>{{ s }}{% if s in r.passport %} · <i data-lucide="handshake" class="w-3 h-3"></i>{{ r.passport[s].count }}{% endif %}</span>{% endfor %}
       {% for s in r.missing[:3] %}<span class="chip chip-red">{{ s }}</span>{% endfor %}
     </div>
   </a>
