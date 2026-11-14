@@ -1,71 +1,80 @@
 {% extends "layouts/public.html" %}
 {% block title %}{{ t('Connectez les talents aux entreprises') }}{% endblock %}
 {% block content %}
+{% macro person(skin, hair, shirt, style='afro', glasses=False) -%}
+<svg viewBox="0 0 200 240" class="w-full h-full" aria-hidden="true">
+  {% if style == 'afro' %}<circle cx="100" cy="88" r="62" fill="{{ hair }}"/>{% endif %}
+  {% if style == 'long' %}<path d="M44 96C44 50 70 30 100 30S156 50 156 96V170H44Z" fill="{{ hair }}"/>{% endif %}
+  <path d="M30 240C30 186 62 162 100 162S170 186 170 240Z" fill="{{ shirt }}"/>
+  <rect x="86" y="140" width="28" height="30" rx="10" fill="{{ skin }}"/>
+  <ellipse cx="100" cy="102" rx="40" ry="46" fill="{{ skin }}"/>
+  {% if style == 'short' %}<path d="M60 92C58 60 80 48 100 48S144 58 140 92C134 74 120 66 100 66S68 74 60 92Z" fill="{{ hair }}"/>{% endif %}
+  {% if style == 'long' %}<path d="M60 96C62 64 82 54 102 56C124 58 140 70 140 96C128 80 112 74 98 74S70 82 60 96Z" fill="{{ hair }}"/>{% endif %}
+  {% if glasses %}<g fill="none" stroke="#2E1A10" stroke-width="3.5"><rect x="66" y="92" width="28" height="20" rx="8"/><rect x="106" y="92" width="28" height="20" rx="8"/><path d="M94 100H106"/></g>
+  {% else %}<circle cx="84" cy="102" r="4" fill="#2E1A10"/><circle cx="116" cy="102" r="4" fill="#2E1A10"/>{% endif %}
+  <path d="M84 124Q100 138 116 124" fill="none" stroke="#2E1A10" stroke-width="4" stroke-linecap="round"/>
+</svg>
+{%- endmacro %}
+
 <!-- HERO -->
-<section class="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
-  <div class="absolute inset-0 pattern opacity-60"></div>
-  <div class="blob w-[420px] h-[420px] -top-20 -left-24" style="background:#F3B48C"></div>
-  <div class="blob w-[380px] h-[380px] top-40 -right-20" style="background:#D86730;opacity:.25"></div>
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-[1.1fr_1fr] gap-14 items-center">
+<section class="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24" style="background:var(--surface)">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-[1.08fr_1fr] gap-12 items-center">
     <div>
       <a href="{{ url_for('main.cv_free') }}" class="reveal inline-flex items-center gap-2 chip chip-terra !py-1.5 !px-3">
-        <span class="w-2 h-2 rounded-full bg-terra-500 animate-pulse"></span>{{ t('La suite de CVFlash, déjà adopté sur LinkedIn') }}<i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></a>
-      <h1 class="reveal font-display text-[2.6rem] sm:text-6xl lg:text-[4.2rem] font-bold leading-[1.02] mt-6">
-        {{ t('Votre talent mérite') }}<br><span class="text-grad">{{ t('une réponse.') }}</span>
-        <span class="font-serif-accent block text-[0.62em] mt-3" style="color:var(--ink-2)">{{ t('Et une recommandation qui compte.') }}</span>
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>{{ t('La suite de CVFlash, déjà adopté sur LinkedIn') }}</a>
+      <p class="reveal font-display font-bold text-2xl sm:text-3xl mt-6" style="color:var(--ink)">{{ t('TalentConnect :') }}</p>
+      <h1 class="reveal font-display font-extrabold leading-[0.95] tracking-tight mt-2">
+        <span class="block text-[2.9rem] sm:text-[4.2rem] lg:text-[4.8rem]" style="color:var(--ink)">{{ t('Votre talent') }}</span>
+        <span class="block text-[2.9rem] sm:text-[4.2rem] lg:text-[4.8rem] text-grad">{{ t('mérite une réponse.') }}</span>
       </h1>
-      <p class="reveal text-lg muted mt-6 max-w-xl leading-relaxed">{{ t('Créez un CV compatible ATS, faites-vous parrainer par ceux qui ont travaillé avec vous, découvrez les offres faites pour vous — et recevez toujours une réponse. Les recruteurs, eux, trouvent des talents dont la compétence est garantie.') }}</p>
-      <div class="reveal flex flex-wrap gap-3 mt-9">
-        <a href="{{ url_for('auth.register', role='candidate') }}" class="btn btn-primary btn-lg">{{ t('Je cherche un emploi') }}<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
-        <a href="{{ url_for('auth.register', role='recruiter') }}" class="btn btn-dark btn-lg">{{ t('Je recrute') }}</a>
+      <p class="reveal mt-5 text-lg font-semibold" style="color:var(--ink)">Abidjan · Dakar · Québec <span class="text-terra-600">{{ t('et partout dans le monde') }}</span></p>
+      <p class="reveal text-[1.05rem] muted mt-3 max-w-xl leading-relaxed">{{ t('CV compatible ATS, parrainages vérifiés, offres faites pour vous, suivi de toutes vos candidatures, et toujours une réponse des recruteurs.') }}</p>
+      <div class="reveal flex flex-wrap gap-3 mt-7">
+        <a href="{{ url_for('auth.register', role='candidate') }}" class="btn btn-primary !rounded-full !px-6 !py-3">{{ t('Je cherche un emploi') }}</a>
+        <a href="{{ url_for('auth.register', role='recruiter') }}" class="btn !rounded-full !px-6 !py-3 border-2 border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--surface)]">{{ t('Je recrute') }}</a>
       </div>
-      <div class="reveal flex items-center gap-6 mt-10 text-sm muted">
-        <div class="flex items-center gap-2"><i data-lucide="file-check-2" class="w-4 h-4 text-terra-500"></i>{{ t('CV ATS gratuit') }}</div>
-        <div class="flex items-center gap-2"><i data-lucide="globe-2" class="w-4 h-4 text-terra-500"></i>{{ t('Tous pays, toutes devises') }}</div>
-        <div class="hidden sm:flex items-center gap-2"><i data-lucide="mail-check" class="w-4 h-4 text-terra-500"></i>{{ t('Accusé de réception garanti') }}</div>
+      <!-- Compteurs façon décompte -->
+      <div class="reveal mt-10 flex items-end gap-3 sm:gap-5">
+        {% for v, l in [(stats.candidates, t('Talents')), (stats.companies, t('Entreprises')), (stats.sponsors, t('Parrains')), (stats.jobs, t('Offres'))] %}
+        <div>
+          <div class="text-[11px] font-semibold uppercase tracking-wider muted">{{ l }}</div>
+          <div class="font-display font-extrabold text-3xl sm:text-[2.6rem] leading-none tabular-nums" style="color:var(--ink)"><span data-count="{{ v }}">0</span></div>
+        </div>
+        {% if not loop.last %}<div class="font-display font-extrabold text-3xl sm:text-[2.6rem] leading-none text-terra-600 pb-0.5">:</div>{% endif %}
+        {% endfor %}
       </div>
     </div>
 
-    <!-- Visuel : cartes flottantes -->
-    <div class="relative h-[480px] hidden md:block">
-      <div class="absolute inset-x-8 top-6 card p-6 float" style="box-shadow:var(--shadow-lg)">
-        <div class="flex items-center gap-3">
-          <span class="avatar w-12 h-12 text-base">AK</span>
-          <div class="flex-1"><div class="font-display font-semibold">Aïcha Koné</div><div class="text-xs muted">Data Analyst · Abidjan</div></div>
-          <span class="badge-level lvl-gold"><i data-lucide="award" class="w-3 h-3"></i>{{ t('Parrainée') }}</span>
-        </div>
-        <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold text-terra-600">92%</div><div class="text-[11px] muted">{{ t('Compatibilité') }}</div></div>
-          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold" style="color:var(--success)">78%</div><div class="text-[11px] muted">{{ t('Chance d\'appel') }}</div></div>
-          <div class="rounded-xl p-3" style="background:var(--bg-2)"><div class="font-display text-2xl font-bold" style="color:var(--ink-2)">3</div><div class="text-[11px] muted">{{ t('Parrains') }}</div></div>
-        </div>
-        <div class="mt-4 flex flex-wrap gap-1.5"><span class="chip chip-terra">Power BI <i data-lucide="badge-check" class="w-3 h-3"></i>3</span><span class="chip chip-terra">SQL <i data-lucide="badge-check" class="w-3 h-3"></i>2</span><span class="chip">Python</span><span class="chip">Leadership <i data-lucide="badge-check" class="w-3 h-3"></i>2</span></div>
+    <!-- Composition illustrée -->
+    <div class="relative h-[460px] sm:h-[520px] hidden md:block reveal">
+      <!-- formes décoratives -->
+      <svg class="absolute left-2 top-6 w-16 h-16 float" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0L61 36L100 50L61 64L50 100L39 64L0 50L39 36Z" fill="#E8B23A"/></svg>
+      <svg class="absolute left-28 bottom-8 w-9 h-9" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0L61 36L100 50L61 64L50 100L39 64L0 50L39 36Z" fill="#E8B23A"/></svg>
+      <svg class="absolute left-0 top-[42%] w-28" viewBox="0 0 160 60" aria-hidden="true"><path d="M5 40C20 5 30 55 45 25S70 10 75 35 100 50 110 20 135 15 155 30" fill="none" stroke="#5A2C19" stroke-width="5" stroke-linecap="round"/></svg>
+      <svg class="absolute right-2 bottom-2 w-20" viewBox="0 0 100 100" aria-hidden="true"><g stroke="#3B1A0E" stroke-width="5" stroke-linecap="round"><path d="M30 70L10 90"/><path d="M50 62L48 92"/><path d="M68 66L86 88"/><path d="M76 50L98 56"/></g></svg>
+      <!-- grande capsule -->
+      <div class="absolute left-[18%] top-[12%] w-[46%] h-[80%] rounded-full overflow-hidden" style="background:linear-gradient(180deg,#F0A13B,#D86730)">
+        <div class="absolute inset-x-[-10%] bottom-0 h-[78%]">{{ person('#7B4A2A', '#1E120B', '#FAF1E3', 'afro', True) }}</div>
       </div>
-      <div class="absolute -left-2 bottom-16 card px-4 py-3 flex items-center gap-3 w-72 float" style="animation-delay:-2s;box-shadow:var(--shadow-lg)">
+      <!-- petites capsules -->
+      <div class="absolute right-[2%] top-0 w-[30%] h-[46%] rounded-full overflow-hidden" style="background:#F3D2B6">
+        <div class="absolute inset-x-[-8%] bottom-0 h-[80%]">{{ person('#C68642', '#3B2314', '#5A2C19', 'short') }}</div>
+      </div>
+      <div class="absolute right-[2%] bottom-[2%] w-[30%] h-[46%] rounded-full overflow-hidden" style="background:#5A2C19">
+        <div class="absolute inset-x-[-8%] bottom-0 h-[80%]">{{ person('#A0663B', '#24150C', '#E8912F', 'long', True) }}</div>
+      </div>
+      <!-- carte flottante -->
+      <div class="absolute left-[-4%] bottom-[10%] card px-4 py-3 flex items-center gap-3 w-64 float" style="animation-delay:-2s;box-shadow:var(--shadow-lg)">
         <div class="w-10 h-10 rounded-xl grid place-items-center" style="background:rgba(47,133,90,.12);color:var(--success)"><i data-lucide="mail-check" class="w-5 h-5"></i></div>
-        <div><div class="text-sm font-semibold">{{ t('Accusé de réception envoyé') }}</div><div class="text-xs muted">Orange CI · {{ t('à l\'instant') }}</div></div>
+        <div><div class="text-sm font-semibold">{{ t('Accusé de réception envoyé') }}</div><div class="text-xs muted">{{ t('Candidature reçue') }} · {{ t('à l\'instant') }}</div></div>
       </div>
-      <div class="absolute right-0 bottom-0 card p-4 w-64 float" style="animation-delay:-4s;box-shadow:var(--shadow-lg)">
-        <div class="text-xs font-semibold muted uppercase tracking-wider">{{ t('Tri IA · 48 candidatures') }}</div>
-        <div class="mt-3 space-y-2 text-sm">
-          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-terra-500"></span>{{ t('Entretien') }}<span class="ml-auto font-bold">9</span></div>
-          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--gold)"></span>{{ t('Seconde chance') }}<span class="ml-auto font-bold">17</span></div>
-          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:var(--muted)"></span>{{ t('Refus + conseils') }}<span class="ml-auto font-bold">22</span></div>
-        </div>
-        <div class="btn btn-primary btn-sm w-full mt-3">{{ t('Envoyer les 48 réponses') }}</div>
+      <div class="absolute right-[24%] top-[44%] card px-3 py-2 flex items-center gap-2 float" style="animation-delay:-4s;box-shadow:var(--shadow-lg)">
+        <span class="badge-level lvl-gold"><i data-lucide="award" class="w-3 h-3"></i>{{ t('Parrainée') }}</span><b class="text-sm text-terra-700">92 %</b>
       </div>
     </div>
   </div>
 </section>
 
-<!-- STATS -->
-<section class="max-w-6xl mx-auto px-4 sm:px-6 -mt-6">
-  <div class="card grid grid-cols-2 md:grid-cols-4 divide-x" style="--tw-divide-opacity:1;border-color:var(--line)">
-    {% for v, l in [(stats.candidates, t('Talents inscrits')), (stats.companies, t('Entreprises')), (stats.sponsors, t('Parrains certifiés')), (stats.jobs, t('Offres actives'))] %}
-    <div class="p-6 text-center reveal" style="border-color:var(--line)"><div class="stat-value text-terra-600"><span data-count="{{ v }}">0</span>+</div><div class="text-sm muted mt-1">{{ l }}</div></div>
-    {% endfor %}
-  </div>
-</section>
 
 <!-- PROBLEMES -> SOLUTIONS -->
 <section id="candidats" class="max-w-7xl mx-auto px-4 sm:px-6 pt-28">

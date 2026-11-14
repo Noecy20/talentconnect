@@ -66,6 +66,8 @@ def register():
             flash(t("Un compte existe déjà avec cet e-mail."), "danger")
         elif len(pw) < 8:
             flash(t("Le mot de passe doit contenir au moins 8 caractères."), "danger")
+        elif request.form.get("password_confirm") is not None and request.form.get("password_confirm") != pw:
+            flash(t("Les deux mots de passe ne correspondent pas."), "danger")
         elif "@" not in email:
             flash(t("Adresse e-mail invalide."), "danger")
         else:

@@ -20,8 +20,8 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">{{ t('Mon espace') }}</a>
       {% else %}
-        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">{{ t('Connexion') }}</a>
-        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">{{ t('Commencer') }}</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm !rounded-full hidden sm:inline-flex">{{ t('Connexion') }}</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-sm !rounded-full border-2 border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--surface)]">{{ t('Commencer') }}</a>
       {% endif %}
       <button class="lg:hidden btn btn-ghost btn-icon" @click="m=!m"><i data-lucide="menu" class="w-5 h-5"></i></button>
     </div>

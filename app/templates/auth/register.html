@@ -1,34 +1,40 @@
 {% extends "auth/_shell.html" %}
+{% from "auth/_fields.html" import ifield, pfield with context %}
+{% from "_macros.html" import location with context %}
 {% block title %}{{ t('Inscription') }}{% endblock %}
 {% block form %}
-<h1 class="font-display text-3xl font-bold">{{ t('Créer votre compte') }}</h1>
-<p class="muted mt-2">{{ t('Choisissez votre profil, vous pourrez tout compléter ensuite.') }}</p>
-<form method="post" class="mt-7 space-y-5" x-data="{role: '{{ role }}'}">
+<h1 class="auth-title">{{ t('Créer un compte') }}</h1>
+<form method="post" class="mt-7 space-y-3.5" x-data="{role: '{{ role }}', p1:'', p2:''}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="next" value="{{ request.args.get('next','') }}">
-  <div class="grid grid-cols-3 gap-2">
+  <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="{{ t('Je suis') }}">
     {% for r, icon, label in [('candidate','user-round',t('Candidat')),('recruiter','briefcase',t('Recruteur')),('sponsor','handshake',t('Parrain'))] %}
     <label class="cursor-pointer">
-      <input type="radio" name="role" value="{{ r }}" x-model="role" class="peer sr-only">
-      <div class="card p-3 text-center transition peer-checked:border-terra-500 peer-checked:shadow-md" :class="role=='{{ r }}' ? '!border-terra-500 ring-4 ring-terra-500/10' : ''">
-        <i data-lucide="{{ icon }}" class="w-5 h-5 mx-auto" :class="role=='{{ r }}' ? 'text-terra-500' : 'muted'"></i>
-        <div class="text-xs font-semibold mt-1.5">{{ label }}</div>
-      </div>
+      <input type="radio" name="role" value="{{ r }}" x-model="role" class="sr-only">
+      <span class="flex items-center justify-center gap-1.5 rounded-lg border-[1.5px] py-2.5 text-xs font-semibold transition"
+            :class="role=='{{ r }}' ? 'bg-[#2E1A10] text-white border-[#2E1A10]' : 'border-[var(--line-2)] muted hover:border-terra-500'">
+        <i data-lucide="{{ icon }}" class="w-4 h-4"></i>{{ label }}</span>
     </label>
     {% endfor %}
   </div>
-  <p class="text-xs muted -mt-2" x-show="role=='sponsor'" x-cloak>{{ t('Les parrains passent un test d\'éligibilité. L\'accès parrain est gratuit.') }}</p>
+  <p class="text-xs muted" x-show="role=='sponsor'" x-cloak>{{ t('Les parrains passent un test d\'éligibilité. L\'accès parrain est gratuit.') }}</p>
   <div class="grid grid-cols-2 gap-3">
-    <div><label class="label">{{ t('Prénom') }}</label><input name="first_name" required class="input"></div>
-    <div><label class="label">{{ t('Nom') }}</label><input name="last_name" required class="input"></div>
+    {{ ifield('first_name', 'user', t('Prénom')) }}
+    {{ ifield('last_name', 'user', t('Nom')) }}
   </div>
-  <div x-show="role=='recruiter'" x-cloak><label class="label">{{ t('Entreprise') }}</label><input name="company_name" class="input" placeholder="{{ t('Nom de votre entreprise') }}"></div>
-  <div><label class="label">{{ t('E-mail') }}</label><input name="email" type="email" required class="input"></div>
-  <div><label class="label">{{ t('Mot de passe') }}</label><div class="relative" x-data="{show:false}"><input name="password" :type="show ? 'text' : 'password'" minlength="8" required placeholder="{{ t('8 caractères minimum') }}" class="input pr-11">
-      <button type="button" @click="show=!show" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg muted hover:text-[var(--ink)]" :aria-label="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}" :title="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}">
-        <span x-show="!show"><i data-lucide="eye" class="w-4 h-4"></i></span><span x-show="show" x-cloak><i data-lucide="eye-off" class="w-4 h-4"></i></span></button></div></div>
-  {{ location('CI', '') }}
-  <button class="btn btn-primary btn-lg w-full">{{ t('Créer mon compte') }}<i data-lucide="sparkles" class="w-4 h-4"></i></button>
+  <div x-show="role=='recruiter'" x-cloak>{{ ifield('company_name', 'building-2', t('Nom de votre entreprise'), required=False) }}</div>
+  {{ ifield('email', 'mail', t('Adresse e-mail'), type='email') }}
+  <div class="grid sm:grid-cols-2 gap-3">
+    {{ pfield('password', t('Mot de passe'), 'minlength="8" x-model="p1"') }}
+    {{ pfield('password_confirm', t('Confirmation'), 'minlength="8" x-model="p2"') }}
+  </div>
+  <p class="text-xs" :class="p2 && p1 !== p2 ? 'text-[#C0392B]' : 'muted'">
+    <span x-show="!(p2 && p1 !== p2)">{{ t('8 caractères minimum') }}</span>
+    <span x-show="p2 && p1 !== p2" x-cloak>{{ t('Les deux mots de passe ne correspondent pas.') }}</span></p>
+  <div class="auth-location">{{ location('CI', '') }}</div>
+  <button class="btn-auth mt-2" :disabled="!!p2 && p1 !== p2">{{ t('Créer mon compte') }}</button>
+  <div class="auth-or py-1">{{ t('ou') }}</div>
+  <a href="{{ url_for('auth.login', next=request.args.get('next')) }}" class="btn-auth-alt"><i data-lucide="log-in" class="w-4 h-4"></i>{{ t('J\'ai déjà un compte') }}</a>
+  <a href="{{ url_for('main.cv_free') }}" class="block text-center text-xs muted hover:underline pt-1">{{ t('Ou créer d\'abord mon CV gratuitement, sans compte') }}</a>
 </form>
-<p class="text-sm muted mt-7 text-center">{{ t('Déjà inscrit ?') }} <a href="{{ url_for('auth.login', next=request.args.get('next')) }}" class="font-semibold text-terra-600 hover:underline">{{ t('Connexion') }}</a></p>
 {% endblock %}

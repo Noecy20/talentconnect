@@ -1,18 +1,18 @@
 {% extends "auth/_shell.html" %}
+{% from "auth/_fields.html" import ifield, pfield with context %}
 {% block title %}{{ t('Connexion') }}{% endblock %}
 {% block form %}
-<h1 class="font-display text-3xl font-bold">{{ t('Bon retour') }}</h1>
-<p class="muted mt-2">{{ t('Connectez-vous pour retrouver votre espace.') }}</p>
-<form method="post" class="mt-8 space-y-5" x-data="{show:false}">
+<h1 class="auth-title">{{ t('Connexion') }}</h1>
+<p class="muted mt-4 text-sm">{{ t('Connectez-vous pour retrouver votre espace.') }}</p>
+<form method="post" class="mt-7 space-y-3.5">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="next" value="{{ request.args.get('next','') }}">
-  <div><label class="label">{{ t('E-mail') }}</label><input name="email" type="email" required autofocus class="input" placeholder="vous@exemple.com"></div>
-  <div><label class="label">{{ t('Mot de passe') }}</label>
-    <div class="relative" x-data="{show:false}"><input name="password" :type="show ? 'text' : 'password'" required class="input pr-11">
-      <button type="button" @click="show=!show" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg muted hover:text-[var(--ink)]" :aria-label="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}" :title="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}">
-        <span x-show="!show"><i data-lucide="eye" class="w-4 h-4"></i></span><span x-show="show" x-cloak><i data-lucide="eye-off" class="w-4 h-4"></i></span></button></div></div>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember" class="check" checked>{{ t('Rester connecté') }}</label>
-  <button class="btn btn-primary btn-lg w-full">{{ t('Se connecter') }}<i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+  {{ ifield('email', 'mail', t('Adresse e-mail'), type='email', extra='autofocus autocomplete="email"') }}
+  {{ pfield('password', t('Mot de passe'), 'autocomplete="current-password"') }}
+  <label class="flex items-center gap-2 text-sm py-1"><input type="checkbox" name="remember" class="check" checked>{{ t('Rester connecté') }}</label>
+  <button class="btn-auth">{{ t('Se connecter') }}</button>
+  <div class="auth-or py-1">{{ t('ou') }}</div>
+  <a href="{{ url_for('auth.register', next=request.args.get('next')) }}" class="btn-auth-alt"><i data-lucide="user-plus" class="w-4 h-4"></i>{{ t('Créer un compte') }}</a>
+  <a href="{{ url_for('main.cv_free') }}" class="block text-center text-xs muted hover:underline pt-1">{{ t('Créer mon CV gratuitement, sans compte') }}</a>
 </form>
-<p class="text-sm muted mt-8 text-center">{{ t('Pas encore de compte ?') }} <a href="{{ url_for('auth.register', next=request.args.get('next')) }}" class="font-semibold text-terra-600 hover:underline">{{ t('Inscrivez-vous') }}</a></p>
 {% endblock %}

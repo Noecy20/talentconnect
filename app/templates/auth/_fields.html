@@ -1,0 +1,15 @@
+{% macro ifield(name, icon, placeholder, type='text', required=True, extra='') -%}
+<div class="auth-field">
+  <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+  <input name="{{ name }}" type="{{ type }}" placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ extra|safe }}>
+</div>
+{%- endmacro %}
+{% macro pfield(name, placeholder, extra='') -%}
+<div class="auth-field" x-data="{show:false}">
+  <i data-lucide="lock" class="w-4 h-4"></i>
+  <input name="{{ name }}" :type="show ? 'text' : 'password'" placeholder="{{ placeholder }}" required {{ extra|safe }}>
+  <button type="button" @click="show=!show" class="auth-eye" :aria-label="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}" :title="show ? {{ t('Masquer le mot de passe')|js }} : {{ t('Afficher le mot de passe')|js }}">
+    <span x-show="!show"><i data-lucide="eye" class="w-4 h-4"></i></span><span x-show="show" x-cloak><i data-lucide="eye-off" class="w-4 h-4"></i></span>
+  </button>
+</div>
+{%- endmacro %}

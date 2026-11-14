@@ -150,3 +150,26 @@ input[type=range]{accent-color:var(--terra)}
 /* Navigation repliée (pages plein écran : CV Builder) */
 .nav-collapsed .sidebar{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .3s;height:100vh}
 .nav-collapsed .sidebar.open{transform:none}
+/* ---------- pages connexion / inscription ---------- */
+.auth-bg{background:linear-gradient(160deg,#F0A13B 0%,#E8912F 45%,#D9772A 100%)}
+.dark .auth-bg{background:linear-gradient(160deg,#5A2C19,#3B1A0E)}
+.auth-card{box-shadow:0 40px 80px -30px rgba(59,26,14,.55)}
+.auth-title{font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:1.75rem;letter-spacing:-.02em;color:var(--ink)}
+.auth-title::after{content:"";display:block;width:44px;height:3px;border-radius:3px;background:var(--ink);margin-top:10px}
+.auth-field{position:relative;display:flex;align-items:center}
+.auth-field>i,.auth-field>svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.auth-field input,.auth-field select{width:100%;background:var(--surface);border:1.5px solid var(--line-2);border-radius:8px;padding:.72rem .8rem .72rem 2.35rem;font-size:.9rem;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.auth-field input:focus,.auth-field select:focus{outline:none;border-color:var(--terra);box-shadow:0 0 0 3px rgba(216,103,48,.15)}
+.auth-eye{position:absolute;right:6px;padding:6px;border-radius:6px;color:var(--muted)}
+.auth-eye:hover{color:var(--ink)}
+.btn-auth{display:flex;width:100%;justify-content:center;align-items:center;gap:.5rem;background:#2E1A10;color:#fff;font-weight:700;padding:.85rem 1rem;border-radius:8px;transition:background .15s,transform .05s}
+.btn-auth:hover{background:#4A2414}.btn-auth:active{transform:translateY(1px)}
+.dark .btn-auth{background:#D86730}
+.btn-auth-alt{display:flex;width:100%;justify-content:center;align-items:center;gap:.5rem;background:var(--terra-600);color:#fff;font-weight:700;padding:.85rem 1rem;border-radius:8px}
+.btn-auth-alt:hover{filter:brightness(1.07)}
+.auth-or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.8rem}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.auth-location .label{display:none}
+.auth-location .select{border-radius:8px;padding:.72rem .8rem;font-size:.9rem}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed}
+.auth-field:has(.auth-eye) input{padding-right:2.6rem}
