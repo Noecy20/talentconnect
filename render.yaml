@@ -5,7 +5,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app --workers 2 --threads 4 --timeout 120
+    startCommand: gunicorn run:app --preload --workers 1 --threads 4 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.4
@@ -26,6 +26,14 @@ services:
       - key: MAIL_SENDER
         sync: false
       - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: JSEARCH_API_KEY
+        sync: false
+      - key: ADZUNA_APP_ID
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false
+      - key: JOOBLE_API_KEY
         sync: false
       - key: FLASK_DEBUG
         value: "0"

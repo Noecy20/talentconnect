@@ -118,17 +118,13 @@ def _bootstrap(app):
         db.session.add(u)
     if not Plan.query.first():
         db.session.add_all([
-            Plan(role="candidate", name="Essentiel", price=2000, currency="XOF", duration_days=30,
-                 features=["Offres personnalisées et score de compatibilité", "Chance d'être appelé", "Parrainages illimités",
-                           "Suivi des candidatures"]),
-            Plan(role="candidate", name="Premium", price=5000, currency="XOF", duration_days=90, highlighted=True,
-                 features=["Tout Essentiel", "Assistant IA personnel", "Lettres de motivation générées", "Orientation RIASEC",
-                           "Carte des métiers qui recrutent"]),
-            Plan(role="recruiter", name="Starter", price=25000, currency="XOF", duration_days=30,
-                 features=["3 offres actives", "Tri IA et réponses groupées", "Pipeline de recrutement"]),
-            Plan(role="recruiter", name="Business", price=60000, currency="XOF", duration_days=90, highlighted=True,
-                 features=["Offres illimitées", "Recherche de talents parrainés", "Vivier seconde chance",
-                           "Assistant IA entreprise", "Modèles de messages personnalisés"]),
+            Plan(role="candidate", name="Formule unique", price=1000, currency="XOF", duration_days=30, highlighted=True,
+                 features=["Offres personnalisées et score de compatibilité", "Chance d'être appelé", "Candidatures et lettres de motivation",
+                           "Parrainages", "Orientation RIASEC", "Suivi des candidatures", "Assistant IA personnel",
+                           "Marché de l'emploi"]),
+            Plan(role="recruiter", name="Formule unique", price=225000, currency="XOF", duration_days=365, highlighted=True,
+                 features=["Offres illimitées", "Pipeline de recrutement", "Tri IA et réponses groupées", "Recherche de talents",
+                           "Vivier de talents", "Modèles de messages", "Assistant IA entreprise"]),
         ])
     for k, v in Setting.DEFAULTS.items():
         if db.session.get(Setting, k) is None:
@@ -356,8 +352,8 @@ def _seed(app):
     db.session.commit()
 
     # --- paiements
-    plan_c = Plan.query.filter_by(role="candidate", name="Premium").first()
-    plan_r = Plan.query.filter_by(role="recruiter", name="Business").first()
+    plan_c = Plan.query.filter_by(role="candidate", active=True).first()
+    plan_r = Plan.query.filter_by(role="recruiter", active=True).first()
     for u in [c for c in cands if c.access_granted][:5]:
         db.session.add(Payment(user_id=u.id, plan_id=plan_c.id, amount=plan_c.price, currency="XOF", method=random.choice(["wave", "orange_money", "mtn_momo"]),
                                reference=f"TX{random.randint(100000, 999999)}", status="confirmed", validated_at=datetime.utcnow()))
