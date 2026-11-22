@@ -165,6 +165,8 @@ def forgot_password():
             # En local, sans serveur mail, on affiche le lien pour pouvoir tester
             if current_app.debug:
                 flash(lien, "info")
+        else:
+            current_app.logger.warning("Mot de passe oublié : aucun compte actif pour l'adresse saisie")
         # Même message dans tous les cas : on ne révèle pas si l'adresse existe
         flash(t("Si un compte existe avec cette adresse, un lien vient de vous être envoyé."), "success")
         return redirect(url_for("auth.forgot_password"))

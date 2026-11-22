@@ -38,6 +38,8 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_SENDER = os.getenv("MAIL_SENDER", "TalentConnect <no-reply@talentconnect.app>")
+    # Clé API Brevo (xkeysib-…) : envoi par HTTPS, nécessaire sur Render gratuit (ports SMTP bloqués)
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 
     # IA générative (optionnelle) : sans clé, l'app utilise ses modèles internes
     # IA générative : OpenRouter d'abord (modèles gratuits, bascule automatique), sinon Claude

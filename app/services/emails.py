@@ -1,4 +1,4 @@
-"""Envoi d'e-mails via Brevo (SMTP) + historisation dans l'app.
+"""Envoi d'e-mails via Brevo (API HTTPS ou SMTP) + historisation dans l'app.
 Chaque message est enregistré dans la table `messages` (visible dans l'app),
 puis envoyé par e-mail en arrière-plan. Sans identifiants SMTP, l'e-mail est
 marqué « skipped » mais le message reste visible dans l'app."""
@@ -14,6 +14,21 @@ from flask import current_app
 
 from ..extensions import db
 from ..modeles import Message, MessageTemplate, User
+
+
+def _api_brevo_send(cfg, to, subject, text, html):
+    """Envoi par l'API HTTPS de Brevo (port 443).
+    À utiliser sur l'hébergement gratuit de Render, qui bloque les ports SMTP (25, 465, 587)."""
+    import json
+    import urllib.request
+    name, addr = parseaddr(cfg["MAIL_SENDER"])
+    corps = {"sender": {"name": name or "TalentConnect", "email": addr}, "to": [{"email": to}],
+             "subject": subject, "htmlContent": html, "textContent": text}
+    req = urllib.request.Request("https://api.brevo.com/v3/smtp/email", data=json.dumps(corps).encode("utf-8"),
+                                 headers={"api-key": cfg["BREVO_API_KEY"], "Content-Type": "application/json",
+                                          "Accept": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=20) as r:
+        r.read()
 
 
 def _smtp_send(cfg, to, subject, text, html):
@@ -54,17 +69,27 @@ def _worker(app, message_ids):
             if not m:
                 continue
             to = m.recipient.email if m.recipient else m.recipient_email
-            if not (cfg.get("MAIL_USERNAME") and cfg.get("MAIL_PASSWORD")) or not to:
+            # API HTTPS de Brevo si la clé est là (marche partout), sinon SMTP classique
+            api = bool(cfg.get("BREVO_API_KEY"))
+            smtp = bool(cfg.get("MAIL_USERNAME") and cfg.get("MAIL_PASSWORD"))
+            if not (api or smtp) or not to:
                 m.email_status = "skipped"
-                app.logger.info("[mail non envoyé — SMTP non configuré] %s -> %s", m.subject, to)
+                app.logger.warning("[mail non envoyé — ni BREVO_API_KEY ni SMTP configuré] %s -> %s", m.subject, to)
             else:
                 try:
                     html = email_html(m.subject, m.body, cfg["APP_URL"])
-                    _smtp_send(cfg, to, m.subject, m.body, html)
+                    (_api_brevo_send if api else _smtp_send)(cfg, to, m.subject, m.body, html)
                     m.email_status = "sent"
+                    app.logger.warning("E-mail envoyé (%s) : %s -> %s", "API Brevo" if api else "SMTP", m.subject, to)
                 except Exception as exc:
+                    detail = ""
+                    if hasattr(exc, "read"):   # erreur HTTP de Brevo : on garde son explication
+                        try:
+                            detail = exc.read().decode("utf-8")[:300]
+                        except Exception:
+                            pass
                     m.email_status = "failed"
-                    app.logger.warning("Échec e-mail %s : %s", to, exc)
+                    app.logger.warning("Échec e-mail %s : %s %s", to, exc, detail)
             db.session.commit()
 
 
