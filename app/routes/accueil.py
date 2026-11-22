@@ -86,7 +86,7 @@ def offers():
     externes, erreurs = [], []
     if f["source"] != "talentconnect":
         mot = f["q"] or current_app.config.get("OFFRES_RECHERCHE_DEFAUT", "emploi")
-        pays = "" if f["ville"] else current_app.config.get("DEFAULT_COUNTRY", "CI")
+        pays = current_app.config.get("DEFAULT_COUNTRY", "CI")
         externes, erreurs = offres_externes.search(mot, f["ville"], pays)
         if f["teletravail"]:
             externes = [r for r in externes if "remote" in (r.get("city") or "").lower()

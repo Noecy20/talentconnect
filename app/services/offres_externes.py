@@ -1,4 +1,8 @@
-"""Offres d'emploi externes en temps réel, via des API officielles (pas de scraping).
+"""Offres d'emploi externes en temps réel.
+
+Sites ivoiriens lus directement (pages publiques de recherche, désactivables avec OFFRES_LOCALES=0) :
+  - Emploi.ci : sa page de recherche (robots.txt : « search=yes », « Allow: / »).
+  - Educarriere.ci : la liste des dernières offres de sa page d'accueil.
 
 Fournisseurs gratuits, sans clé (toujours actifs, désactivables avec OFFRES_SANS_CLE=0) :
   - Remotive, Arbeitnow, Jobicy : offres en télétravail et internationales.
@@ -23,15 +27,23 @@ ADZUNA_COUNTRIES = {"GB", "US", "FR", "CA", "DE", "AU", "AT", "BE", "BR", "CH", 
 def providers():
     c = current_app.config
     out = []
-    if str(c.get("OFFRES_SANS_CLE", "1")) != "0":
-        out += ["Remotive", "Arbeitnow", "Jobicy"]
+    if str(c.get("OFFRES_LOCALES", "1")) != "0":
+        out += ["Emploi.ci", "Educarriere"]
     if c.get("JSEARCH_API_KEY"):
         out.append("JSearch")
     if c.get("ADZUNA_APP_ID") and c.get("ADZUNA_APP_KEY"):
         out.append("Adzuna")
     if c.get("JOOBLE_API_KEY"):
         out.append("Jooble")
+    if str(c.get("OFFRES_SANS_CLE", "1")) != "0":
+        out += ["Remotive", "Arbeitnow", "Jobicy"]
     return out
+
+
+# Sources qui ne publient que des offres en Côte d'Ivoire
+SOURCES_LOCALES = {"Emploi.ci": "CI", "Educarriere": "CI"}
+# Sources de télétravail international : utiles seulement pour une recherche précise de métier
+SOURCES_DISTANTES = {"Remotive", "Arbeitnow", "Jobicy"}
 
 
 def _get(url, headers=None, data=None, timeout=8):
@@ -118,6 +130,137 @@ def _jooble(q, where, country, days):
     return out
 
 
+# ---------------------------------------------------------------- sites ivoiriens (pages publiques)
+UA_NAVIGATEUR = "Mozilla/5.0 (compatible; TalentConnect/1.0; +https://talentconnect-eu.onrender.com)"
+
+
+def _page(url, timeout=8):
+    """Télécharge une page HTML publique et renvoie un objet BeautifulSoup."""
+    from bs4 import BeautifulSoup
+    req = urllib.request.Request(url, headers={"User-Agent": UA_NAVIGATEUR, "Accept-Language": "fr-FR,fr;q=0.9"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return BeautifulSoup(r.read().decode("utf-8", "replace"), "html.parser")
+
+
+def _norm(texte):
+    """Minuscules sans accents, pour comparer des mots (« Comptabilité » ~ « comptabilite »)."""
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", (texte or "").lower()) if unicodedata.category(c) != "Mn")
+
+
+def _mots(q):
+    """Mots utiles d'une recherche (on ignore les petits mots et la recherche par défaut)."""
+    if _norm(q) == _norm(current_app.config.get("OFFRES_RECHERCHE_DEFAUT", "emploi")):
+        return []
+    vides = {"de", "du", "des", "la", "le", "les", "en", "et", "a", "au", "un", "une", "pour"}
+    return [m for m in _norm(q).replace("/", " ").replace("-", " ").split() if len(m) > 1 and m not in vides]
+
+
+def _correspond(texte, mots):
+    """Vrai si chaque mot (ou son début : « comptab ») apparaît dans le texte."""
+    t = _norm(texte)
+    return all(m in t or (len(m) > 5 and m[:5] in t) for m in mots)
+
+
+def _hors_ci(country):
+    return bool(country) and country.upper() != "CI"
+
+
+def _emploi_ci(q, where, country, days):
+    if _hors_ci(country):
+        return []
+    mots = _mots(q)
+    base = "https://www.emploi.ci/recherche-jobs-cote-ivoire"
+    if mots:
+        base += "/" + urllib.parse.quote(" ".join(mots))
+    soupe = _page(base)
+    out = []
+    for carte in soupe.select(".card-job"):
+        lien = carte.select_one("h3 a")
+        if not lien:
+            continue
+        infos = {}
+        for li in carte.select("li"):
+            txt = " ".join(li.get_text(" ", strip=True).split())
+            if ":" in txt:
+                k, v = txt.split(":", 1)
+                infos[_norm(k).strip()] = v.strip()
+        date = carte.select_one("time")
+        jour = (date.get_text(strip=True) if date else "").split(".")
+        posted = f"{jour[2]}-{jour[1]}-{jour[0]}" if len(jour) == 3 else ""
+        img = carte.select_one("picture img") or carte.select_one("img")
+        logo = (img.get("data-src") or img.get("src") or "") if img else ""
+        entreprise = carte.select_one(".card-job-company")
+        url = carte.get("data-href") or urllib.parse.urljoin("https://www.emploi.ci", lien.get("href", ""))
+        out.append({"title": (lien.get("title") or lien.get_text(strip=True)).strip(),
+                    "company": entreprise.get_text(strip=True) if entreprise else "",
+                    "city": infos.get("region de", "Côte d'Ivoire"), "country_code": "CI", "url": url,
+                    "contract": infos.get("contrat propose", ""), "salary": "", "posted": posted,
+                    "logo": logo if logo.startswith("http") and "default-logo" not in logo else "", "source": "Emploi.ci",
+                    "description": " · ".join(v for k, v in infos.items() if k.startswith(("competences", "niveau")))[:1500]})
+    return _filtre_ville(out, where)
+
+
+def _educarriere(q, where, country, days):
+    if _hors_ci(country):
+        return []
+    import re
+
+    def date(texte, mot):
+        m = re.search(mot + r"[^0-9]*(\d{2})/(\d{2})/(\d{4})", texte)
+        return f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else ""
+
+    soupe = _page("https://emploi.educarriere.ci/")
+    mots = _mots(q)
+    brutes = []
+    # 1. Les cartes complètes (logo, entreprise, type, date de publication)
+    for carte in soupe.select(".ej-card"):
+        lien = carte.select_one("a.ej-poste")
+        if not lien:
+            continue
+        texte = carte.get_text(" ", strip=True)
+        img = carte.select_one("img.ej-logo")
+        societe = carte.select_one(".ej-societe")
+        tag = carte.select_one(".ej-tag")
+        brutes.append({"url": lien.get("href", ""), "title": lien.get_text(strip=True),
+                       "company": societe.get_text(" ", strip=True) if societe else (img.get("alt", "") if img else ""),
+                       "logo": img.get("src", "") if img else "", "contract": tag.get_text(strip=True) if tag else "",
+                       "posted": date(texte, "Publi"), "deadline": date(texte, "Expire")})
+    # 2. Les autres listes de la page (titre, logo dont l'attribut alt est le nom de l'entreprise, date limite)
+    for a in soupe.select('a[href*="/offre-"]'):
+        morceaux = a.get_text("|", strip=True).split("|")
+        if len(morceaux) < 2:
+            continue
+        img = a.select_one("img")
+        brutes.append({"url": a.get("href", ""), "title": morceaux[0],
+                       "company": (img.get("alt") if img else "") or morceaux[1], "logo": "", "contract": "",
+                       "posted": "", "deadline": date(a.get_text(" "), "Limite")})
+    out, vus = [], set()
+    for o in brutes:
+        url = urllib.parse.urljoin("https://emploi.educarriere.ci/", o["url"])
+        if url in vus or not o["title"] or (mots and not _correspond(f"{o['title']} {o['company']}", mots)):
+            continue
+        vus.add(url)
+        if o["company"].lower().startswith(("limite", "expire")):
+            o["company"] = ""
+        d = o.pop("deadline")
+        out.append({**o, "url": url, "city": "Côte d'Ivoire", "country_code": "CI", "salary": "",
+                    "logo": o["logo"] if o["logo"].startswith("http") and "icone_fcbk" not in o["logo"] else "",
+                    "contract": "" if o["contract"].lower() == "emploi" else o["contract"],
+                    "source": "Educarriere", "description": f"Date limite : {d}" if d else ""})
+    # Educarriere n'indique pas la ville : la grande majorité des offres sont à Abidjan
+    if where and "abidjan" not in _norm(where):
+        out = [o for o in out if _norm(where) in _norm(o["title"])]
+    return out
+
+
+def _filtre_ville(offres, where):
+    if not where:
+        return offres
+    v = _norm(where)
+    return [o for o in offres if v in _norm(f"{o['city']} {o['title']}")]
+
+
 # ---------------------------------------------------------------- sources sans clé
 def _remotive(q, where, country, days):
     res = _get("https://remotive.com/api/remote-jobs?" + urllib.parse.urlencode({"search": q, "limit": 30}))
@@ -189,8 +332,11 @@ def search(q, where="", country="", days=0):
 
 
 def _chercher(q, where, country, days):
-    funcs = {"JSearch": _jsearch, "Adzuna": _adzuna, "Jooble": _jooble,
-             "Remotive": _remotive, "Arbeitnow": _arbeitnow, "Jobicy": _jobicy}
+    funcs = {"Emploi.ci": _emploi_ci, "Educarriere": _educarriere, "JSearch": _jsearch, "Adzuna": _adzuna,
+             "Jooble": _jooble, "Remotive": _remotive, "Arbeitnow": _arbeitnow, "Jobicy": _jobicy}
+    mots = _mots(q)
+    # Le télétravail international n'a pas sa place pour une ville ou pour « les dernières offres »
+    noms = [n for n in providers() if n not in SOURCES_DISTANTES or (mots and not where)]
     # Les sources sont interrogées en même temps : la page attend la plus lente, pas la somme
     from concurrent.futures import ThreadPoolExecutor
     app = current_app._get_current_object()
@@ -198,19 +344,29 @@ def _chercher(q, where, country, days):
     def appel(name):
         with app.app_context():
             try:
-                return funcs[name](q, where, country, days), None
+                return name, funcs[name](q, where, country, days), None
             except Exception as exc:
-                return [], f"{name} : {exc}"
+                return name, [], f"{name} : {exc}"
 
     results, errors = [], []
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        for offres, erreur in pool.map(appel, providers()):
-            results += offres
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for name, offres, erreur in pool.map(appel, noms):
+            for o in offres:
+                o["_rang"] = 0 if name in SOURCES_LOCALES else (2 if name in SOURCES_DISTANTES else 1)
+                # Offres d'un autre pays (JSearch peut en renvoyer malgré le filtre) : écartées
+                cc = (o.get("country_code") or "").upper()
+                if country and cc and cc != country.upper():
+                    continue
+                # Télétravail : seulement si l'intitulé parle vraiment du métier cherché
+                if name in SOURCES_DISTANTES and not _correspond(o.get("title") or "", mots[:1]):
+                    continue
+                results.append(o)
             if erreur:
                 errors.append(erreur)
+    results.sort(key=lambda o: o.pop("_rang"))   # tri stable : sites ivoiriens d'abord
     seen, uniq = set(), []
     for r in results:
-        key = ((r.get("title") or "").lower(), (r.get("company") or "").lower())
+        key = (_norm(r.get("title")).strip(), _norm(r.get("company")).strip())
         if r.get("title") and key not in seen:
             seen.add(key)
             uniq.append(r)

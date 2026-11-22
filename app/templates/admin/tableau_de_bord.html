@@ -19,6 +19,20 @@
              (t('Gérer les utilisateurs'), url_for('admin.users'), 'users')]) %}
 {% endcall %}
 
+{# Offres de démonstration encore en ligne : un bouton pour les retirer #}
+{% if nb_offres_demo %}
+<form method="post" action="{{ url_for('admin.delete_demo_jobs') }}" class="card p-6 mt-7 flex flex-col lg:flex-row lg:items-center gap-5" style="box-shadow:inset 4px 0 0 var(--danger),var(--ombre)">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <span class="logo-ent" style="background:#FBEAE8;color:var(--danger)"><i data-lucide="trash-2"></i></span>
+  <div class="flex-1">
+    <div class="font-semibold">{{ t('{n} offre(s) de démonstration sont encore en ligne', n=nb_offres_demo) }}</div>
+    <p class="text-[13.5px] muted mt-0.5">{{ t('Elles ont été créées pour les essais (recruteurs @demo.tc). La suppression est définitive et retire aussi leurs candidatures.') }}</p>
+  </div>
+  <input name="confirmation" class="input lg:!w-56" placeholder="{{ t('Tapez SUPPRIMER') }}" autocomplete="off" required>
+  <button class="btn" style="background:var(--danger);color:#fff">{{ t('Supprimer les offres de démo') }}</button>
+</form>
+{% endif %}
+
 <div class="grid xl:grid-cols-[1fr_1.6fr] gap-7 mt-7">
   {# À traiter : une seule liste plutôt que trois cartes identiques #}
   <div class="card">

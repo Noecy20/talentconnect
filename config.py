@@ -52,6 +52,7 @@ class Config:
     # Offres externes en temps réel via API officielles (facultatif)
     JSEARCH_API_KEY = os.getenv("JSEARCH_API_KEY", "")
     JSEARCH_FOURNISSEUR = os.getenv("JSEARCH_FOURNISSEUR", "openwebninja")  # ou « rapidapi »
+    OFFRES_LOCALES = os.getenv("OFFRES_LOCALES", "1")  # Emploi.ci, Educarriere (lecture des pages publiques)
     OFFRES_SANS_CLE = os.getenv("OFFRES_SANS_CLE", "1")  # Remotive, Arbeitnow, Jobicy
     # Recherche faite quand personne n'a tapé de mot-clé (page Offres, accueil)
     OFFRES_RECHERCHE_DEFAUT = os.getenv("OFFRES_RECHERCHE_DEFAUT", "emploi")

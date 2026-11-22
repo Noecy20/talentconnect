@@ -10,7 +10,7 @@
 {# ------------------------------------------------------------ en-tête de la page #}
 <div class="flex flex-wrap items-end justify-between gap-4">
   <p class="muted text-[14.5px] max-w-xl">{{ t('Toutes vos candidatures, celles d\'ici et celles envoyées ailleurs, au même endroit.') }}</p>
-  <div class="flex items-center gap-2.5">
+  <div class="flex flex-wrap items-center gap-2.5">
     <div class="bascule">
       <a href="{{ url_for('tracker.board', **dict(f, view='kanban')) }}" class="{{ 'actif' if view != 'table' }}"><i data-lucide="kanban-square"></i>Kanban</a>
       <a href="{{ url_for('tracker.board', **dict(f, view='table')) }}" class="{{ 'actif' if view == 'table' }}"><i data-lucide="table-2"></i>{{ t('Liste') }}</a>

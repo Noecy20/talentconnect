@@ -20,7 +20,7 @@
     <form method="post" enctype="multipart/form-data" class="card card-pad space-y-4" x-data="{mode:'text'}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add">
       <h3 class="font-display font-semibold text-lg">{{ t('Ajouter des connaissances') }}</h3>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         {% for m, icon, l in [('text','type',t('Texte libre')),('faq','help-circle',t('Question / réponse')),('file','upload',t('Document (PDF, TXT)'))] %}
         <button type="button" @click="mode='{{ m }}'" class="btn btn-sm" :class="mode=='{{ m }}' ? 'btn-primary' : 'btn-ghost'"><i data-lucide="{{ icon }}" class="w-4 h-4"></i>{{ l }}</button>{% endfor %}
       </div>

@@ -30,7 +30,7 @@
     {% set actions = creations() %}
     {% if actions %}
     <div class="relative" x-data="{o:false}">
-      <button type="button" class="btn btn-primary !h-[46px] !rounded-full !px-5" @click="o=!o" :aria-expanded="o">
+      <button type="button" class="btn btn-primary bouton-creer !rounded-full" @click="o=!o" :aria-expanded="o">
         <i data-lucide="plus"></i><span class="hidden md:inline">{{ t('Créer') }}</span>
       </button>
       <div class="deroulant w-72 p-2" x-show="o" @click.outside="o=false" x-cloak x-transition.opacity>

@@ -14,3 +14,4 @@ pypdf>=4.3
 anthropic>=0.34
 gunicorn>=22.0; sys_platform != "win32"
 waitress>=3.0; sys_platform == "win32"
+beautifulsoup4>=4.12

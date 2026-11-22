@@ -38,7 +38,9 @@ def dashboard():
                 signups[u.role][idx] += 1
     countries = db.session.query(User.country_code, func.count(User.id)).group_by(User.country_code) \
         .order_by(func.count(User.id).desc()).limit(8).all()
-    return render_template("admin/tableau_de_bord.html", counts=counts, paid=paid, revenue=dict(revenue),
+    from ..services import donnees_demo
+    return render_template("admin/tableau_de_bord.html", nb_offres_demo=len(donnees_demo.offres_demo()),
+                           counts=counts, paid=paid, revenue=dict(revenue),
                            pending_payments=Payment.query.filter_by(status="pending").count(),
                            pending_sponsors=SponsorProfile.query.filter_by(status="pending_review").count(),
                            jobs=Job.query.filter_by(status="open").count(), apps=Application.query.count(),
@@ -50,6 +52,18 @@ def dashboard():
 
 
 # --------------------------------------------------------------------------- utilisateurs & accès
+@bp.route("/offres-demo/supprimer", methods=["POST"])
+def delete_demo_jobs():
+    """Bouton du tableau de bord : retire les offres de démonstration (suppression définitive)."""
+    from ..services import donnees_demo
+    if request.form.get("confirmation") != "SUPPRIMER":
+        flash(t("Tapez SUPPRIMER pour confirmer."), "warning")
+        return redirect(url_for("admin.dashboard"))
+    n, c = donnees_demo.supprimer_offres_demo()
+    flash(t("{n} offre(s) de démo et {c} candidature(s) liée(s) supprimées.", n=n, c=c), "success")
+    return redirect(url_for("admin.dashboard"))
+
+
 @bp.route("/utilisateurs")
 def users():
     q = User.query
