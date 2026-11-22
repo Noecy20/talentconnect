@@ -1,0 +1,289 @@
+/* ==========================================================================
+   TalentConnect — feuille de style principale
+
+   Palette : terracotta, brun et crème (nos couleurs, définies une seule fois
+   dans :root). Tailwind (tailwind.css) est chargé après ce fichier pour les
+   petits ajustements de mise en page directement dans les gabarits.
+
+   Sommaire
+     1. Couleurs, ombres, rayons
+     2. Socle partagé avec Connexion / Inscription  (ne pas modifier)
+     3. Boutons et badges
+     4. Espace connecté : menu latéral, en-tête, fil d'Ariane
+     5. Bannière d'accueil des tableaux de bord
+     6. Indicateurs, tableaux, listes
+     7. Kanban, messagerie, divers
+     8. Pages Connexion / Inscription            (ne pas modifier)
+   ========================================================================== */
+
+
+/* 1. Couleurs, ombres, rayons ---------------------------------------------- */
+:root{
+  --bg:#FBF5EC; --bg-2:#F6EADB; --surface:#FFFFFF; --surface-2:#FDF8F2;
+  --ink:#24140B; --ink-2:#4A2414; --muted:#5F4636; --line:#EEDFCD; --line-2:#E4CDB4;
+  --terra:#D86730; --terra-600:#B04A1F; --terra-700:#8E3A1B; --brown:#5A2C19; --brown-2:#7E3520;
+  --sand:#F3D2B6; --cream:#FAF1E3; --gold:#D9A441; --success:#2F855A; --danger:#C0392B; --info:#2B6CB0;
+  --sombre:#3B1A0E;            /* brun très foncé : bannière, bandeau du menu profil */
+  --shadow-sm:0 1px 2px rgba(90,44,25,.06),0 1px 1px rgba(90,44,25,.04);
+  --shadow:0 10px 30px -12px rgba(90,44,25,.22),0 2px 6px rgba(90,44,25,.06);
+  --shadow-lg:0 30px 60px -20px rgba(90,44,25,.35);
+  --radius:18px;
+  --entete:72px;               /* hauteur de l'en-tête de l'espace connecté */
+}
+.dark{
+  --bg:#1A110C; --bg-2:#22160F; --surface:#2A1B13; --surface-2:#311F16;
+  --ink:#F8ECDF; --ink-2:#F3D2B6; --muted:#C4A58F; --line:#3E2a1F; --line-2:#4B3324;
+  --cream:#2A1B13; --sand:#4B3324; --sombre:#120A06;
+  --shadow:0 10px 30px -12px rgba(0,0,0,.6);
+}
+
+
+/* 2. Socle partagé avec Connexion / Inscription -----------------------------
+   Ces règles sont utilisées par les pages de connexion et d'inscription,
+   qui ne doivent pas changer d'apparence. Les modifier change ces pages. */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+h1,h2,h3,h4,.font-display{font-family:'Inter',system-ui,sans-serif;letter-spacing:-.022em;font-weight:700}
+.btn,.label,.nav-link.active,.chip{font-family:'Inter',system-ui,sans-serif}
+a{color:inherit}
+::selection{background:var(--terra);color:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:box-shadow .25s,transform .25s,border-color .25s}
+.card-pad{padding:1.4rem}
+.muted{color:var(--muted)}
+.divider{height:1px;background:var(--line)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-weight:600;font-size:.9rem;padding:.7rem 1.15rem;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:all .18s ease;white-space:nowrap;text-decoration:none;line-height:1.1}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-2)}.btn-ghost:hover{background:var(--surface-2);border-color:var(--terra)}
+.btn-sm{padding:.45rem .8rem;font-size:.8rem;border-radius:10px}
+.btn-icon{padding:.55rem;border-radius:10px}
+.label{display:block;font-size:.8rem;font-weight:600;color:var(--ink-2);margin-bottom:.4rem}
+.input,.select,.textarea{width:100%;background:var(--surface);border:1.5px solid var(--line-2);border-radius:12px;padding:.7rem .9rem;font-size:.92rem;color:var(--ink);transition:border-color .15s,box-shadow .15s;font-family:inherit}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--terra);box-shadow:0 0 0 4px rgba(216,103,48,.14)}
+.textarea{min-height:110px;resize:vertical;line-height:1.55}
+.help{font-size:.75rem;color:var(--muted);margin-top:.3rem}
+.check{accent-color:var(--terra);width:1.05rem;height:1.05rem}
+input[type=range]{accent-color:var(--terra)}
+.glass{background:rgba(255,255,255,.65);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.6)}
+.dark .glass{background:rgba(42,27,19,.7);border-color:rgba(255,255,255,.06)}
+[x-cloak]{display:none!important}
+.toast{animation:slideIn .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-12px) scale(.98)}to{opacity:1;transform:none}}
+
+
+/* 3. Boutons et badges ------------------------------------------------------ */
+/* Bouton principal : aplat terracotta foncé (le terracotta clair manque de
+   contraste avec un texte blanc). */
+.btn-primary{background:var(--terra-600);color:#fff}
+.btn-primary:hover{background:var(--terra-700)}
+.btn-dark{background:var(--brown);color:#fff}.btn-dark:hover{background:var(--brown-2)}
+.btn-soft{background:rgba(216,103,48,.1);color:var(--terra-700)}.btn-soft:hover{background:rgba(216,103,48,.18)}
+.dark .btn-soft{color:#F3B48C}
+.btn-danger{background:rgba(192,57,43,.1);color:var(--danger)}.btn-danger:hover{background:rgba(192,57,43,.18)}
+.btn-success{background:rgba(47,133,90,.12);color:var(--success)}.btn-success:hover{background:rgba(47,133,90,.2)}
+.btn-lg{padding:.95rem 1.5rem;font-size:1rem;border-radius:14px}
+.btn-pill{border-radius:999px}
+
+.chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;padding:.3rem .65rem;border-radius:999px;background:var(--bg-2);color:var(--ink-2);border:1px solid var(--line)}
+.chip-terra{background:rgba(216,103,48,.12);color:var(--terra-700);border-color:rgba(216,103,48,.25)}
+.dark .chip-terra{color:#F3B48C}
+.chip-green{background:rgba(47,133,90,.12);color:#276749;border-color:rgba(47,133,90,.25)}
+.chip-red{background:rgba(192,57,43,.1);color:#A93226;border-color:rgba(192,57,43,.2)}
+.chip-blue{background:rgba(43,108,176,.1);color:#2B6CB0;border-color:rgba(43,108,176,.2)}
+.chip-gold{background:rgba(217,164,65,.16);color:#8A6116;border-color:rgba(217,164,65,.35)}
+.dark .chip-green{color:#7FD1A6}.dark .chip-red{color:#F19A90}.dark .chip-blue{color:#90C2F0}.dark .chip-gold{color:#F1CF85}
+.badge-level{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.25rem .55rem;border-radius:8px}
+.lvl-gold{background:#E9C25E;color:#5A3B05}
+.lvl-silver{background:#D4D4D4;color:#3D3D3D}
+.lvl-bronze{background:#D99A68;color:#4A2509}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:700;color:#fff;background:var(--brown);flex:none}
+
+
+/* 4. Espace connecté --------------------------------------------------------- */
+
+/* Menu latéral */
+.sidebar{width:264px;background:var(--surface);border-right:1px solid var(--line)}
+.nav-section{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.8;padding:1.1rem .85rem .45rem}
+.nav-link{display:flex;align-items:center;gap:.75rem;padding:.62rem .85rem;border-radius:10px;font-size:.9rem;font-weight:500;color:var(--muted);transition:background .15s,color .15s;text-decoration:none}
+.nav-link:hover{background:var(--bg-2);color:var(--ink)}
+.nav-link.active{background:var(--terra-600);color:#fff;font-weight:600}
+.nav-link .lock{margin-left:auto;opacity:.6}
+.nav-link .compteur{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-size:.72rem;font-weight:700;background:rgba(216,103,48,.14);color:var(--terra-700)}
+.nav-link.active .compteur{background:rgba(255,255,255,.2);color:#fff}
+.encart-acces{border-radius:14px;padding:1rem;font-size:.85rem}
+.encart-acces.actif{background:rgba(47,133,90,.08);border:1px solid rgba(47,133,90,.22)}
+.encart-acces.offre{background:var(--sombre);color:#fff}
+@media (max-width:1023px){.sidebar{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .3s}.sidebar.open{transform:none}}
+/* Navigation repliée (pages plein écran : CV Builder) */
+.nav-collapsed .sidebar{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .3s;height:100vh}
+.nav-collapsed .sidebar.open{transform:none}
+
+/* En-tête */
+.entete{height:var(--entete);background:var(--surface);border-bottom:1px solid var(--line)}
+.recherche{display:flex;align-items:center;gap:.6rem;height:44px;padding:0 .45rem 0 .35rem;border-radius:999px;background:var(--bg-2);border:1px solid var(--line);color:var(--muted);font-size:.9rem;min-width:0;cursor:text;transition:border-color .15s}
+.recherche:hover{border-color:var(--line-2)}
+.recherche .loupe{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;background:var(--surface);color:var(--terra-600);flex:none}
+kbd,.touche{font-family:inherit;font-size:.72rem;font-weight:600;padding:.2rem .45rem;border-radius:6px;background:var(--surface);border:1px solid var(--line-2);color:var(--muted)}
+.icone-ronde{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;position:relative;color:var(--ink-2);background:var(--bg-2);transition:background .15s,color .15s;flex:none}
+.icone-ronde:hover{background:var(--line);color:var(--ink)}
+.icone-ronde.ton-or{background:rgba(217,164,65,.16);color:#8A6116}
+.icone-ronde.ton-terra{background:rgba(216,103,48,.12);color:var(--terra-700)}
+.dark .icone-ronde.ton-or{color:#F1CF85}.dark .icone-ronde.ton-terra{color:#F3B48C}
+.icone-ronde .pastille{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:999px;background:var(--terra);box-shadow:0 0 0 2px var(--surface)}
+.groupe-icones{display:flex;align-items:center;gap:.35rem;padding:.25rem;border-radius:999px;border:1px solid var(--line)}
+.bouton-profil{display:flex;align-items:center;gap:.6rem;padding:.25rem .6rem .25rem .25rem;border-radius:999px;border:1px solid var(--line);transition:background .15s}
+.bouton-profil:hover{background:var(--bg-2)}
+.bouton-profil .avatar{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--terra)}
+
+/* Menus déroulants de l'en-tête */
+.deroulant{position:absolute;right:0;top:calc(100% + 10px);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);z-index:50;overflow:hidden}
+.deroulant-lien{display:flex;align-items:center;gap:.8rem;padding:.55rem .75rem;border-radius:10px;font-size:.9rem;color:var(--ink-2);text-decoration:none}
+.deroulant-lien:hover{background:var(--bg-2)}
+.carre-icone{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none}
+.carre-terra{background:rgba(216,103,48,.12);color:var(--terra-700)}
+.carre-or{background:rgba(217,164,65,.18);color:#8A6116}
+.carre-vert{background:rgba(47,133,90,.12);color:var(--success)}
+.carre-brun{background:rgba(90,44,25,.1);color:var(--brown)}
+.carre-rouge{background:rgba(192,57,43,.1);color:var(--danger)}
+.lien-danger{color:var(--danger)}
+.dark .lien-danger,.dark .carre-rouge{color:#F19A90}
+.dark .carre-terra{color:#F3B48C}.dark .carre-or{color:#F1CF85}.dark .carre-brun{color:var(--sand);background:rgba(243,210,182,.1)}
+.profil-bandeau{background:var(--sombre);color:#fff;padding:1.1rem}
+.profil-tuile{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .4rem;text-align:center}
+.badge-sombre{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:.2rem .5rem;border-radius:999px;background:rgba(255,255,255,.12);color:#F3D2B6}
+
+/* Recherche (Ctrl/⌘ K) */
+.palette{position:fixed;inset:0;z-index:90;background:rgba(36,20,11,.45);display:flex;align-items:flex-start;justify-content:center;padding:12vh 1rem 1rem}
+.palette-boite{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+.palette-ligne{display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;border-radius:10px;font-size:.9rem;cursor:pointer}
+.palette-ligne.choisie{background:var(--bg-2)}
+
+/* Fil d'Ariane, sous l'en-tête */
+.fil-ariane{border-bottom:1px solid var(--line);background:var(--surface-2)}
+.fil-ariane .titre{font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.fil-ariane ol{align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted)}  /* affiché en flex par la classe sm:flex */
+.fil-ariane li+li::before{content:"/";margin-right:.4rem;opacity:.5}
+.fil-ariane a:hover{color:var(--terra-600)}
+
+/* Messages de confirmation / erreur, dans le flux de la page */
+.alerte{display:flex;align-items:flex-start;gap:.75rem;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);border-left-width:4px;background:var(--surface);font-size:.9rem}
+.alerte-success{border-left-color:var(--success)}
+.alerte-danger,.alerte-error{border-left-color:var(--danger)}
+.alerte-warning{border-left-color:var(--gold)}
+.alerte-info{border-left-color:var(--terra)}
+
+
+/* 5. Bannière d'accueil des tableaux de bord -------------------------------- */
+.banniere{position:relative;overflow:hidden;border-radius:20px;background:var(--sombre);color:#fff;padding:2rem}
+/* quadrillage fin en fond */
+.banniere::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:32px 32px}
+/* halo flou dans le coin bas gauche */
+.banniere::after{content:"";position:absolute;width:260px;height:260px;left:-90px;bottom:-150px;border-radius:50%;
+  background:var(--terra);opacity:.22;filter:blur(70px);pointer-events:none}
+.dark .banniere{border:1px solid var(--line)}  /* en sombre, la bannière se détache du fond */
+.banniere>*{position:relative;z-index:1}
+/* Tailwind remet la graisse des titres à zéro : on la précise dans chaque composant */
+.banniere h1{font-size:clamp(1.6rem,3vw,2.35rem);font-weight:700;line-height:1.15;letter-spacing:-.03em}
+.banniere .resume{color:rgba(255,255,255,.78);max-width:46rem}
+.pilule{display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;font-weight:600;padding:.35rem .8rem;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff}
+.pilule .point{width:7px;height:7px;border-radius:999px;background:#68D391}
+.indicateurs{display:flex;flex-wrap:wrap;row-gap:1rem}
+.indicateur{padding:0 1.75rem;border-left:1px solid rgba(255,255,255,.16)}
+.indicateur:first-child{padding-left:0;border-left:0}
+.indicateur .libelle{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.indicateur .valeur{font-size:1.65rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-top:.2rem}
+/* jauge circulaire posée sur la bannière */
+.banniere .tc-ring{background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.12) 0)}
+.banniere .tc-ring::after{background:var(--sombre)}
+.banniere .tc-ring>span{color:#fff}
+.btn-translucide{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.18)}
+.btn-translucide:hover{background:rgba(255,255,255,.16)}
+.btn-blanc{background:#fff;color:var(--sombre)}
+.btn-blanc:hover{background:var(--cream)}
+.dark .btn-blanc:hover{background:#F6EADB}
+/* petit écran : indicateurs sur deux colonnes, sans trait en début de ligne */
+@media (max-width:639px){.banniere{padding:1.4rem}.indicateurs{display:grid;grid-template-columns:1fr 1fr;row-gap:1rem}.indicateur{padding:0 1rem}.indicateur:nth-child(odd){padding-left:0;border-left:0}.indicateur .valeur{font-size:1.35rem}}
+
+
+/* 6. Indicateurs, tableaux, listes ----------------------------------------- */
+.stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(216,103,48,.12);color:var(--terra)}
+.stat-value{font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.03em}
+.progress{height:8px;border-radius:999px;background:var(--bg-2);overflow:hidden}
+.progress>span{display:block;height:100%;border-radius:999px;background:var(--terra);transition:width .8s ease}
+.tc-ring{--p:0;--c:var(--terra);width:var(--s,84px);height:var(--s,84px);border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--bg-2) 0);position:relative}
+.tc-ring::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--surface)}
+.tc-ring>span{position:relative;z-index:1;font-weight:700}
+.card-hover{transition:border-color .15s}
+.card-hover:hover{border-color:var(--line-2)}
+.entete-carte{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--line)}
+.entete-carte h3{font-size:1rem;font-weight:600}
+.ligne-liste{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--line)}
+.ligne-liste:last-child{border-bottom:0}
+
+.table{width:100%;border-collapse:separate;border-spacing:0;font-size:.88rem}
+.table th{text-align:left;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:.75rem 1rem;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.table td{padding:.85rem 1rem;border-bottom:1px solid var(--line);vertical-align:middle}
+.table tr:last-child td{border-bottom:0}
+.table tbody tr{transition:background .12s}.table tbody tr:hover{background:var(--surface-2)}
+
+
+/* 7. Kanban, messagerie, divers -------------------------------------------- */
+.kanban-col{background:var(--bg-2);border-radius:16px;min-width:270px;width:270px;padding:.75rem;display:flex;flex-direction:column;max-height:calc(100vh - 240px)}
+.kanban-list{flex:1;overflow-y:auto;min-height:80px;display:flex;flex-direction:column;gap:.6rem;padding:2px}
+.kanban-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8rem;cursor:grab;box-shadow:var(--shadow-sm);transition:box-shadow .15s}
+.kanban-card:hover{box-shadow:var(--shadow)}
+.sortable-ghost{opacity:.4}
+
+.bubble{max-width:82%;padding:.75rem 1rem;border-radius:18px;font-size:.92rem;line-height:1.55;white-space:pre-wrap}
+.bubble-me{background:var(--terra-600);color:#fff;border-bottom-right-radius:6px;margin-left:auto}
+.bubble-bot{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.typing span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin:0 2px;animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.htmx-indicator{opacity:0;transition:opacity .2s}.htmx-request .htmx-indicator,.htmx-request.htmx-indicator{opacity:1}
+.shimmer{background:var(--bg-2)}
+
+.bg-grad{background:var(--sombre)}
+.pattern{background-image:radial-gradient(rgba(216,103,48,.12) 1px,transparent 1px);background-size:22px 22px}
+.font-serif-accent{font-family:'Inter',system-ui,sans-serif;font-style:normal;font-weight:800;color:var(--terra-600)}
+.text-grad{color:var(--terra-600)}
+.dark .text-grad{color:#F0A060}
+.scroll-x{overflow-x:auto;scrollbar-width:thin}
+.line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.grid>*{min-width:0} /* évite que les textes tronqués débordent des grilles */
+.star-on svg,.star-on{fill:currentColor}
+.timeline-dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 2px var(--line-2);background:var(--line-2)}
+.timeline-dot.done{background:var(--terra);box-shadow:0 0 0 2px var(--terra)}
+.likert input{display:none}
+.likert label{cursor:pointer;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--line-2);font-weight:700;transition:all .15s;color:var(--muted)}
+.likert input:checked+label{background:var(--terra-600);border-color:var(--terra-600);color:#fff}
+.likert label:hover{border-color:var(--terra)}
+
+
+/* 8. Pages Connexion / Inscription -----------------------------------------
+   Ne pas modifier : ces pages gardent leur apparence actuelle. */
+.auth-bg{background:linear-gradient(160deg,#F0A13B 0%,#E8912F 45%,#D9772A 100%)}
+.dark .auth-bg{background:linear-gradient(160deg,#5A2C19,#3B1A0E)}
+.auth-card{box-shadow:0 40px 80px -30px rgba(59,26,14,.55)}
+.auth-title{font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:1.75rem;letter-spacing:-.02em;color:var(--ink)}
+.auth-title::after{content:"";display:block;width:44px;height:3px;border-radius:3px;background:var(--ink);margin-top:10px}
+.auth-field{position:relative;display:flex;align-items:center}
+.auth-field>i,.auth-field>svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.auth-field input,.auth-field select{width:100%;background:var(--surface);border:1.5px solid var(--line-2);border-radius:8px;padding:.72rem .8rem .72rem 2.35rem;font-size:.9rem;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.auth-field input:focus,.auth-field select:focus{outline:none;border-color:var(--terra);box-shadow:0 0 0 3px rgba(216,103,48,.15)}
+.auth-eye{position:absolute;right:6px;padding:6px;border-radius:6px;color:var(--muted)}
+.auth-eye:hover{color:var(--ink)}
+.btn-auth{display:flex;width:100%;justify-content:center;align-items:center;gap:.5rem;background:#2E1A10;color:#fff;font-weight:700;padding:.85rem 1rem;border-radius:8px;transition:background .15s,transform .05s}
+.btn-auth:hover{background:#4A2414}.btn-auth:active{transform:translateY(1px)}
+.dark .btn-auth{background:#D86730}
+.btn-auth-alt{display:flex;width:100%;justify-content:center;align-items:center;gap:.5rem;background:var(--terra-600);color:#fff;font-weight:700;padding:.85rem 1rem;border-radius:8px}
+.btn-auth-alt:hover{filter:brightness(1.07)}
+.auth-or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.8rem}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.auth-location .label{display:none}
+.auth-location .select{border-radius:8px;padding:.72rem .8rem;font-size:.9rem}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed}
+.auth-field:has(.auth-eye) input{padding-right:2.6rem}

@@ -1,0 +1,17 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Modèles de messages') }}{% endblock %}
+{% block page_title %}{{ t('Modèles de messages') }}{% endblock %}
+{% block content %}
+<p class="muted mb-6 max-w-2xl">{{ t('Ces messages partent par e-mail (Brevo) et restent visibles dans l\'app. Variables disponibles :') }} <code class="chip">{candidate}</code> <code class="chip">{job}</code> <code class="chip">{company}</code> <code class="chip">{recruiter}</code> <code class="chip">{note}</code> <code class="chip">{feedback}</code></p>
+<form method="post" class="grid lg:grid-cols-2 gap-5">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for k, label, icon in [('ack', t('Accusé de réception (automatique)'), 'mail-check'), ('interview', t('Invitation à un entretien'), 'calendar-check'), ('second_chance', t('Seconde chance'), 'sparkles'), ('rejected', t('Refus avec retour constructif'), 'message-square-heart')] %}
+  <div class="card card-pad space-y-3">
+    <div class="flex items-center gap-2"><i data-lucide="{{ icon }}" class="w-5 h-5 text-terra-500"></i><h3 class="font-display font-semibold">{{ label }}</h3></div>
+    <input name="subject_{{ k }}" value="{{ tpls[k][0] }}" class="input">
+    <textarea name="body_{{ k }}" class="textarea !min-h-[220px] text-sm">{{ tpls[k][1] }}</textarea>
+  </div>
+  {% endfor %}
+  <div class="lg:col-span-2"><button class="btn btn-primary">{{ t('Enregistrer les modèles') }}</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import avatar, status with context %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block page_title %}<a href="{{ url_for('recruiter.jobs') }}" class="muted hover:text-terra-600"><i data-lucide="arrow-left" class="w-5 h-5 inline"></i></a> {{ job.title }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <span class="chip">{{ total }} {{ t('candidature(s)') }}</span>
+  <span class="chip"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ job.city }}</span>
+  {% if job.status=='open' %}<span class="chip chip-green">{{ t('Ouverte') }}</span>{% else %}<span class="chip">{{ t('Fermée') }}</span>{% endif %}
+  <div class="ml-auto flex gap-2">
+    <a href="{{ url_for('recruiter.job_edit', job_id=job.id) }}" class="btn btn-ghost btn-sm"><i data-lucide="pencil" class="w-4 h-4"></i>{{ t('Modifier') }}</a>
+    <a href="{{ url_for('recruiter.job_triage', job_id=job.id) }}" class="btn btn-primary btn-sm"><i data-lucide="sparkles" class="w-4 h-4"></i>{{ t('Tri IA & réponses groupées') }}</a>
+  </div>
+</div>
+
+{% if suggestions %}
+<div class="card card-pad mb-6" style="background:var(--sable)">
+  <div class="flex items-center gap-2 font-display font-semibold"><i data-lucide="sparkles" class="w-5 h-5" style="color:var(--gold)"></i>{{ t('Talents de votre vivier compatibles avec cette offre') }}</div>
+  <div class="flex flex-wrap gap-3 mt-4">
+    {% for s in suggestions %}
+    <a href="{{ url_for('recruiter.candidate_view', user_id=s.p.candidate_id) }}" class="card px-3 py-2 flex items-center gap-2 card-hover">
+      {{ avatar(s.p.candidate, 30) }}<span class="text-sm font-semibold">{{ s.p.candidate.full_name }}</span><span class="chip chip-terra">{{ s.score }}%</span></a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<p class="text-xs muted mb-3"><i data-lucide="move" class="w-3.5 h-3.5 inline"></i> {{ t('Glissez-déposez les cartes pour changer le statut. Pour notifier le candidat par e-mail, utilisez le tri IA ou la fiche candidat.') }}</p>
+<div class="flex gap-4 overflow-x-auto pb-4" x-data>
+  {% for s, label, color in [('received', t('Reçues'), 'var(--muted)'), ('shortlisted', t('Présélection'), '#2B6CB0'), ('interview', t('Entretien'), 'var(--terra)'), ('offer', t('Offre'), '#2F855A'), ('hired', t('Embauché'), '#2F855A'), ('second_chance', t('Seconde chance'), 'var(--gold)'), ('rejected', t('Non retenus'), '#C0392B')] %}
+  <div class="kanban-col">
+    <div class="flex items-center gap-2 px-1 pb-3">
+      <span class="w-2.5 h-2.5 rounded-full" style="background:{{ color }}"></span>
+      <span class="font-display font-semibold text-sm">{{ label }}</span>
+      <span class="ml-auto chip !py-0 !px-2" data-count-col="{{ s }}">{{ cols[s]|length }}</span>
+    </div>
+    <div class="kanban-list" data-status="{{ s }}">
+      {% for a in cols[s] %}
+      <div class="kanban-card" data-id="{{ a.id }}">
+        <div class="flex items-center gap-2.5">
+          {{ avatar(a.candidate, 34) }}
+          <div class="flex-1 min-w-0"><a href="{{ url_for('recruiter.application', app_id=a.id) }}" class="text-sm font-semibold hover:text-terra-600 truncate block">{{ a.candidate.full_name }}</a>
+            <div class="text-[11px] muted truncate">{{ a.candidate.candidate.headline if a.candidate.candidate }}</div></div>
+        </div>
+        <div class="flex items-center gap-1.5 mt-2.5">
+          <span class="chip chip-terra !text-[11px] !py-0.5">{{ a.match_score }}%</span>
+          {% if a.ai_group == 'interview' %}<span class="chip chip-green !text-[11px] !py-0.5"><i data-lucide="sparkles" class="w-3 h-3"></i>IA</span>{% endif %}
+          <span class="ml-auto text-[11px] muted">{{ a.created_at|ago }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='librairies/Sortable.min.js') }}"></script>
+<script>
+  const csrf = {{ csrf_token()|tojson }};
+  document.querySelectorAll('.kanban-list').forEach(el => {
+    new Sortable(el, { group: 'pipeline', animation: 180, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen',
+      onAdd: async (evt) => {
+        const id = evt.item.dataset.id, status = evt.to.dataset.status;
+        const body = new URLSearchParams({ status });
+        await fetch(`{{ url_for('recruiter.set_status', app_id=0) }}`.replace('/0/', `/${id}/`), { method: 'POST', headers: { 'X-CSRFToken': csrf, 'HX-Request': 'true' }, body });
+        document.querySelectorAll('[data-count-col]').forEach(c => { const l = document.querySelector(`.kanban-list[data-status="${c.dataset.countCol}"]`); c.textContent = l.children.length; });
+      } });
+  });
+</script>
+{% endblock %}

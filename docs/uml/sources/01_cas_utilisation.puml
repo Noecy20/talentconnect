@@ -1,0 +1,78 @@
+@startuml
+!include _theme.iuml
+left to right direction
+skinparam packageStyle rectangle
+actor Visiteur as V
+actor Candidat as C
+actor Recruteur as R
+actor Parrain as P
+actor Administrateur as A
+rectangle "TalentConnect" {
+  package "Espace public" {
+    usecase "Consulter la plateforme\net les formules" as U1
+    usecase "Créer un CV sans compte" as U2
+    usecase "Créer un compte" as U3
+    usecase "Se connecter" as U4
+  }
+  package "Services communs" {
+    usecase "Échanger par messagerie" as S1
+    usecase "Utiliser son assistant IA" as S2
+    usecase "Souscrire une formule\n(déclarer un paiement)" as S3
+  }
+  package "Espace candidat" {
+    usecase "Gérer son profil\net ses CV" as C1
+    usecase "Rechercher des offres\n(scores de compatibilité\net de probabilité)" as C2
+    usecase "Postuler à une offre" as C3
+    usecase "Suivre ses candidatures\n(Kanban, relances)" as C4
+    usecase "Passer le test RIASEC" as C5
+    usecase "Solliciter un parrainage" as C6
+  }
+  package "Espace recruteur" {
+    usecase "Gérer l'entreprise\net sa vérification" as R1
+    usecase "Publier et gérer des offres" as R2
+    usecase "Traiter les candidatures\n(pipeline, tri IA)" as R3
+    usecase "Envoyer des réponses groupées" as R4
+    usecase "Rechercher des talents\net gérer le vivier" as R5
+  }
+  package "Espace parrain" {
+    usecase "Passer le test d'éligibilité" as P1
+    usecase "Recommander un candidat" as P2
+    usecase "Suivre ses recommandations" as P3
+  }
+  package "Administration" {
+    usecase "Gérer les utilisateurs" as A1
+    usecase "Valider les paiements\net les accès" as A2
+    usecase "Gérer les formules" as A3
+    usecase "Vérifier recruteurs\net parrains" as A4
+    usecase "Paramétrer la plateforme" as A5
+  }
+}
+V --> U1
+V --> U2
+V --> U3
+V --> U4
+C --> C1
+C --> C2
+C --> C3
+C --> C4
+C --> C5
+C --> C6
+C --> S1
+C --> S2
+C --> S3
+R1 <-- R
+R2 <-- R
+R3 <-- R
+R4 <-- R
+R5 <-- R
+P1 <-- P
+P2 <-- P
+P3 <-- P
+A1 <-- A
+A2 <-- A
+A3 <-- A
+A4 <-- A
+A5 <-- A
+R4 ..> R3 : <<extend>>
+note "Le candidat, le recruteur et le parrain sont des visiteurs\nauthentifiés : ils héritent des cas d'utilisation publics.\nLe recruteur et le parrain accèdent aussi\naux services communs (messagerie, formule)." as N1
+@enduml

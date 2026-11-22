@@ -1,0 +1,16 @@
+{# Messages de confirmation / d'erreur, affichés en haut du contenu (dans le flux de la page). #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="space-y-2 mb-6 {{ flash_marges|default("") }}">
+  {% for cat, msg in messages %}
+  {% set icone = {'success': 'check-circle-2', 'danger': 'x-circle', 'error': 'x-circle', 'warning': 'alert-triangle'}.get(cat, 'info') %}
+  {% set couleur = {'success': 'var(--success)', 'danger': 'var(--danger)', 'error': 'var(--danger)', 'warning': '#8A6116'}.get(cat, 'var(--terra-600)') %}
+  <div class="alerte alerte-{{ cat }}" x-data="{visible:true}" x-show="visible">
+    <i data-lucide="{{ icone }}" class="w-5 h-5 shrink-0 mt-px" style="color:{{ couleur }}"></i>
+    <p class="flex-1">{{ msg }}</p>
+    <button type="button" @click="visible=false" class="muted hover:opacity-70" aria-label="{{ t('Fermer') }}"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}

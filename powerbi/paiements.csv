@@ -1,0 +1,14 @@
+﻿id_paiement;id_utilisateur;role;formule;montant;devise;moyen;statut;date_declaration;date_validation
+1;11;candidate;Formule unique;1000;XOF;orange_money;confirmed;2026-11-17;2026-11-17
+2;12;candidate;Formule unique;1000;XOF;orange_money;confirmed;2026-11-17;2026-11-17
+3;13;candidate;Formule unique;1000;XOF;mtn_momo;confirmed;2026-11-17;2026-11-17
+4;14;candidate;Formule unique;1000;XOF;wave;confirmed;2026-11-17;2026-11-17
+5;15;candidate;Formule unique;1000;XOF;mtn_momo;confirmed;2026-11-17;2026-11-17
+6;2;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+7;3;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+8;4;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+9;5;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+10;6;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+11;7;recruiter;Formule unique;225000;XOF;bank;confirmed;2026-11-17;2026-11-17
+12;16;candidate;Formule unique;1000;XOF;wave;pending;2026-11-17;
+13;21;candidate;Formule unique;1000;XOF;wave;pending;2026-11-17;

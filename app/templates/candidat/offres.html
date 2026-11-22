@@ -1,0 +1,50 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Offres') }}{% endblock %}
+{% block page_title %}{{ t('Offres pour moi') }}{% endblock %}
+{% block content %}
+<form id="filters" hx-get="{{ url_for('candidate.jobs') }}" hx-target="#results" hx-trigger="change, keyup changed delay:400ms from:input[type=search]" hx-push-url="true" hx-indicator="#ld"
+      class="card card-pad mb-6" x-data="{adv:false}">
+  <div class="flex flex-col lg:flex-row gap-3">
+    <div class="relative flex-1"><i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 muted"></i>
+      <input type="search" name="q" value="{{ f.q }}" class="input !pl-10" placeholder="{{ t('Poste, mot-clé…') }}"></div>
+    <div class="flex rounded-xl p-1" style="background:var(--bg-2)">
+      <input type="hidden" name="mode" value="{{ f.mode }}">
+      <a href="{{ url_for('candidate.jobs', mode='me') }}" class="px-4 py-2 rounded-lg text-sm font-semibold {% if f.mode=='me' %}bg-[var(--surface)] shadow text-terra-600{% else %}muted{% endif %}"><i data-lucide="sparkles" class="w-4 h-4 inline -mt-0.5"></i> {{ t('Pour moi') }}</a>
+      <a href="{{ url_for('candidate.jobs', mode='all') }}" class="px-4 py-2 rounded-lg text-sm font-semibold {% if f.mode=='all' %}bg-[var(--surface)] shadow text-terra-600{% else %}muted{% endif %}">{{ t('Toutes') }}</a>
+    </div>
+    <button type="button" @click="adv=!adv" class="btn btn-ghost"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i>{{ t('Filtres') }}</button>
+  </div>
+  <div x-show="adv" x-transition x-cloak class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+    <select name="country" class="select"><option value="">{{ t('Tous les pays') }}</option>
+      {% for code, name in countries() %}<option value="{{ code }}" {% if code==f.country %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+    <input type="search" name="city" value="{{ f.city }}" class="input" placeholder="{{ t('Ville') }}">
+    <input type="search" name="company" value="{{ f.company }}" class="input" placeholder="{{ t('Entreprise') }}">
+    <input type="search" name="field" value="{{ f.field }}" list="fields" class="input" placeholder="{{ t('Filière') }}">
+    <datalist id="fields">{% for x in field_suggestions %}<option value="{{ x }}">{% endfor %}</datalist>
+    <select name="contract" class="select"><option value="">{{ t('Tous contrats') }}</option>{% for c in contracts %}<option value="{{ c }}" {% if c==f.contract %}selected{% endif %}>{{ contract_label(c) }}</option>{% endfor %}</select>
+    <select name="level" class="select"><option value="">{{ t('Tous niveaux') }}</option>{% for c, r in levels %}<option value="{{ c }}" {% if c==f.level %}selected{% endif %}>{{ edu_label(c) }}</option>{% endfor %}</select>
+    <select name="posted" class="select"><option value="">{{ t('Publiée : toutes dates') }}</option>
+      {% for d, l in [(1, t('Dernières 24 h')), (3, t('3 derniers jours')), (7, t('7 derniers jours')), (14, t('14 derniers jours')), (30, t('30 derniers jours'))] %}<option value="{{ d }}" {% if f.posted==d %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <select name="sort" class="select"><option value="match">{{ t('Trier : compatibilité') }}</option><option value="recent" {% if f.sort=='recent' %}selected{% endif %}>{{ t('Trier : plus récentes') }}</option></select>
+    <a href="{{ url_for('candidate.jobs', mode='all') }}" class="btn btn-ghost">{{ t('Réinitialiser') }}</a>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 mt-4">
+    <span class="text-xs font-semibold muted"><i data-lucide="calendar-clock" class="w-3.5 h-3.5 inline -mt-0.5"></i> {{ t('Publiée') }} :</span>
+    {% for d, l in [(0, t('Toutes')), (1, t('24 h')), (3, t('3 jours')), (7, t('1 semaine')), (30, t('1 mois'))] %}
+    <a href="{{ url_for('candidate.jobs', **dict(f, posted=d or None)) }}" class="chip !py-1 {% if f.posted==d %}chip-terra{% endif %}">{{ l }}</a>
+    {% endfor %}
+  </div>
+  {% if f.mode=='me' %}<p class="text-xs muted mt-3"><i data-lucide="info" class="w-3.5 h-3.5 inline"></i> {{ t('Filtré automatiquement selon votre profil :') }} <b>{{ f.field or t('toutes filières') }}</b> · <b>{{ country_name(f.country) or t('tous pays') }}</b></p>{% endif %}
+</form>
+<div id="ld" class="htmx-indicator text-sm muted mb-3">{{ t('Recherche…') }}</div>
+<div class="flex items-baseline gap-3 mb-4"><h2 class="text-[18px] font-bold tracking-tight">{{ t('Sur TalentConnect') }}</h2></div>
+<div id="results">{% include "candidat/_liste_offres.html" %}</div>
+
+{# Toutes les autres offres du web, chargées une fois la page affichée #}
+<section class="mt-14" hx-get="{{ url_for('candidate.jobs_web', q=f.q or None, city=f.city or None, country=f.country or None) }}" hx-trigger="load">
+  <div class="flex items-center gap-3 muted text-[14px]">
+    <span class="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin"></span>
+    {{ t('Recherche des offres sur LinkedIn, Indeed et les autres sites…') }}
+  </div>
+</section>
+{% endblock %}

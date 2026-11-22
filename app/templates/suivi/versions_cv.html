@@ -1,0 +1,23 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Mes versions de CV') }}{% endblock %}
+{% block page_title %}<a href="{{ url_for('tracker.board') }}" class="muted hover:text-terra-700"><i data-lucide="arrow-left" class="w-5 h-5 inline"></i></a> {{ t('Mes versions de CV') }}{% endblock %}
+{% block content %}
+<div class="card card-pad mb-6 flex flex-col md:flex-row md:items-center gap-4">
+  <div class="flex-1"><h2 class="font-display text-lg">{{ t('Un CV adapté à chaque candidature') }}</h2>
+    <p class="text-sm muted mt-1">{{ t('Dans le CV Builder, cliquez sur « Enregistrer comme version », ou enregistrez ici votre CV actuel. Associez ensuite la bonne version à chaque candidature.') }}</p></div>
+  <form method="post" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="snapshot">
+    <input name="name" class="input" placeholder="{{ t('Nom de la version') }}" required><button class="btn btn-dark shrink-0">{{ t('Enregistrer mon CV actuel') }}</button></form>
+  <a href="{{ url_for('candidate.cv_builder') }}" class="btn btn-primary shrink-0"><i data-lucide="file-text" class="w-4 h-4"></i>{{ t('CV Builder') }}</a>
+</div>
+<div class="card"><table class="table"><tbody>
+  {% for v in versions %}
+  <tr>
+    <td><div class="font-semibold flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-terra-600"></i>{{ v.name }}</div><div class="text-xs muted">{{ v.created_at|datefr('time') }} · {{ t('{n} candidature(s)', n=usage[v.id]) }}</div></td>
+    <td class="text-right"><div class="inline-flex gap-2">
+      <a href="{{ url_for('candidate.cv_builder', version=v.id) }}" class="btn btn-ghost btn-sm">{{ t('Ouvrir') }}</a>
+      <form method="post" onsubmit="return confirm({{ t('Supprimer cette version ?')|tojson|forceescape }})"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ v.id }}"><input type="hidden" name="action" value="delete"><button class="btn btn-danger btn-sm btn-icon"><i data-lucide="trash-2" class="w-4 h-4"></i></button></form>
+    </div></td>
+  </tr>
+  {% else %}<tr><td class="text-center muted py-10">{{ t('Aucune version pour le moment.') }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

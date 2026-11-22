@@ -1,0 +1,103 @@
+{#
+  En-tête de l'espace connecté, posé sur le fond de page (pas de barre).
+  À gauche : bouton du menu (mobile) et titre de la page avec son chemin.
+  À droite : recherche, création rapide, langue, thème, messages et profil.
+  Les liens sont ceux qui existaient déjà : seul l'habillage a changé.
+#}
+{% from "composants/ui.html" import avatar, langswitch, themetoggle with context %}
+<header class="entete">
+  <button class="icone {% if not collapsed %}lg:hidden{% endif %}" @click="menu=true" aria-label="{{ t('Ouvrir le menu') }}">
+    <i data-lucide="menu"></i></button>
+
+  <div class="titre-page">
+    <h1>{{ titre_page or t('Tableau de bord') }}</h1>
+    <ol class="hidden sm:flex">
+      <li><a href="{{ url_for('main.dashboard') }}">{{ t('Accueil') }}</a></li>
+      {{ chemin_page }}
+    </ol>
+  </div>
+
+  <div class="ml-auto flex items-center gap-2.5">
+    {# Recherche d'une page : ouvre la liste (composants/recherche.html) #}
+    <button type="button" class="recherche hidden 2xl:flex" @click="$dispatch('ouvrir-recherche')">
+      <i data-lucide="search"></i>
+      <span class="flex-1 text-left truncate">{{ t('Rechercher…') }}</span>
+      <kbd x-data x-text="/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'">Ctrl K</kbd>
+    </button>
+    <button type="button" class="icone 2xl:hidden" @click="$dispatch('ouvrir-recherche')" aria-label="{{ t('Rechercher') }}"><i data-lucide="search"></i></button>
+
+    {# Création rapide : raccourcis vers les formulaires de création existants #}
+    {% set actions = creations() %}
+    {% if actions %}
+    <div class="relative" x-data="{o:false}">
+      <button type="button" class="btn btn-primary !h-[46px] !rounded-full !px-5" @click="o=!o" :aria-expanded="o">
+        <i data-lucide="plus"></i><span class="hidden md:inline">{{ t('Créer') }}</span>
+      </button>
+      <div class="deroulant w-72 p-2" x-show="o" @click.outside="o=false" x-cloak x-transition.opacity>
+        {% for ep, icone, libelle in actions %}
+        <a href="{{ url_for(ep) }}" class="deroulant-lien">
+          <span class="carre-icone carre-terra"><i data-lucide="{{ icone }}"></i></span>{{ libelle }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="hidden sm:flex items-center gap-2.5">
+      <a href="{{ url_for('messages.inbox') }}" class="icone" title="{{ t('Messages') }}">
+        <i data-lucide="bell"></i>
+        {% if unread_count %}<span class="pastille" aria-label="{{ t('{n} message(s) non lu(s)', n=unread_count) }}"></span>{% endif %}
+      </a>
+    </div>
+
+    {# Menu profil #}
+    <div class="relative" x-data="{o:false}">
+      <button type="button" class="profil" @click="o=!o" :aria-expanded="o">
+        {{ avatar(current_user, 38) }}
+        <span class="hidden 2xl:block text-left leading-tight">
+          <span class="block text-[13.5px] font-semibold max-w-[140px] truncate">{{ current_user.first_name or current_user.full_name }}</span>
+          <span class="block text-xs muted">{{ role_libelle() }}</span>
+        </span>
+        <i data-lucide="chevron-down" class="!w-4 !h-4 muted"></i>
+      </button>
+
+      <div class="deroulant w-[320px] max-w-[calc(100vw-2rem)]" x-show="o" @click.outside="o=false" x-cloak x-transition.opacity>
+        <div class="profil-bandeau">
+          <div class="flex items-center gap-3">
+            {{ avatar(current_user, 44) }}
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold truncate">{{ current_user.full_name }}</span>
+                <span class="badge-role">{{ role_libelle() }}</span>
+              </div>
+              <div class="text-[13px] text-white/65 truncate">{{ current_user.email }}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-4">
+            {% for valeur, libelle in mini_stats() %}
+            <div class="profil-tuile">
+              <div class="font-semibold text-base leading-tight">{{ valeur }}</div>
+              <div class="text-[11px] text-white/60 leading-tight mt-0.5">{{ libelle }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="p-2">
+          <a href="{{ url_for('auth.account') }}" class="deroulant-lien">
+            <span class="carre-icone carre-vert"><i data-lucide="settings"></i></span>{{ t('Mon compte') }}</a>
+          {% if current_user.role in ['candidate', 'recruiter'] %}
+          <a href="{{ url_for('billing.pricing') }}" class="deroulant-lien">
+            <span class="carre-icone carre-or"><i data-lucide="credit-card"></i></span>{{ t('Abonnement') }}</a>
+          {% endif %}
+          {# Langue et thème, rangés ici pour alléger l'en-tête #}
+          <div class="flex items-center gap-2 px-2 py-2">
+            <span class="text-[13px] muted flex-1">{{ t('Langue et affichage') }}</span>
+            {{ langswitch(rond=True) }}{{ themetoggle(rond=True) }}
+          </div>
+          <div class="divider my-2 mx-2"></div>
+          <a href="{{ url_for('auth.logout') }}" class="deroulant-lien lien-danger">
+            <span class="carre-icone carre-rouge"><i data-lucide="log-out"></i></span>{{ t('Déconnexion') }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>

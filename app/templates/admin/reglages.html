@@ -1,0 +1,37 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Réglages') }}{% endblock %}
+{% block page_title %}{{ t('Réglages des modèles') }}{% endblock %}
+{% block content %}
+<form method="post" class="grid xl:grid-cols-2 gap-6" x-data='{w: {{ w|tojson }} }'>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-6">
+    <section class="card card-pad space-y-4">
+      <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-terra-500"></i><h2 class="font-display font-semibold">{{ t('Parrainage') }}</h2></div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="label">{{ t('Validation auto dès') }}</label><input type="number" name="sponsor_auto_approve" value="{{ s.sponsor_auto_approve }}" class="input"></div>
+        <div><label class="label">{{ t('Score minimum') }}</label><input type="number" name="sponsor_min_score" value="{{ s.sponsor_min_score }}" class="input"></div>
+        <div><label class="label">{{ t('Max / an') }}</label><input type="number" name="sponsor_max_per_year" value="{{ s.sponsor_max_per_year }}" class="input"></div>
+      </div>
+      <p class="help">{{ t('Entre le score minimum et la validation auto, le dossier passe en revue manuelle.') }}</p>
+    </section>
+    <section class="card card-pad space-y-4">
+      <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-terra-500"></i><h2 class="font-display font-semibold">{{ t('Tri automatique des candidatures') }}</h2></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">{{ t('Entretien à partir de (%)') }}</label><input type="number" name="triage_interview" value="{{ s.triage_interview }}" class="input"></div>
+        <div><label class="label">{{ t('Seconde chance à partir de (%)') }}</label><input type="number" name="triage_second_chance" value="{{ s.triage_second_chance }}" class="input"></div>
+      </div>
+    </section>
+  </div>
+  <section class="card card-pad space-y-4">
+    <div class="flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-terra-500"></i><h2 class="font-display font-semibold">{{ t('Pondération du score de compatibilité') }}</h2></div>
+    <p class="text-sm muted">{{ t('Importance relative de chaque critère (le total est normalisé).') }}</p>
+    {% for k, label in [('skills', t('Compétences')), ('field', t('Filière')), ('experience', t('Expérience')), ('education', t('Études')), ('location', t('Localisation')), ('soft_skills', t('Soft skills')), ('languages', t('Langues'))] %}
+    <div>
+      <div class="flex justify-between text-sm mb-1"><span class="font-medium">{{ label }}</span><b class="text-terra-600" x-text="w.{{ k }}"></b></div>
+      <input type="range" min="0" max="50" name="w_{{ k }}" x-model.number="w.{{ k }}" class="w-full">
+    </div>
+    {% endfor %}
+  </section>
+  <div class="xl:col-span-2"><button class="btn btn-primary btn-lg">{{ t('Enregistrer les réglages') }}</button></div>
+</form>
+{% endblock %}

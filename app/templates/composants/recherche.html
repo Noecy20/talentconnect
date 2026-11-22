@@ -1,0 +1,32 @@
+{#
+  Recherche de l'en-tête (Ctrl/⌘ K) : retrouve une page du menu en tapant son nom.
+  Pas d'appel au serveur : la liste est celle du menu latéral, envoyée avec la page.
+#}
+{% set liens = [] %}
+{% for section, items in menu() %}
+  {% for lien in items %}{% set _ = liens.append({'libelle': lien.libelle, 'section': section, 'url': lien.url}) %}{% endfor %}
+{% endfor %}
+{% set _ = liens.append({'libelle': t('Mon compte'), 'section': t('Compte'), 'url': url_for('auth.account')}) %}
+
+<div x-data='recherche({{ liens|tojson }})' @keydown.window="raccourci($event)" @ouvrir-recherche.window="ouvrir()">
+  <div class="palette" x-show="ouvert" x-cloak @click.self="fermer()" @keydown.escape.window="fermer()">
+    <div class="palette-boite" role="dialog" aria-label="{{ t('Rechercher une page') }}">
+      <div class="flex items-center gap-3 px-4 border-b" style="border-color:var(--line)">
+        <i data-lucide="search" class="w-5 h-5 muted"></i>
+        <input x-ref="champ" x-model="q" @input="index = 0"
+               @keydown.arrow-down.prevent="bouger(1)" @keydown.arrow-up.prevent="bouger(-1)" @keydown.enter.prevent="aller()"
+               class="flex-1 h-14 bg-transparent outline-none text-[15px]" placeholder="{{ t('Rechercher une page…') }}">
+        <kbd>{{ t('Échap') }}</kbd>
+      </div>
+      <div class="max-h-[360px] overflow-y-auto p-2">
+        <template x-for="(lien, i) in resultats" :key="lien.url">
+          <a :href="lien.url" class="palette-ligne" :class="i === index && 'choisie'" @mouseenter="index = i">
+            <span class="flex-1" x-text="lien.libelle"></span>
+            <span class="text-xs muted" x-text="lien.section"></span>
+          </a>
+        </template>
+        <p x-show="!resultats.length" class="px-3 py-6 text-sm muted text-center">{{ t('Aucune page ne correspond.') }}</p>
+      </div>
+    </div>
+  </div>
+</div>

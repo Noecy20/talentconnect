@@ -1,0 +1,32 @@
+@startuml
+!include _theme.iuml
+autonumber
+actor "Candidat ou\nrecruteur" as U
+participant "Application Flask\n(abonnement)" as F
+database "PostgreSQL" as DB
+participant "Service d'envoi\n(Brevo)" as M
+actor Administrateur as A
+U -> F : Consulte les formules
+F --> U : Formule du rôle et instructions de paiement
+U -> U : Paie hors plateforme\n(Wave, Orange Money, MTN MoMo…)
+U -> F : POST /abonnement/payer/{formule}\n(moyen de paiement, référence)
+alt Référence absente
+  F --> U : Message « indiquez la référence »
+else Référence fournie
+  F -> DB : Enregistrer le paiement (statut « en attente »)
+  F -> M : Notifier les administrateurs
+  F --> U : « Paiement en cours de vérification »
+  A -> F : Ouvre la liste des paiements en attente
+  F --> A : Paiements à vérifier
+  A -> A : Vérifie la transaction\nchez l'opérateur
+  alt Paiement confirmé
+    A -> F : Confirmer
+    F -> DB : Statut « confirmé » et accès accordé\npour la durée de la formule
+    F -> M : Informer l'utilisateur de l'activation
+  else Paiement non valide
+    A -> F : Rejeter
+    F -> DB : Statut « rejeté »
+    F -> M : Informer l'utilisateur
+  end
+end
+@enduml

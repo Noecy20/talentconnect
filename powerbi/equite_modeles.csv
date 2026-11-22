@@ -1,0 +1,26 @@
+﻿etude;critere;groupe;effectif_test;taux_reel_pct;taux_predit_modele_pct
+bertrand_mullainathan_2004;origine (race);black;510;6.27;8.32
+bertrand_mullainathan_2004;origine (race);white;464;9.91;8.08
+bertrand_mullainathan_2004;genre;f;759;8.04;8.04
+bertrand_mullainathan_2004;genre;m;215;7.91;8.79
+phillips_2019;origine (race);black;227;21.59;20.68
+phillips_2019;origine (race);white;226;21.24;20.85
+phillips_2019;genre;female;213;21.13;21.0
+phillips_2019;genre;male;240;21.67;20.55
+karachi_it;genre;female;192;6.25;6.8
+karachi_it;genre;male;214;7.48;6.52
+karachi_it;classe sociale;high;194;6.19;7.15
+karachi_it;classe sociale;low;212;7.55;6.2
+time_to_degree;genre;femme;713;12.2;13.59
+time_to_degree;genre;homme;736;14.95;13.59
+time_to_degree;origine (race);blanc;684;13.01;13.59
+time_to_degree;origine (race);noir;765;14.12;13.59
+behaghel_2015;genre;femme;146;10.27;12.46
+behaghel_2015;genre;homme;152;12.5;11.93
+behaghel_2015;origine immigrée;non;166;15.06;12.81
+behaghel_2015;origine immigrée;oui;132;6.82;11.41
+behaghel_2015;quartier prioritaire;non;205;11.71;12.13
+behaghel_2015;quartier prioritaire;oui;93;10.75;12.31
+behaghel_2015;âge;26-49 ans;183;10.38;11.8
+behaghel_2015;âge;50 ans et plus;35;5.71;11.37
+behaghel_2015;âge;moins de 26 ans;80;16.25;13.44

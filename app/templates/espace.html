@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{#
+  Mise en page de l'espace connecté (candidat, recruteur, parrain, admin).
+
+  Blocs à remplir dans chaque page :
+    title       : titre de l'onglet du navigateur
+    page_title  : titre affiché dans l'en-tête
+    chemin      : (facultatif) chemin sous le titre
+    content     : contenu de la page
+    head_page   : (facultatif) feuilles de style propres à la page
+  Une page plein écran (CV Builder) met « collapsed » dans le bloc nav_mode :
+  le menu est alors replié et s'ouvre avec le bouton de l'en-tête.
+#}
+{# Ces blocs sont lus par l'en-tête (composants/entete.html) #}
+{% block page_title %}{% endblock %}
+{% block chemin %}<li>{{ self.page_title()|striptags }}</li>{% endblock %}
+
+{% block body_class %}ui{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/interface.css') }}">{% block head_page %}{% endblock %}{% endblock %}
+{% block nav_mode %}{% endblock %}
+{% block messages_flash %}{% endblock %}  {# affichés dans le contenu, voir plus bas #}
+
+{% block body %}
+{% set collapsed = self.nav_mode()|trim == 'collapsed' %}
+{% set titre_page = self.page_title()|trim %}
+{% set chemin_page = self.chemin() %}
+<div class="coque" x-data="{menu:false}">
+  {% include "composants/menu_lateral.html" %}
+  <div class="voile {% if not collapsed %}lg:hidden{% endif %}" x-show="menu" x-cloak @click="menu=false"></div>
+
+  <div class="principal">
+    {% include "composants/entete.html" %}
+
+    {% block main %}
+    <main class="contenu">
+      {% block fil_ariane %}{% endblock %}
+      {% include "composants/messages_flash.html" %}
+      {% block content %}{% endblock %}
+    </main>
+    {% endblock %}
+  </div>
+</div>
+{% include "composants/recherche.html" %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{#
+  Menu latéral de l'espace connecté.
+  Les liens viennent de interface.menu() : la même liste sert à la recherche Ctrl/⌘ K.
+  Sur mobile (et sur les pages plein écran), le menu se replie et s'ouvre avec
+  le bouton de l'en-tête.
+#}
+<aside class="menu {% if collapsed %}menu-replie{% endif %}" :class="{ 'ouvert': menu }">
+  <div class="menu-logo">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="">
+    <a href="{{ url_for('main.dashboard') }}"><span>Talent<b>Connect</b></span></a>
+    <button class="icone plat ml-auto {% if not collapsed %}lg:hidden{% endif %}" @click="menu=false" aria-label="{{ t('Fermer le menu') }}">
+      <i data-lucide="x"></i></button>
+  </div>
+
+  <nav>
+    {% for section, liens in menu() %}
+      <div class="menu-titre">{{ section }}</div>
+      {% for lien in liens %}
+      <a href="{{ lien.url }}" class="menu-lien {% if lien.actif %}actif{% endif %}">
+        <i data-lucide="{{ lien.icone }}"></i><span>{{ lien.libelle }}</span>
+        {% if lien.ep == 'messages.inbox' and unread_count %}
+          <span class="compteur">{{ unread_count }}</span>
+        {% elif lien.ep == 'recruiter.verification' and current_user.recruiter and not current_user.recruiter.is_verified %}
+          <span class="compteur">1</span>
+        {% elif lien.verrou %}
+          <i data-lucide="lock" class="verrou"></i>
+        {% endif %}
+      </a>
+      {% endfor %}
+    {% endfor %}
+  </nav>
+
+  {# Accès payant : date de fin, ou lien vers les formules #}
+  {% if current_user.role in ['candidate', 'recruiter'] %}
+  <div class="menu-encart">
+    {% if current_user.has_access %}
+      <strong>{{ t('Accès actif') }}</strong>
+      {% if current_user.access_until %}{{ t('jusqu\'au') }} {{ current_user.access_until|datefr }}{% endif %}
+    {% else %}
+      <strong>{{ t('Accès gratuit') }}</strong>
+      {{ t('Débloquez les offres, le suivi et l\'assistant IA.') }}
+      <a href="{{ url_for('billing.pricing') }}">{{ t('Voir les formules') }} →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</aside>

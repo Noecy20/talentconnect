@@ -1,0 +1,199 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import status, avatar, ring, logo with context %}
+{% block title %}{{ t('Tableau de bord') }}{% endblock %}
+{% block page_title %}{{ t('Bonjour, {nom}', nom=current_user.first_name or current_user.full_name) }}{% endblock %}
+{% block chemin %}<li>{{ t('Tableau de bord') }}</li>{% endblock %}
+
+{% block content %}
+{# Phrase d'accueil selon le score d'employabilité #}
+{% if score >= 75 %}{% set phrase = t('Excellent profil, les recruteurs vont vous remarquer.') %}
+{% elif score >= 50 %}{% set phrase = t('Bon départ ! Quelques actions et vous serez au top.') %}
+{% else %}{% set phrase = t('Construisons ensemble un profil qui attire les recruteurs.') %}{% endif %}
+
+{# Ligne 1 : accueil avec recherche, et la fiche profil à côté #}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-7 items-stretch">
+    {# Accueil : recherche d'offres directement depuis le tableau de bord #}
+    <section class="banniere h-full">
+      <p class="text-white/60 text-sm font-medium">{{ now|datefr('full') }}</p>
+      <h2 class="text-[clamp(1.5rem,2.4vw,2rem)] font-bold tracking-tight mt-2 max-w-xl leading-tight">{{ t('Trouvons votre prochain poste.') }}</h2>
+      <p class="text-white/70 mt-2 max-w-xl">{{ phrase }}</p>
+      <form action="{{ url_for('candidate.jobs') }}" method="get" class="mt-6 flex flex-col sm:flex-row gap-2.5 max-w-2xl">
+        <input type="hidden" name="mode" value="all">
+        <label class="flex items-center gap-2.5 sm:flex-1 h-[50px] shrink-0 px-4 rounded-2xl bg-white text-[var(--ink)]">
+          <i data-lucide="search" class="muted"></i>
+          <input name="q" class="flex-1 min-w-0 bg-transparent outline-none text-[15px]" placeholder="{{ t('Poste, compétence, entreprise…') }}">
+        </label>
+        <button class="btn btn-primary !h-[50px] !rounded-2xl !px-6">{{ t('Rechercher') }}</button>
+      </form>
+    </section>
+
+    {# Profil et score d'employabilité #}
+    <section class="card card-pad text-center h-full">
+      <div class="flex justify-center">{{ avatar(current_user, 72) }}</div>
+      <div class="font-bold text-[17px] mt-3">{{ current_user.full_name }}</div>
+      <div class="text-[13px] muted">{{ current_user.candidate.headline if current_user.candidate and current_user.candidate.headline else role_libelle() }}</div>
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <div class="rounded-2xl py-3" style="background:var(--bg)">
+          <div class="text-[22px] font-bold tracking-tight">{{ score }}<span class="text-sm muted font-medium">/100</span></div>
+          <div class="text-[12px] muted">{{ t('Employabilité') }}</div>
+        </div>
+        <div class="rounded-2xl py-3" style="background:var(--bg)">
+          <div class="text-[22px] font-bold tracking-tight">{{ completeness }}<span class="text-sm muted font-medium"> %</span></div>
+          <div class="text-[12px] muted">{{ t('Profil complété') }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('candidate.profile') }}" class="btn btn-ghost w-full mt-4">{{ t('Voir mon profil') }}</a>
+    </section>
+
+</div>
+
+{# Ligne 2 : chiffres du suivi #}
+<div class="mt-8">
+    {# Chiffres du suivi, en tuiles teintées #}
+    <div class="tuiles">
+      {% for teinte, icone, libelle, valeur, detail in [
+           ('peche', 'send', t('Candidatures envoyées'), jat.sent, t('ici et ailleurs')),
+           ('sauge', 'message-square-reply', t('Réponses reçues'), jat.responses, t('{n} % de réponse', n=jat.response_rate)),
+           ('sable', 'calendar-check', t('Entretiens'), jat.interviews, t('dans votre suivi')),
+           ('creme', 'bell-ring', t('Relances à faire'), jat.due|length, t('cette semaine'))] %}
+      <div class="tuile {{ teinte }}">
+        <span class="rond"><i data-lucide="{{ icone }}"></i></span>
+        <div class="valeur">{{ valeur }}</div>
+        <div class="libelle">{{ libelle }}</div>
+        <div class="detail">{{ detail }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+</div>
+
+{# Ligne 3 : offres recommandées, puis l'agenda à droite #}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-7 mt-10 items-start">
+  <div class="min-w-0">
+    {# Offres recommandées, en cartes #}
+    <section>
+      <div class="flex items-end justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-[18px] font-bold tracking-tight">{{ t('Offres faites pour vous') }}</h3>
+          <p class="text-[13.5px] muted mt-0.5">{{ t('Selon votre filière, votre ville et vos compétences.') }}</p>
+        </div>
+        <a href="{{ url_for('candidate.jobs') }}" class="btn btn-ghost btn-sm !rounded-full">{{ t('Tout voir') }}<i data-lucide="arrow-right"></i></a>
+      </div>
+      {% if not current_user.has_access %}
+        <div class="card card-pad flex flex-col sm:flex-row sm:items-center gap-5">
+          <span class="logo-ent"><i data-lucide="lock"></i></span>
+          <div class="flex-1">
+            <p class="font-semibold">{{ t('Vos offres personnalisées vous attendent') }}</p>
+            <p class="muted text-[13.5px] mt-0.5">{{ t('Activez votre accès pour voir les offres, votre score de compatibilité et vos chances d\'être appelé.') }}</p>
+          </div>
+          <a href="{{ url_for('billing.pricing') }}" class="btn btn-primary">{{ t('Débloquer l\'accès') }}</a>
+        </div>
+      {% elif recos %}
+        <div class="card py-2">
+          {% for r in recos[:5] %}{% set j = r.job %}
+          <a href="{{ url_for('candidate.job_detail', job_id=j.id) }}" class="ligne-liste !py-4 group">
+            {{ logo(j.company) }}
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold truncate group-hover:text-terra-600">{{ j.title }}</div>
+              <div class="text-[13px] muted truncate">{{ j.company.name }} · {{ j.city }} · {{ contract_label(j.contract_type) }}</div>
+            </div>
+            <div class="hidden sm:block w-36">
+              <div class="text-[11.5px] muted mb-1">{{ t('Compatibilité') }}</div>
+              <div class="jauge"><span class="barre"><span style="width:{{ r.score }}%"></span></span>{{ r.score }} %</div>
+            </div>
+            <div class="text-right w-20 shrink-0">
+              <div class="text-[11.5px] muted">{{ t('Appel') }}</div>
+              <div class="font-bold" style="color:var(--success)">{{ r.prob }} %</div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-pad muted text-[14px]">{{ t('Pas encore d\'offre correspondante.') }} <a class="text-terra-600 font-semibold" href="{{ url_for('candidate.profile') }}">{{ t('Compléter mon profil') }}</a></div>
+      {% endif %}
+    </section>
+
+  </div>
+  <div class="space-y-7">
+    {# Ce qui arrive : relances et dates limites du suivi #}
+    <section class="card">
+      <div class="entete-carte">
+        <h3>{{ t('À venir') }}</h3>
+        <a href="{{ url_for('tracker.board') }}" class="text-[13.5px] text-terra-600 font-semibold">{{ t('Mon suivi') }}</a>
+      </div>
+      <div class="pb-3">
+      {% for x in (jat.due + jat.deadlines)[:4] %}
+        {% set d = x.next_followup if x in jat.due else x.deadline %}
+        <a href="{{ url_for('tracker.detail', tid=x.id) }}" class="ligne-liste">
+          <span class="date-badge"><span class="mois">{{ d|datefr('MMM') if d else '—' }}</span><span class="jour">{{ d.day if d else '' }}</span></span>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold truncate">{{ x.title }}</div>
+            <div class="text-[13px] muted truncate">{{ x.company }} · {% if x in jat.due %}{{ t('Relance') }}{% else %}{{ t('Date limite') }}{% endif %}</div>
+          </div>
+        </a>
+      {% else %}
+        <p class="px-6 py-4 text-[14px] muted">{{ t('Rien de prévu pour l\'instant.') }}</p>
+      {% endfor %}
+      </div>
+    </section>
+
+    {# Actions qui font monter le score #}
+    {% if actions %}
+    <section class="card">
+      <div class="entete-carte"><h3>{{ t('Améliorer mon profil') }}</h3></div>
+      <div class="pb-3">
+      {% for a in actions[:4] %}
+        <a href="{{ url_for(a.url) }}" class="ligne-liste">
+          <span class="initiale !w-9 !h-9" style="background:var(--peche);color:var(--terra-700)"><i data-lucide="plus"></i></span>
+          <span class="flex-1 text-[14px]">{{ a.label }}</span>
+          <span class="text-[12.5px] font-bold" style="color:var(--success)">+{{ a.gain }}</span>
+        </a>
+      {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+  </div>
+</div>
+
+{# Ligne 4 : candidatures et messages #}
+<div class="grid lg:grid-cols-2 gap-7 mt-10">
+    {# Dernières candidatures #}
+    <section class="card">
+      <div class="entete-carte">
+        <h3>{{ t('Dernières candidatures') }}</h3>
+        {% if current_user.has_access %}<a href="{{ url_for('candidate.applications') }}" class="text-[13.5px] text-terra-600 font-semibold">{{ t('Voir tout') }}</a>{% endif %}
+      </div>
+      <div class="pb-3">
+      {% for a in apps %}
+        <div class="ligne-liste">
+          {{ logo(a.job.company, 'petit') }}
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold truncate">{{ a.job.title }}</div>
+            <div class="text-[13px] muted">{{ a.job.company.name }} · {{ a.created_at|ago }}</div>
+          </div>
+          {{ status(a.status) }}
+        </div>
+      {% else %}<p class="px-6 py-4 text-[14px] muted">{{ t('Aucune candidature pour le moment.') }}</p>{% endfor %}
+      </div>
+    </section>
+    {# Messages récents #}
+    <section class="card">
+      <div class="entete-carte">
+        <h3>{{ t('Messages') }}</h3>
+        <a href="{{ url_for('messages.inbox') }}" class="text-[13.5px] text-terra-600 font-semibold">{{ t('Tout voir') }}</a>
+      </div>
+      <div class="pb-3">
+      {% for m in msgs[:4] %}
+        <a href="{{ url_for('messages.view', mid=m.id) }}" class="ligne-liste">
+          <span class="w-2 h-2 rounded-full shrink-0 {% if not m.read_at %}bg-terra-500{% else %}bg-transparent{% endif %}"></span>
+          <div class="flex-1 min-w-0">
+            <div class="{% if not m.read_at %}font-semibold{% endif %} truncate text-[14px]">{{ m.subject }}</div>
+            <div class="text-[12.5px] muted">{{ m.created_at|ago }}</div>
+          </div>
+        </a>
+      {% else %}<p class="px-6 py-4 text-[14px] muted">{{ t('Aucun message.') }}</p>{% endfor %}
+      </div>
+    </section>
+</div>
+{% endblock %}

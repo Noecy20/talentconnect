@@ -1,0 +1,13 @@
+{% extends "authentification/_cadre.html" %}
+{% from "authentification/_champs.html" import pfield with context %}
+{% block title %}{{ t('Nouveau mot de passe') }}{% endblock %}
+{% block form %}
+<h1 class="auth-title">{{ t('Nouveau mot de passe') }}</h1>
+<p class="muted mt-4 text-sm">{{ t('Choisissez un mot de passe d\'au moins 8 caractères.') }}</p>
+<form method="post" class="mt-7 space-y-3.5">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {{ pfield('password', t('Nouveau mot de passe'), 'autofocus autocomplete="new-password" minlength="8"') }}
+  {{ pfield('password_confirm', t('Confirmer le mot de passe'), 'autocomplete="new-password" minlength="8"') }}
+  <button class="btn-auth">{{ t('Enregistrer') }}</button>
+</form>
+{% endblock %}

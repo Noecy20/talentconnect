@@ -1,0 +1,128 @@
+{% extends "espace.html" %}
+{% block title %}{{ tr.title }}{% endblock %}
+{% block page_title %}<a href="{{ url_for('tracker.board') }}" class="muted hover:text-terra-700"><i data-lucide="arrow-left" class="w-5 h-5 inline"></i></a> {{ tr.title }}{% endblock %}
+{% block content %}
+{% set KIND_ICONS = {'note':'sticky-note','email':'mail','call':'phone','meeting':'calendar','interview':'users-round','followup':'bell-ring','stage':'git-commit-horizontal'} %}
+<!-- Progression -->
+<div class="card card-pad">
+  <div class="flex flex-wrap items-start gap-4">
+    <div class="flex-1 min-w-[220px]">
+      <h1 class="font-display text-2xl">{{ tr.title }}</h1>
+      <p class="muted mt-0.5">{{ tr.company }}{% if tr.city %} · {{ tr.city }}{% endif %}{% if tr.country_code %}, {{ country_name(tr.country_code) }}{% endif %}</p>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        {% if tr.project %}<span class="chip"><span class="w-2.5 h-2.5 rounded-full" style="background:{{ tr.project.color }}"></span>{{ tr.project.name }}</span>{% endif %}
+        {% if tr.source %}<span class="chip"><i data-lucide="globe" class="w-3 h-3"></i>{{ tr.source }}</span>{% endif %}
+        {% if tr.salary %}<span class="chip chip-green"><i data-lucide="banknote" class="w-3 h-3"></i>{{ tr.salary }}</span>{% endif %}
+        {% if tr.contract %}<span class="chip">{{ contract_label(tr.contract) }}</span>{% endif %}
+        {% if tr.priority == 1 %}<span class="chip chip-red"><i data-lucide="flag" class="w-3 h-3"></i>{{ t('Priorité haute') }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if tr.url %}<a href="{{ tr.url }}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm"><i data-lucide="external-link" class="w-4 h-4"></i>{{ t('Voir l\'offre') }}</a>{% endif %}
+      <a href="{{ url_for('tracker.edit', tid=tr.id) }}" class="btn btn-dark btn-sm"><i data-lucide="pencil" class="w-4 h-4"></i>{{ t('Modifier') }}</a>
+      <form method="post" action="{{ url_for('tracker.archive', tid=tr.id) }}" onsubmit="return confirm({{ t('Archiver cette candidature ?')|tojson|forceescape }})"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm btn-icon" title="{{ t('Archiver') }}"><i data-lucide="archive" class="w-4 h-4"></i></button></form>
+    </div>
+  </div>
+  <div class="mt-5 overflow-x-auto">
+    <form method="post" action="{{ url_for('tracker.move', tid=tr.id) }}" class="flex gap-1 min-w-max">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% set idx = stages|map('first')|list %}
+      {% for k, l in stages %}
+      {% set done = idx.index(k) <= idx.index(tr.stage) and tr.stage != 'refused' or k == tr.stage %}
+      <button name="stage" value="{{ k }}" class="px-3 py-2 rounded-lg text-xs font-semibold border transition {% if k == tr.stage %}{% if k=='refused' %}bg-[#C0392B] text-white border-[#C0392B]{% else %}bg-terra-600 text-white border-terra-600{% endif %}
+        {% elif done and k != 'refused' %}bg-[var(--bg-2)] text-terra-700 border-transparent{% else %}border-[var(--line-2)] muted hover:border-terra-500{% endif %}">{{ t(l) }}</button>
+      {% endfor %}
+    </form>
+  </div>
+</div>
+
+<div class="grid xl:grid-cols-[1fr_380px] gap-6 mt-6 items-start">
+  <div class="space-y-6">
+    <!-- Historique -->
+    <section id="historique" class="card card-pad">
+      <h2 class="font-display text-lg">{{ t('Historique des échanges') }}</h2>
+      <form method="post" action="{{ url_for('tracker.add_event', tid=tr.id) }}" class="mt-4 rounded-2xl p-4 space-y-3" style="background:var(--bg-2)" x-data="{kind:'note'}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="flex flex-wrap gap-1.5">
+          {% for k, l, icon in kinds if k != 'stage' %}
+          <label class="cursor-pointer"><input type="radio" name="kind" value="{{ k }}" x-model="kind" class="sr-only">
+            <span class="chip !py-1.5 !px-3" :class="kind=='{{ k }}' ? '!bg-terra-600 !text-white !border-terra-600' : ''"><i data-lucide="{{ icon }}" class="w-3.5 h-3.5"></i>{{ t(l) }}</span></label>
+          {% endfor %}
+        </div>
+        <textarea name="content" class="textarea !min-h-[80px] text-sm" placeholder="{{ t('Ex : Appel avec la RH, entretien fixé au 12/11 à 10h…') }}"></textarea>
+        <div class="flex flex-wrap items-end gap-3">
+          <div><label class="label">{{ t('Date') }}</label><input type="datetime-local" name="at" class="input !py-2 text-sm"></div>
+          <div><label class="label">{{ t('Prochaine relance') }}</label><input type="date" name="next_followup" class="input !py-2 text-sm"></div>
+          <button class="btn btn-primary ml-auto">{{ t('Ajouter') }}</button>
+        </div>
+      </form>
+      <ol class="mt-6 relative border-l-2 ml-3 space-y-5" style="border-color:var(--line-2)">
+        {% for e in events %}
+        <li class="pl-6 relative">
+          <span class="absolute -left-[15px] top-0 w-7 h-7 rounded-full grid place-items-center border-2 {% if e.kind=='stage' %}bg-terra-600 text-white border-terra-600{% else %}bg-[var(--surface)] text-terra-700{% endif %}" style="{% if e.kind!='stage' %}border-color:var(--line-2){% endif %}"><i data-lucide="{{ KIND_ICONS.get(e.kind, 'circle') }}" class="w-3.5 h-3.5"></i></span>
+          <div class="text-xs muted">{{ e.at|datefr('time') }}</div>
+          <div class="text-[0.95rem] mt-0.5 whitespace-pre-line">{{ e.content }}</div>
+        </li>
+        {% else %}<li class="pl-6 text-sm muted">{{ t('Aucun échange enregistré.') }}</li>{% endfor %}
+      </ol>
+    </section>
+
+    <!-- Lettre -->
+    <section class="card card-pad">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="font-display text-lg">{{ t('Lettre de motivation') }}</h2>
+        <button type="button" class="btn btn-soft btn-sm" hx-post="{{ url_for('tracker.letter', tid=tr.id) }}" hx-target="#letter" hx-swap="outerHTML" hx-indicator="#lg"><i data-lucide="wand-sparkles" class="w-4 h-4"></i>{{ t('Générer') }}</button>
+      </div>
+      <div id="lg" class="htmx-indicator text-xs muted mt-2"><span class="typing"><span></span><span></span><span></span></span> {{ t('Rédaction en cours…') }}</div>
+      <form method="post" action="{{ url_for('tracker.edit', tid=tr.id) }}" class="mt-3 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="title" value="{{ tr.title }}"><input type="hidden" name="project_id" value="{{ tr.project_id or '' }}">
+        <input type="hidden" name="priority" value="{{ tr.priority }}"><input type="hidden" name="deadline" value="{{ tr.deadline or '' }}">
+        <input type="hidden" name="cv_version_id" value="{{ tr.cv_version_id or '' }}">
+        <textarea id="letter" name="cover_letter" class="textarea !min-h-[240px] text-sm">{{ tr.cover_letter }}</textarea>
+        <button class="btn btn-dark btn-sm">{{ t('Enregistrer la lettre') }}</button>
+      </form>
+    </section>
+    {% if tr.description %}
+    <section class="card card-pad"><h2 class="font-display text-lg mb-2">{{ t('Description') }}</h2><p class="text-[0.95rem] leading-relaxed whitespace-pre-line">{{ tr.description }}</p></section>
+    {% endif %}
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <section class="card card-pad space-y-3 text-sm">
+      <h3 class="font-display font-semibold text-base">{{ t('Dates clés') }}</h3>
+      <div class="flex justify-between"><span class="muted">{{ t('Ajoutée') }}</span><b>{{ tr.created_at|datefr('short') }}</b></div>
+      <div class="flex justify-between"><span class="muted">{{ t('Candidature envoyée') }}</span><b>{{ tr.applied_at|datefr('short') if tr.applied_at else '—' }}</b></div>
+      <div class="flex justify-between"><span class="muted">{{ t('Date limite') }}</span><b class="{% if tr.deadline and (tr.deadline - today).days <= 3 %}text-[#C0392B]{% endif %}">{{ tr.deadline|datefr('short') if tr.deadline else '—' }}</b></div>
+      <div class="flex justify-between items-center"><span class="muted">{{ t('Prochaine relance') }}</span>
+        <b class="{% if tr.followup_due %}text-[#8A6116]{% endif %}">{{ tr.next_followup|datefr('short') if tr.next_followup else '—' }}</b></div>
+      {% if tr.followup_due %}
+      <form method="post" action="{{ url_for('tracker.followup_done', tid=tr.id) }}" class="pt-1"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary btn-sm w-full"><i data-lucide="bell-ring" class="w-4 h-4"></i>{{ t('J\'ai relancé') }}</button></form>
+      {% endif %}
+    </section>
+    <section class="card card-pad space-y-2 text-sm">
+      <h3 class="font-display font-semibold text-base">{{ t('Contact RH') }}</h3>
+      {% if tr.contact_name or tr.contact_email %}
+        <div class="font-semibold">{{ tr.contact_name }}</div><div class="muted">{{ tr.contact_role }}</div>
+        {% if tr.contact_email %}<a href="mailto:{{ tr.contact_email }}?subject={{ ('Candidature — ' ~ tr.title)|urlencode }}" class="flex items-center gap-2 underline"><i data-lucide="mail" class="w-4 h-4"></i>{{ tr.contact_email }}</a>{% endif %}
+        {% if tr.contact_phone %}<a href="tel:{{ tr.contact_phone }}" class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4"></i>{{ tr.contact_phone }}</a>{% endif %}
+        {% if tr.application_id and tr.job and tr.job.recruiter_id %}<a href="{{ url_for('messages.thread', uid=tr.job.recruiter_id) }}" class="btn btn-soft btn-sm mt-2 w-full"><i data-lucide="message-circle" class="w-4 h-4"></i>{{ t('Messagerie TalentConnect') }}</a>{% endif %}
+      {% else %}<p class="muted">{{ t('Aucun contact enregistré.') }} <a href="{{ url_for('tracker.edit', tid=tr.id) }}" class="underline">{{ t('Ajouter') }}</a></p>{% endif %}
+    </section>
+    <section class="card card-pad space-y-3 text-sm">
+      <h3 class="font-display font-semibold text-base">{{ t('CV utilisé') }}</h3>
+      {% if tr.cv_version %}
+        <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-terra-600"></i><b>{{ tr.cv_version.name }}</b></div>
+        <a href="{{ url_for('candidate.cv_builder', version=tr.cv_version_id) }}" class="btn btn-ghost btn-sm w-full">{{ t('Ouvrir dans le CV Builder') }}</a>
+      {% elif tr.cv_file %}
+        <a href="{{ url_for('tracker.cv_file', tid=tr.id) }}" class="btn btn-ghost btn-sm w-full"><i data-lucide="download" class="w-4 h-4"></i>{{ t('Télécharger le CV joint') }}</a>
+      {% else %}
+        <p class="muted">{{ t('CV principal du profil.') }}</p>
+        <a href="{{ url_for('tracker.cv_versions') }}" class="underline text-xs">{{ t('Créer une version adaptée à ce poste') }}</a>
+      {% endif %}
+    </section>
+    {% if tr.notes %}<section class="card card-pad text-sm"><h3 class="font-display font-semibold text-base mb-2">{{ t('Mes notes') }}</h3><p class="whitespace-pre-line">{{ tr.notes }}</p></section>{% endif %}
+  </aside>
+</div>
+{% endblock %}

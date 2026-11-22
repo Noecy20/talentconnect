@@ -1,0 +1,79 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import tags, location, ring with context %}
+{% block title %}{{ t('Mon profil') }}{% endblock %}
+{% block page_title %}{{ t('Mon profil') }}{% endblock %}
+{% block content %}
+<form method="post" class="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-6">
+    <section class="card card-pad space-y-5">
+      <div class="flex items-center gap-2"><i data-lucide="user-round" class="w-5 h-5 text-terra-500"></i><h2 class="font-display text-lg font-semibold">{{ t('Qui êtes-vous ?') }}</h2></div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2"><label class="label">{{ t('Titre du profil') }}</label><input name="headline" value="{{ p.headline }}" class="input" placeholder="{{ t('Ex : Comptable junior spécialisée en fiscalité') }}"></div>
+        <div><label class="label">{{ t('Filière / domaine') }}</label><input name="field" value="{{ p.field }}" list="fields" class="input" placeholder="{{ t('Ex : Finance / Comptabilité') }}">
+          <datalist id="fields">{% for f in field_suggestions %}<option value="{{ f }}">{% endfor %}</datalist></div>
+        <div><label class="label">{{ t('Niveau d\'études') }}</label>
+          <select name="education_level" class="select">{% for code, r in levels %}<option value="{{ code }}" {% if code==p.education_level %}selected{% endif %}>{{ edu_label(code) }}</option>{% endfor %}</select></div>
+        <div><label class="label">{{ t('Années d\'expérience') }}</label><input type="number" step="0.5" min="0" name="years_experience" value="{{ p.years_experience|nb }}" class="input"></div>
+        <div><label class="label">{{ t('Téléphone') }}</label><input name="phone" value="{{ current_user.phone }}" class="input"></div>
+      </div>
+      {{ location(current_user.country_code, current_user.city) }}
+      <div><label class="label">{{ t('Résumé') }}</label><textarea name="summary" class="textarea" placeholder="{{ t('2 à 4 phrases : votre spécialité, vos réussites, ce que vous cherchez.') }}">{{ p.summary }}</textarea></div>
+      <div><label class="label">LinkedIn</label><input name="linkedin" value="{{ p.linkedin }}" class="input" placeholder="linkedin.com/in/..."></div>
+    </section>
+
+    <section class="card card-pad space-y-5">
+      <div class="flex items-center gap-2"><i data-lucide="zap" class="w-5 h-5 text-terra-500"></i><h2 class="font-display text-lg font-semibold">{{ t('Compétences') }}</h2></div>
+      <div><label class="label">{{ t('Compétences techniques') }}</label>{{ tags('skills', p.skills, t('Tapez une compétence puis Entrée'), skill_suggestions) }}</div>
+      <div><label class="label">{{ t('Soft skills') }}</label>{{ tags('soft_skills', p.soft_skills, t('Ex : Leadership'), soft_suggestions) }}</div>
+      <div x-data='{langs: {{ (p.languages or [{'name':'','level':''}])|tojson }} }'>
+        <label class="label">{{ t('Langues') }}</label>
+        <template x-for="(l,i) in langs" :key="i">
+          <div class="grid grid-cols-[1fr_140px_auto] gap-2 mb-2">
+            <input name="lang_name" x-model="l.name" class="input" placeholder="{{ t('Langue') }}">
+            <select name="lang_level" x-model="l.level" class="select">
+              {% for lv in ['A1','A2','B1','B2','C1','C2', t('Langue maternelle')] %}<option>{{ lv }}</option>{% endfor %}
+            </select>
+            <button type="button" class="btn btn-ghost btn-icon" @click="langs.splice(i,1)"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </template>
+        <button type="button" class="btn btn-soft btn-sm" @click="langs.push({name:'',level:'B1'})"><i data-lucide="plus" class="w-4 h-4"></i>{{ t('Ajouter une langue') }}</button>
+      </div>
+    </section>
+
+    <section class="card card-pad space-y-5">
+      <div class="flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-terra-500"></i><h2 class="font-display text-lg font-semibold">{{ t('Ce que je recherche') }}</h2></div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div><label class="label">{{ t('Poste souhaité') }}</label><input name="desired_position" value="{{ p.desired_position }}" class="input"></div>
+        <div><label class="label">{{ t('Prétentions salariales (mensuel)') }} · {{ currency_for(current_user.country_code) }}</label><input type="number" name="salary_expectation" value="{{ p.salary_expectation or '' }}" class="input"></div>
+      </div>
+      <div><label class="label">{{ t('Types de contrat') }}</label>
+        <div class="flex flex-wrap gap-2">{% for c in contracts %}
+          <label class="cursor-pointer"><input type="checkbox" name="desired_contracts" value="{{ c }}" class="peer sr-only" {% if c in (p.desired_contracts or []) %}checked{% endif %}>
+            <span class="chip !py-1.5 !px-3 peer-checked:!bg-terra-500 peer-checked:!text-white peer-checked:!border-terra-500 transition">{{ contract_label(c) }}</span></label>{% endfor %}</div></div>
+      <div><label class="label">{{ t('Autres villes possibles') }}</label>{{ tags('desired_cities', p.desired_cities, t('Ex : Yamoussoukro')) }}</div>
+      <label class="flex items-center gap-3 text-sm"><input type="checkbox" name="open_to_international" class="check" {% if p.open_to_international %}checked{% endif %}>{{ t('Ouvert(e) aux opportunités à l\'étranger') }}</label>
+      <label class="flex items-center gap-3 text-sm"><input type="checkbox" name="visible_to_recruiters" class="check" {% if p.visible_to_recruiters %}checked{% endif %}>{{ t('Rendre mon profil visible des recruteurs') }}</label>
+    </section>
+    <div class="flex gap-3 sticky bottom-4"><button class="btn btn-primary btn-lg shadow-xl">{{ t('Enregistrer mon profil') }}</button></div>
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <div class="card card-pad text-center">
+      <div class="flex justify-center">{{ ring(completeness, 110) }}</div>
+      <div class="font-display font-semibold mt-3">{{ t('Profil complété') }}</div>
+      <p class="text-xs muted mt-1">{{ t('Un profil complet multiplie vos chances d\'être contacté.') }}</p>
+      <a href="{{ url_for('candidate.cv_builder') }}" class="btn btn-soft w-full mt-4"><i data-lucide="file-text" class="w-4 h-4"></i>{{ t('Remplir via le CV Builder') }}</a>
+    </div>
+    <div class="card card-pad">
+      <div class="flex items-center gap-2"><i data-lucide="stamp" class="w-5 h-5 text-terra-500"></i><h3 class="font-display font-semibold">{{ t('Passeport de compétences') }}</h3></div>
+      <p class="text-xs muted mt-1">{{ t('Compétences confirmées par vos parrains.') }}</p>
+      <div class="flex flex-wrap gap-1.5 mt-4">
+        {% for k, v in passport.items() %}<span class="chip chip-terra">{{ k }} <i data-lucide="badge-check" class="w-3 h-3"></i><b>{{ v.count }}</b></span>
+        {% else %}<span class="text-sm muted">{{ t('Aucune compétence confirmée pour l\'instant.') }}</span>{% endfor %}
+      </div>
+      <a href="{{ url_for('candidate.sponsorships') }}" class="btn btn-ghost btn-sm w-full mt-4">{{ t('Demander un parrainage') }}</a>
+    </div>
+  </aside>
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+@startuml
+!include _theme.iuml
+|Candidat|
+start
+:Consulter une offre;
+:Voir le score de compatibilité\net la probabilité d'être contacté;
+if (Souhaite postuler ?) then (non)
+  stop
+else (oui)
+endif
+if (Accès actif ?) then (non)
+  :Souscrire une formule;
+  stop
+else (oui)
+endif
+:Rédiger ou générer\nla lettre de motivation;
+:Envoyer la candidature;
+|Plateforme|
+if (Déjà postulé à cette offre ?) then (oui)
+  :Informer le candidat;
+  stop
+else (non)
+endif
+:Calculer score, probabilité\net groupe proposé;
+:Enregistrer la candidature;
+:Envoyer l'accusé de réception;
+:Mettre à jour le suivi Kanban du candidat;
+|Recruteur|
+:Examiner les candidatures\n(pipeline, tri IA);
+:Classer la candidature\n(Entretien, Seconde chance ou Refus)\net valider l'envoi;
+|Plateforme|
+if (Groupe retenu ?) then (Entretien)
+else (Refus ou Seconde chance)
+  :Générer un retour constructif\n(raisons et conseils);
+  if (Seconde chance ?) then (oui)
+    :Ajouter au vivier\nde l'entreprise;
+  else (non)
+  endif
+endif
+:Envoyer la réponse personnalisée\n(e-mail et messagerie);
+:Mettre à jour le statut\net le suivi du candidat;
+|Candidat|
+:Consulter la réponse\ndans son suivi;
+stop
+@enduml

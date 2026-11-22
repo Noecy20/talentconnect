@@ -1,0 +1,177 @@
+{% macro tags(name, value, placeholder='', suggestions=[]) -%}
+<div x-data='tagInput({{ (value|join(', ') if value is iterable and value is not string else (value or ''))|tojson }}, {{ suggestions|tojson }})' class="relative">
+  <div class="input flex flex-wrap gap-1.5 items-center min-h-[48px] cursor-text" @click="$refs.i.focus()">
+    <template x-for="(tg,i) in tags" :key="tg+i">
+      <span class="chip chip-terra">
+        <span x-text="tg"></span>
+        <button type="button" @click.stop="remove(i)" class="opacity-60 hover:opacity-100">&times;</button>
+      </span>
+    </template>
+    <input x-ref="i" x-model="draft" @keydown="key($event)" @blur="add()" class="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1" placeholder="{{ placeholder }}">
+  </div>
+  <div x-show="filtered.length" x-cloak class="absolute z-30 mt-1 w-full card shadow-lg p-1">
+    <template x-for="s in filtered"><button type="button" @mousedown.prevent="add(s)" class="block w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-[var(--bg-2)]" x-text="s"></button></template>
+  </div>
+  <input type="hidden" name="{{ name }}" :value="joined">
+</div>
+{%- endmacro %}
+
+{% macro location(country='CI', city='', country_name='country_code', city_name='city', required=False) -%}
+<div x-data='cityPicker({{ country|tojson }}, {{ city|tojson }})' class="grid sm:grid-cols-2 gap-4">
+  <div>
+    <label class="label">{{ t('Pays') }}</label>
+    <select name="{{ country_name }}" x-model="country" class="select">
+      {% for code, name in countries() %}<option value="{{ code }}" {% if code==country %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="relative" @click.outside="open=false">
+    <label class="label">{{ t('Ville') }}</label>
+    <input type="hidden" name="{{ city_name }}" :value="city">
+    <button type="button" class="select text-left flex items-center gap-2" @click="open=!open; $nextTick(()=>$refs.q.focus())" :aria-expanded="open">
+      <i data-lucide="map-pin" class="w-4 h-4 muted shrink-0"></i>
+      <span class="flex-1 truncate" :class="city ? '' : 'muted'" x-text="city || {{ t('Choisir une ville')|js }}"></span>
+    </button>
+    <div x-show="open" x-cloak x-transition.opacity class="absolute z-40 mt-1 w-full card shadow-xl p-2" style="box-shadow:var(--shadow-lg)">
+      <div class="relative mb-2"><i data-lucide="search" class="w-4 h-4 muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input x-ref="q" x-model="q" @keydown.enter.prevent="pickFirst()" @keydown.escape="open=false" class="input !py-2 !pl-9 text-sm" placeholder="{{ t('Rechercher une ville…') }}"></div>
+      <div class="max-h-64 overflow-y-auto">
+        <template x-if="loading"><p class="text-sm muted px-3 py-2">{{ t('Chargement…') }}</p></template>
+        <template x-for="c in filtered" :key="c.name">
+          <button type="button" @click="choose(c.name)" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-[var(--bg-2)] flex items-center justify-between" :class="c.name===city ? 'font-semibold text-terra-700' : ''">
+            <span x-text="c.name"></span><svg x-show="c.name===city" viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </template>
+        <button type="button" x-show="q && !exact" @click="choose(q)" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-[var(--bg-2)]">
+          <i data-lucide="plus" class="w-4 h-4 inline -mt-0.5"></i> {{ t('Utiliser') }} « <span x-text="q"></span> »</button>
+        <p x-show="!loading && !filtered.length && !q" class="text-sm muted px-3 py-2">{{ t('Aucune ville pour ce pays.') }}</p>
+      </div>
+    </div>
+    {% if required %}<p class="help" x-show="!city">{{ t('Champ obligatoire') }}</p>{% endif %}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro ring(value, size=84, label='', color='var(--terra)') -%}
+<div class="tc-ring" style="--p:{{ value }};--s:{{ size }}px;--c:{{ color }}"><span style="font-size:{{ (size/4.2)|round|int }}px">{{ value }}<small style="font-size:.55em">%</small></span></div>
+{%- if label %}<div class="text-xs muted mt-1 text-center">{{ label }}</div>{% endif %}
+{%- endmacro %}
+
+{% set STATUS_LABELS = {
+  'received': ('Reçue', 'chip'), 'shortlisted': ('Présélection', 'chip chip-blue'),
+  'second_chance': ('Seconde chance', 'chip chip-gold'), 'interview': ('Entretien', 'chip chip-terra'),
+  'offer': ('Offre', 'chip chip-green'), 'hired': ('Embauché', 'chip chip-green'), 'rejected': ('Non retenue', 'chip chip-red') } %}
+
+{% macro status(s) -%}
+{% set m = STATUS_LABELS.get(s, (s, 'chip')) %}<span class="{{ m[1] }}">{{ t(m[0]) }}</span>
+{%- endmacro %}
+
+{% macro level(l) -%}
+{% if l %}<span class="badge-level lvl-{{ l }}"><i data-lucide="award" class="w-3 h-3"></i>{{ {'gold': t('Or'), 'silver': t('Argent'), 'bronze': t('Bronze')}[l] }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro avatar(user, size=40) -%}
+<span class="avatar" style="width:{{ size }}px;height:{{ size }}px;font-size:{{ (size/2.6)|int }}px">{{ user.initials }}</span>
+{%- endmacro %}
+
+{#
+  Logo d'une entreprise : celui qu'elle a envoyé, sinon l'icône de son site web,
+  sinon son initiale sur une pastille colorée.
+    co     : l'entreprise (ou un dict {name, website, logo_url} pour les offres externes)
+    classe : classes en plus (ex. « petit »)
+#}
+{% macro logo(co, classe='') -%}
+{% set nom = co.name or '?' %}
+{% set site = (co.website or '')|replace('https://', '')|replace('http://', '')|replace('www.', '') %}
+{% set teinte = 't' ~ ((nom|length % 4) + 1) %}
+{% if co.logo_url %}
+  <span class="logo-ent image {{ classe }}"><img src="{{ co.logo_url }}" alt="" loading="lazy" onerror="this.parentNode.textContent={{ nom[:1]|tojson|forceescape }}"></span>
+{% elif co.logo %}
+  <span class="logo-ent image {{ classe }}"><img src="{{ url_for('main.company_logo', cid=co.id) }}" alt="" loading="lazy"></span>
+{% elif site %}
+  <span class="logo-ent image {{ classe }}"><img src="https://www.google.com/s2/favicons?domain={{ site.split('/')[0] }}&sz=128" alt="" loading="lazy" onerror="this.parentNode.textContent={{ nom[:1]|tojson|forceescape }}"></span>
+{% else %}
+  <span class="logo-ent {{ teinte }} {{ classe }}">{{ nom[:1] }}</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro empty(icon, title, text='', action_url=None, action_label=None) -%}
+<div class="card card-pad text-center py-14">
+  <div class="mx-auto w-14 h-14 rounded-2xl grid place-items-center mb-4" style="background:rgba(216,103,48,.1);color:var(--terra)"><i data-lucide="{{ icon }}" class="w-7 h-7"></i></div>
+  <h3 class="font-display text-lg font-semibold">{{ title }}</h3>
+  {% if text %}<p class="muted text-sm mt-1 max-w-md mx-auto">{{ text }}</p>{% endif %}
+  {% if action_url %}<a href="{{ action_url }}" class="btn btn-primary mt-5">{{ action_label }}</a>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Sélecteur de langue. rond=True : version icône ronde de l'en-tête de l'espace connecté.
+   La version par défaut sert aux pages publiques et à Connexion / Inscription. #}
+{% macro langswitch(rond=False) -%}
+<div x-data="{o:false}" class="relative">
+  {% if rond %}
+  <button type="button" @click="o=!o" class="icone" title="{{ t('Langue') }}"><i data-lucide="languages"></i></button>
+  {% else %}
+  <button type="button" @click="o=!o" class="btn btn-ghost btn-sm"><i data-lucide="languages" class="w-4 h-4"></i><span class="uppercase">{{ lang }}</span></button>
+  {% endif %}
+  <div x-show="o" @click.outside="o=false" x-cloak x-transition class="absolute right-0 mt-2 card shadow-lg p-1 w-44 z-50">
+    {% for code, l in languages.items() %}
+    <a href="{{ url_for('main.set_language', code=code, next=request.full_path) }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[var(--bg-2)] {% if code==lang %}font-bold text-terra-600{% endif %}">
+      <span class="w-7 text-[11px] font-bold uppercase muted">{{ code }}</span>{{ l.name }}</a>
+    {% endfor %}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro themetoggle(rond=False) -%}
+<button type="button" @click="toggle()" class="{{ 'icone' if rond else 'btn btn-ghost btn-icon' }}" title="{{ t('Mode sombre') }}">
+  <i data-lucide="moon" class="w-4 h-4" x-show="!dark"></i><i data-lucide="sun" class="w-4 h-4" x-show="dark" x-cloak></i>
+</button>
+{%- endmacro %}
+
+{% macro stars(n, size=12) -%}
+<span class="inline-flex items-center gap-px text-terra-500">{% for i in range(5) %}<i data-lucide="star" class="star {% if i < n|int %}star-on{% else %}opacity-25{% endif %}" style="width:{{ size }}px;height:{{ size }}px"></i>{% endfor %}</span>
+{%- endmacro %}
+
+{#
+  Carte d'accueil des tableaux de bord, suivie des chiffres clés en tuiles.
+    pilules     : [(icône, texte)] — petites informations au-dessus du titre (icône None = ignorée)
+    indicateurs : [(libellé, valeur)] — affichés en tuiles teintées sous la carte
+    actions     : [(libellé, url, icône)] — la 1re en blanc, les suivantes translucides
+  Un bloc {% call %} facultatif s'affiche à droite de la carte (jauge, score…).
+#}
+{% macro banniere(titre, resume, indicateurs, pilules=[], actions=[]) -%}
+<section class="banniere">
+  <div class="flex flex-col lg:flex-row lg:items-center gap-8">
+    <div class="flex-1 min-w-0">
+      {% set infos = pilules|selectattr(0)|list %}
+      {% if infos %}
+      <div class="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-white/65">
+        {% for icone, texte in infos %}<span class="inline-flex items-center gap-1.5"><i data-lucide="{{ icone }}" class="!w-4 !h-4"></i>{{ texte }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      <h2 class="text-[clamp(1.5rem,2.4vw,2rem)] font-bold tracking-tight leading-tight mt-3">{{ titre }}</h2>
+      <p class="text-white/70 mt-2 max-w-2xl">{{ resume }}</p>
+      {% if actions %}
+      <div class="flex flex-wrap gap-2.5 mt-6">
+        {% for libelle, url, icone in actions %}
+        <a href="{{ url }}" class="btn {{ 'btn-blanc' if loop.first else 'btn-translucide' }}">
+          <i data-lucide="{{ icone }}"></i>{{ libelle }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% if caller is defined %}<div class="shrink-0">{{ caller() }}</div>{% endif %}
+  </div>
+</section>
+{% if indicateurs %}
+<div class="tuiles mt-7">
+  {% set teintes = ['peche', 'sauge', 'sable', 'creme'] %}
+  {% for libelle, valeur in indicateurs %}
+  <div class="tuile {{ teintes[loop.index0 % 4] }}">
+    <div class="valeur !mt-0">{{ valeur }}</div>
+    <div class="libelle">{{ libelle }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro check(size=12) -%}<i data-lucide="check" style="width:{{ size }}px;height:{{ size }}px" class="inline-block"></i>{%- endmacro %}

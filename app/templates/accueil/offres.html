@@ -1,0 +1,111 @@
+{% extends "public.html" %}
+{% from "composants/ui.html" import empty with context %}
+{% block title %}{{ t('Offres d\'emploi') }}{% endblock %}
+{% block content %}
+
+{# Paramètres actuels de l'URL, pour construire les liens des filtres sans perdre le reste #}
+{% macro lien() -%}
+{%- set p = {'q': f.q or None, 'ville': f.ville or None, 'source': f.source if f.source != 'toutes' else None,
+             'contrat': f.contrat or None, 'teletravail': '1' if f.teletravail else None,
+             'recentes': '1' if f.recentes else None, 'groupe': f.groupe or None} -%}
+{%- set _ = p.update(kwargs) -%}
+{{ url_for('main.offers', **p) }}
+{%- endmacro %}
+
+<section class="section pt-10 sm:pt-14 grid lg:grid-cols-[1.25fr_1fr] gap-10 items-center">
+  <div>
+    <span class="surtitre">{{ t('Offres d\'emploi') }}</span>
+    <h1 class="titre-section mt-2">{{ t('Toutes les offres,') }}<br>{{ t('au même endroit.') }}</h1>
+    <p class="muted text-[16px] mt-4 max-w-lg leading-relaxed">{{ t('Les offres publiées sur TalentConnect, et celles des sites d\'emploi partenaires pour votre recherche.') }}</p>
+
+    {# Recherche façon Odoo : un champ, les filtres actifs en pastilles, et un menu Filtres / Regrouper par #}
+    <form method="get" class="mt-8 relative" x-data="{ menu:false }" @click.outside="menu=false">
+      <input type="hidden" name="source" value="{{ f.source }}">
+      {% for c in f.contrat %}<input type="hidden" name="contrat" value="{{ c }}">{% endfor %}
+      {% if f.teletravail %}<input type="hidden" name="teletravail" value="1">{% endif %}
+      {% if f.recentes %}<input type="hidden" name="recentes" value="1">{% endif %}
+      {% if f.groupe %}<input type="hidden" name="groupe" value="{{ f.groupe }}">{% endif %}
+
+      <div class="recherche-offres">
+        <i data-lucide="search" class="muted shrink-0"></i>
+        <div class="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 py-2">
+          {% for c in f.contrat %}
+            <a href="{{ lien(contrat=f.contrat|reject('equalto', c)|list or None) }}" class="facette"><i data-lucide="filter"></i>{{ contract_label(c) }}<span>×</span></a>
+          {% endfor %}
+          {% if f.teletravail %}<a href="{{ lien(teletravail=None) }}" class="facette"><i data-lucide="filter"></i>{{ t('Télétravail') }}<span>×</span></a>{% endif %}
+          {% if f.recentes %}<a href="{{ lien(recentes=None) }}" class="facette"><i data-lucide="filter"></i>{{ t('7 derniers jours') }}<span>×</span></a>{% endif %}
+          {% if f.groupe %}<a href="{{ lien(groupe=None) }}" class="facette facette-groupe"><i data-lucide="layers"></i>{{ t(regroupements[f.groupe]) }}<span>×</span></a>{% endif %}
+          <input name="q" value="{{ f.q }}" class="flex-1 min-w-[140px] bg-transparent outline-none text-[15px] h-9" placeholder="{{ t('Poste, entreprise, mot-clé…') }}" aria-label="{{ t('Rechercher') }}">
+        </div>
+        <button type="button" class="bouton-menu" @click="menu=!menu" :aria-expanded="menu" aria-label="{{ t('Filtres et regroupements') }}"><i data-lucide="chevron-down"></i></button>
+      </div>
+      <div class="flex gap-2.5 mt-3">
+        <label class="champ-ville"><i data-lucide="map-pin" class="muted"></i>
+          <input name="ville" value="{{ f.ville }}" placeholder="{{ t('Ville') }}" aria-label="{{ t('Ville') }}"></label>
+        <button class="btn btn-primary !h-[50px] !rounded-[14px] !px-7">{{ t('Rechercher') }}</button>
+      </div>
+
+      {# Menu déroulant : Filtres | Regrouper par #}
+      <div class="menu-recherche" x-show="menu" x-cloak x-transition.opacity>
+        <div>
+          <div class="titre"><i data-lucide="filter" style="color:var(--terra-600)"></i>{{ t('Filtres') }}</div>
+          {% for c in contrats %}
+            {% set actif = c in f.contrat %}
+            <a href="{{ lien(contrat=(f.contrat|reject('equalto', c)|list if actif else f.contrat + [c]) or None) }}" class="{{ 'actif' if actif }}">{{ contract_label(c) }}</a>
+          {% endfor %}
+          <div class="separateur"></div>
+          <a href="{{ lien(teletravail=None if f.teletravail else '1') }}" class="{{ 'actif' if f.teletravail }}">{{ t('Télétravail possible') }}</a>
+          <a href="{{ lien(recentes=None if f.recentes else '1') }}" class="{{ 'actif' if f.recentes }}">{{ t('Publiées ces 7 derniers jours') }}</a>
+        </div>
+        <div>
+          <div class="titre"><i data-lucide="layers" style="color:#2F855A"></i>{{ t('Regrouper par') }}</div>
+          {% for code, libelle in regroupements.items() %}
+            <a href="{{ lien(groupe=None if f.groupe == code else code) }}" class="{{ 'actif' if f.groupe == code }}">{{ t(libelle) }}</a>
+          {% endfor %}
+        </div>
+        <div>
+          <div class="titre"><i data-lucide="globe" style="color:#8A6116"></i>{{ t('Origine') }}</div>
+          {% for code, libelle in [('toutes', t('Toutes les offres')), ('talentconnect', 'TalentConnect'), ('externes', t('Sites partenaires'))] %}
+            <a href="{{ lien(source=code if code != 'toutes' else None) }}" class="{{ 'actif' if f.source == code }}">{{ libelle }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {# Illustration (unDraw) #}
+  <div class="hidden lg:flex justify-center">
+    <img src="{{ url_for('static', filename='images/illustrations/equipe.svg') }}" alt="" class="w-full max-w-[420px]">
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ résultats #}
+<section class="section mt-14">
+  <div class="flex flex-wrap items-baseline justify-between gap-3 pb-5 border-b" style="border-color:var(--line)">
+    <h2 class="text-[19px] font-bold tracking-tight">
+      {{ offres|length }} {{ t('offre(s)') }}
+      <span class="muted font-medium text-[14px] ml-2">{{ nb_internes }} TalentConnect · {{ nb_externes }} {{ t('sites partenaires') }}</span>
+    </h2>
+    {% if sources and f.source != 'talentconnect' %}<span class="text-[13px] muted">{{ t('Sources partenaires :') }} {{ sources|join(', ') }}</span>{% endif %}
+  </div>
+
+  {% if f.source != 'talentconnect' and not f.q %}
+    <p class="text-[14px] muted mt-5 flex items-center gap-2"><i data-lucide="info"></i>{{ t('Tapez un poste ou un mot-clé pour chercher aussi sur les sites partenaires.') }}</p>
+  {% endif %}
+
+  {% if not offres %}
+    <div class="mt-8">{{ empty('search-x', t('Aucune offre ne correspond'), t('Essayez un autre mot-clé ou retirez un filtre.')) }}</div>
+  {% elif groupes %}
+    {% for nom, liste in groupes %}
+    <div class="mt-10">
+      <h3 class="titre-groupe">{{ nom }} <span>{{ liste|length }}</span></h3>
+      <div class="grille-offres mt-5">{% for o in liste %}{% include "accueil/_offre_liste.html" %}{% endfor %}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="grille-offres mt-8">{% for o in offres %}{% include "accueil/_offre_liste.html" %}{% endfor %}</div>
+  {% endif %}
+
+  {% if erreurs and config.DEBUG %}<p class="text-[12px] muted mt-6">{{ t('Certaines sources n\'ont pas répondu :') }} {{ erreurs|map('truncate', 60)|join(' · ') }}</p>{% endif %}
+</section>
+{% endblock %}

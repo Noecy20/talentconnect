@@ -1,0 +1,34 @@
+@startuml
+!include _theme.iuml
+autonumber
+actor Recruteur as R
+participant "Application Flask\n(espace recruteur)" as F
+participant "Service de recrutement" as H
+participant "Service de scoring" as S
+participant "Service d'envoi\n(Brevo)" as M
+database "PostgreSQL" as DB
+actor Candidat as C
+R -> F : Ouvre le tri IA d'une offre
+F -> DB : Charger les candidatures
+F --> R : Groupes proposés : Entretien / Seconde chance / Refus\n(score, points forts, manques)
+R -> F : Ajuste les groupes et valide l'envoi groupé
+F -> H : decide(candidatures, groupe, modèle de message)
+loop Pour chaque candidature
+  opt Groupe « Refus » ou « Seconde chance »
+    H -> S : refusal_feedback()
+    S --> H : Raisons et conseils personnalisés
+    opt Modèle de langage configuré
+      H -> H : Rédiger le retour en texte bienveillant
+    end
+  end
+  opt Groupe « Seconde chance »
+    H -> DB : Ajouter au vivier de l'entreprise
+  end
+  H -> DB : Mettre à jour le statut
+  H -> M : Envoyer le message (e-mail + messagerie)
+  M --> C : Réponse personnalisée
+  H -> DB : Synchroniser le suivi du candidat
+end
+H --> F : Nombre de réponses envoyées
+F --> R : Confirmation
+@enduml

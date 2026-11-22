@@ -1,0 +1,3 @@
+{# Une offre de la page « Offres d'emploi » : `o.type` vaut « tc » (TalentConnect) ou « ext » (site partenaire). #}
+{% if o.type == 'tc' %}{% set j = o.job %}{% include "accueil/_offre_publique.html" %}
+{% else %}{% set r = o.r %}{% include "accueil/_offre_externe.html" %}{% endif %}

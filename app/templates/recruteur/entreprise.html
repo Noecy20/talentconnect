@@ -1,0 +1,32 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import location, logo with context %}
+{% block title %}{{ t('Mon entreprise') }}{% endblock %}
+{% block page_title %}{{ t('Mon entreprise') }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="card p-8 space-y-6 max-w-4xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {# Logo : affiché sur toutes les offres de l'entreprise #}
+  <div class="flex flex-wrap items-center gap-5 pb-6 border-b" style="border-color:var(--line)">
+    {{ logo(co, '!w-20 !h-20 !rounded-[22px] !text-[26px]') }}
+    <div class="flex-1 min-w-[200px]">
+      <h2 class="text-[19px] font-bold">{{ co.name }}</h2>
+      {% if co.verified %}<span class="chip chip-green mt-1.5"><i data-lucide="badge-check" class="!w-3.5 !h-3.5"></i>{{ t('Entreprise vérifiée') }}</span>{% else %}<span class="chip mt-1.5">{{ t('Vérification en attente') }}</span>{% endif %}
+    </div>
+    <label class="btn btn-ghost cursor-pointer" x-data="{nom:''}">
+      <i data-lucide="image-up"></i><span x-text="nom || {{ t('Changer le logo')|js }}">{{ t('Changer le logo') }}</span>
+      <input type="file" name="logo" accept="image/*" class="hidden" @change="nom = $event.target.files[0]?.name || ''">
+    </label>
+  </div>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <div><label class="label">{{ t('Nom de l\'entreprise') }}</label><input name="name" value="{{ co.name }}" class="input" required></div>
+    <div><label class="label">{{ t('Votre fonction') }}</label><input name="position" value="{{ current_user.recruiter.position }}" class="input" placeholder="{{ t('Ex : Responsable RH') }}"></div>
+    <div><label class="label">{{ t('Secteur') }}</label><input name="sector" value="{{ co.sector }}" class="input"></div>
+    <div><label class="label">{{ t('Taille') }}</label><select name="size" class="select">{% for s in ['1-10','11-50','51-200','201-1000','1000+'] %}<option {% if s==co.size %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div><label class="label">{{ t('Site web') }}</label><input name="website" value="{{ co.website }}" class="input"></div>
+    <div><label class="label">{{ t('N° RCCM / immatriculation') }}</label><input name="registration_number" value="{{ co.registration_number }}" class="input"><p class="help">{{ t('Permet à l\'admin de vérifier votre entreprise (badge « vérifiée »).') }}</p></div>
+  </div>
+  {{ location(co.country_code, co.city) }}
+  <div><label class="label">{{ t('Présentation') }}</label><textarea name="description" class="textarea">{{ co.description }}</textarea></div>
+  <button class="btn btn-primary">{{ t('Enregistrer') }}</button>
+</form>
+{% endblock %}

@@ -40,11 +40,16 @@ class Config:
     MAIL_SENDER = os.getenv("MAIL_SENDER", "TalentConnect <no-reply@talentconnect.app>")
 
     # IA générative (optionnelle) : sans clé, l'app utilise ses modèles internes
+    # IA générative : OpenRouter d'abord (modèles gratuits, bascule automatique), sinon Claude
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODELES = os.getenv("OPENROUTER_MODELES", "")   # facultatif : modèles préférés, séparés par des virgules
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     LLM_MODEL = os.getenv("LLM_MODEL", "claude-sonnet-4-5")
 
     # Offres externes en temps réel via API officielles (facultatif)
     JSEARCH_API_KEY = os.getenv("JSEARCH_API_KEY", "")
+    JSEARCH_FOURNISSEUR = os.getenv("JSEARCH_FOURNISSEUR", "openwebninja")  # ou « rapidapi »
+    OFFRES_SANS_CLE = os.getenv("OFFRES_SANS_CLE", "1")  # Remotive, Arbeitnow, Jobicy
     ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
     ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
     JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")

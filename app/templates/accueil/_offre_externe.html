@@ -1,0 +1,20 @@
+{# Carte d'une offre venant d'un site partenaire. Attend `r` (dict renvoyé par services/offres_externes). #}
+{% from "composants/ui.html" import logo with context %}
+<a href="{{ r.url }}" target="_blank" rel="noopener" class="offre bordee group">
+  <div class="flex items-start gap-3.5">
+    {{ logo({'name': r.company, 'logo_url': r.logo}) }}
+    <div class="flex-1 min-w-0">
+      <h4 class="group-hover:text-terra-600 transition">{{ r.title }}</h4>
+      <div class="text-[13.5px] muted truncate mt-0.5">{{ r.company }}</div>
+    </div>
+    <i data-lucide="arrow-up-right" class="muted shrink-0"></i>
+  </div>
+  <div class="flex flex-wrap gap-1.5">
+    {% if r.city %}<span class="chip"><i data-lucide="map-pin" class="!w-3 !h-3"></i>{{ r.city|truncate(28, True, '…') }}</span>{% endif %}
+    {% if r.contract %}<span class="chip chip-terra">{{ r.contract|truncate(22, True, '…') }}</span>{% endif %}
+  </div>
+  <div class="pied">
+    <span class="text-[13px]">{{ t('Sur') }} <b>{{ r.source }}</b></span>
+    <span class="text-[12.5px] muted">{{ r.posted }}</span>
+  </div>
+</a>

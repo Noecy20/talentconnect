@@ -1,8 +1,0 @@
-{% extends "layouts/app.html" %}
-{% block nav_mode %}collapsed{% endblock %}
-{% block title %}{{ t('CV Builder') }}{% endblock %}
-{% block main %}
-<main class="flex-1 min-h-0">
-  <iframe src="{{ frame_url }}" title="{{ t('CV Builder') }}" class="block w-full border-0" style="height:calc(100vh - 65px)"></iframe>
-</main>
-{% endblock %}

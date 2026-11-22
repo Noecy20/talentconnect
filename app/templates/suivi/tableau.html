@@ -1,0 +1,229 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Mon suivi') }}{% endblock %}
+{% block page_title %}{{ t('Mon suivi') }}{% endblock %}
+{% block content %}
+{% set STAGE_COLORS = {'identified':'#8B6B57','to_analyze':'#7C3AED','to_apply':'#2B6CB0','prepared':'#0E7490','sent':'#D86730','waiting':'#D9A441','interview':'#B04A1F','test':'#8E44AD','offer':'#2F855A','accepted':'#1F6F45','refused':'#C0392B'} %}
+{% set proj_map = {} %}{% for p in projects %}{% set _ = proj_map.update({p.id: p}) %}{% endfor %}
+
+<div x-data="{ ajout:false, etape:'choix', q:'' }">
+
+{# ------------------------------------------------------------ en-tête de la page #}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <p class="muted text-[14.5px] max-w-xl">{{ t('Toutes vos candidatures, celles d\'ici et celles envoyées ailleurs, au même endroit.') }}</p>
+  <div class="flex items-center gap-2.5">
+    <div class="bascule">
+      <a href="{{ url_for('tracker.board', **dict(f, view='kanban')) }}" class="{{ 'actif' if view != 'table' }}"><i data-lucide="kanban-square"></i>Kanban</a>
+      <a href="{{ url_for('tracker.board', **dict(f, view='table')) }}" class="{{ 'actif' if view == 'table' }}"><i data-lucide="table-2"></i>{{ t('Liste') }}</a>
+    </div>
+    <button type="button" class="btn btn-primary" @click="ajout=true; etape='choix'"><i data-lucide="plus"></i>{{ t('Ajouter une offre') }}</button>
+  </div>
+</div>
+
+{# ------------------------------------------------------------ chiffres #}
+<div class="tuiles mt-7">
+  {% for teinte, icone, val, label, detail in [
+      ('peche', 'send', st.sent, t('Candidatures envoyées'), t('{n} suivies au total', n=st.total)),
+      ('sauge', 'mail-open', st.responses, t('Réponses reçues'), t('{n} % de réponse', n=st.response_rate)),
+      ('sable', 'calendar-check', st.interviews, t('Entretiens obtenus'), ''),
+      ('creme', 'trophy', st.accepted, t('Offres acceptées'), '')] %}
+  <div class="tuile {{ teinte }}">
+    <span class="rond"><i data-lucide="{{ icone }}"></i></span>
+    <div class="valeur">{{ val }}</div>
+    <div class="libelle">{{ label }}</div>
+    {% if detail %}<div class="detail">{{ detail }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{# ------------------------------------------------------------ relances et dates limites #}
+{% if st.due or st.deadlines %}
+<div class="card mt-7 grid lg:grid-cols-2">
+  {% if st.due %}
+  <div class="p-6">
+    <h3 class="font-bold flex items-center gap-2"><i data-lucide="bell-ring" style="color:#8A6116"></i>{{ t('{n} relance(s) à faire', n=st.due|length) }}</h3>
+    <ul class="mt-3">
+      {% for x in st.due[:4] %}
+      <li class="flex items-center gap-3 py-2.5">
+        <a href="{{ url_for('tracker.detail', tid=x.id) }}" class="flex-1 min-w-0">
+          <div class="font-medium truncate">{{ x.title }}</div>
+          <div class="text-[13px] muted truncate">{{ x.company }} · {{ t('prévue le') }} {{ x.next_followup|datefr('short') }}</div>
+        </a>
+        <form method="post" action="{{ url_for('tracker.followup_done', tid=x.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-sm"><i data-lucide="check"></i>{{ t('Fait') }}</button></form>
+      </li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if st.deadlines %}
+  <div class="p-6 {% if st.due %}lg:border-l{% endif %}" style="border-color:var(--line)">
+    <h3 class="font-bold flex items-center gap-2"><i data-lucide="calendar-clock" class="text-terra-600"></i>{{ t('Dates limites à venir') }}</h3>
+    <ul class="mt-3">
+      {% for x in st.deadlines %}
+      <li class="flex items-center gap-3 py-2.5">
+        {% set d = x.deadline %}
+        <span class="date-badge"><span class="mois">{{ d|datefr('MMM') }}</span><span class="jour">{{ d.day }}</span></span>
+        <a href="{{ url_for('tracker.detail', tid=x.id) }}" class="flex-1 min-w-0">
+          <div class="font-medium truncate">{{ x.title }}</div>
+          <div class="text-[13px] muted truncate">{{ x.company }}</div>
+        </a>
+      </li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ------------------------------------------------------------ projets de mobilité #}
+<div class="flex flex-wrap items-center gap-2 mt-9">
+  <span class="text-[13px] font-semibold muted mr-1">{{ t('Projet :') }}</span>
+  <a href="{{ url_for('tracker.board', view=view) }}" class="chip !px-3.5 !py-1.5 {% if not f.project %}!bg-[var(--sombre)] !text-white{% endif %}">{{ t('Tous') }}</a>
+  {% for p in projects %}
+  <a href="{{ url_for('tracker.board', view=view, project=p.id) }}" class="chip !px-3.5 !py-1.5 {% if (f.project or 0)|int == p.id %}!bg-[var(--sombre)] !text-white{% endif %}">
+    <span class="w-2 h-2 rounded-full" style="background:{{ p.color }}"></span>{{ p.name }}</a>
+  {% endfor %}
+  <a href="{{ url_for('tracker.projects') }}" class="text-[13px] font-semibold text-terra-600 ml-1">{{ t('Gérer les projets') }}</a>
+</div>
+
+{% if view == 'table' %}
+{# ------------------------------------------------------------ vue liste #}
+<form class="flex flex-wrap gap-2.5 mt-5" method="get">
+  <input type="hidden" name="view" value="table">{% if f.project %}<input type="hidden" name="project" value="{{ f.project }}">{% endif %}
+  <label class="champ-ville !h-11 !flex-[2] min-w-[220px]"><i data-lucide="search" class="muted"></i><input name="q" value="{{ f.q }}" placeholder="{{ t('Poste, entreprise, ville…') }}"></label>
+  <select name="stage" class="select !w-auto !h-11 !py-0" onchange="this.form.submit()"><option value="">{{ t('Toutes les étapes') }}</option>{% for k, l in stages %}<option value="{{ k }}" {% if f.stage==k %}selected{% endif %}>{{ t(l) }}</option>{% endfor %}</select>
+  <select name="source" class="select !w-auto !h-11 !py-0" onchange="this.form.submit()"><option value="">{{ t('Toutes les sources') }}</option>{% for s in sources %}<option {% if f.source==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <a href="{{ url_for('tracker.export_csv', **f) }}" class="btn btn-ghost !h-11"><i data-lucide="download"></i>{{ t('Exporter') }}</a>
+</form>
+<div class="card mt-5"><div class="scroll-x"><table class="table">
+  <thead><tr>
+    {% for key, label in [('company', t('Poste')), ('stage', t('Étape')), (None, t('Lieu')), ('applied', t('Candidature')), ('deadline', t('Date limite')), (None, t('Relance'))] %}
+    <th>{% if key %}<a href="{{ url_for('tracker.board', **dict(f, sort=key)) }}" class="inline-flex items-center gap-1 {% if sort==key %}text-terra-700{% endif %}">{{ label }}<i data-lucide="arrow-up-down" class="!w-3 !h-3"></i></a>{% else %}{{ label }}{% endif %}</th>
+    {% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for x in items %}
+  <tr class="cursor-pointer" onclick="location.href='{{ url_for('tracker.detail', tid=x.id) }}'">
+    <td><div class="font-semibold">{{ x.title }}</div><div class="text-[13px] muted">{{ x.company }}{% if x.source %} · {{ x.source }}{% endif %}</div></td>
+    <td><span class="chip" style="color:{{ STAGE_COLORS[x.stage] }};background:{{ STAGE_COLORS[x.stage] }}17">{{ t(x.stage_label) }}</span></td>
+    <td>{{ x.city or '—' }}</td>
+    <td>{{ x.applied_at|datefr('short') if x.applied_at else '—' }}</td>
+    <td>{{ x.deadline|datefr('short') if x.deadline else '—' }}</td>
+    <td>{% if x.followup_due %}<span class="chip chip-gold">{{ t('À faire') }}</span>{% elif x.next_followup %}{{ x.next_followup|datefr('short') }}{% else %}—{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="6" class="text-center muted py-12">{{ t('Aucune candidature ne correspond.') }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+{% else %}
+{# ------------------------------------------------------------ vue Kanban #}
+<p class="text-[13px] muted mt-5 mb-4 flex items-center gap-2"><i data-lucide="move" class="!w-4 !h-4"></i>{{ t('Glissez une carte pour changer d\'étape. Les dates et les rappels de relance se remplissent tout seuls.') }}</p>
+<div class="flex gap-4 overflow-x-auto pb-5">
+  {% for key, label in stages %}
+  {% set col = items|selectattr('stage', 'equalto', key)|list %}
+  <div class="colonne">
+    <div class="colonne-tete">
+      <span class="w-2 h-2 rounded-full" style="background:{{ STAGE_COLORS[key] }}"></span>
+      <span class="font-semibold text-[14px]">{{ t(label) }}</span>
+      <span class="compte" data-colcount="{{ key }}">{{ col|length }}</span>
+    </div>
+    <div class="kanban-list" data-stage="{{ key }}">
+      {% for x in col %}
+      <div class="carte-suivi" data-id="{{ x.id }}">
+        <a href="{{ url_for('tracker.detail', tid=x.id) }}" class="block">
+          <div class="flex items-start gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-[14px] leading-snug">{{ x.title }}</div>
+              <div class="text-[12.5px] muted truncate mt-0.5">{{ x.company }}{% if x.city %} · {{ x.city }}{% endif %}</div>
+            </div>
+            {% if x.priority == 1 %}<i data-lucide="flag" class="!w-3.5 !h-3.5 text-[#C0392B] shrink-0" title="{{ t('Priorité haute') }}"></i>{% endif %}
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5 mt-3">
+            {% if x.project_id and proj_map.get(x.project_id) %}<span class="chip !text-[11px]"><span class="w-1.5 h-1.5 rounded-full" style="background:{{ proj_map[x.project_id].color }}"></span>{{ proj_map[x.project_id].name }}</span>{% endif %}
+            {% if x.application_id %}<span class="chip chip-terra !text-[11px]">TalentConnect</span>{% elif x.source %}<span class="chip !text-[11px]">{{ x.source }}</span>{% endif %}
+            {% if x.followup_due %}<span class="chip chip-gold !text-[11px]">{{ t('À relancer') }}</span>{% endif %}
+            {% if x.deadline and x.stage in ['identified','to_analyze','to_apply','prepared'] %}<span class="chip !text-[11px] {% if (x.deadline - today).days <= 3 %}chip-red{% endif %}">{{ x.deadline|datefr('short') }}</span>{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    <a href="{{ url_for('tracker.new', stage=key, project=f.project) }}" class="colonne-ajout"><i data-lucide="plus"></i>{{ t('Ajouter') }}</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ------------------------------------------------------------ fenêtre « Ajouter une offre » #}
+<div class="fenetre-fond" x-show="ajout" x-cloak x-transition.opacity @keydown.escape.window="ajout=false" @click.self="ajout=false">
+  <div class="fenetre" role="dialog" aria-label="{{ t('Ajouter une offre') }}">
+    <div class="flex items-center gap-3 mb-5">
+      <button type="button" class="icone plat !w-9 !h-9" x-show="etape !== 'choix'" @click="etape='choix'" aria-label="{{ t('Retour') }}"><i data-lucide="arrow-left"></i></button>
+      <h2 class="text-[19px] font-bold flex-1">{{ t('Ajouter une offre au suivi') }}</h2>
+      <button type="button" class="icone plat !w-9 !h-9" @click="ajout=false" aria-label="{{ t('Fermer') }}"><i data-lucide="x"></i></button>
+    </div>
+
+    {# Étape 1 : d'où vient l'offre ? #}
+    <div x-show="etape === 'choix'" class="grid sm:grid-cols-2 gap-4">
+      <button type="button" class="choix" @click="etape='site'; $nextTick(() => $refs.cherche.focus())">
+        <span class="logo-ent"><i data-lucide="briefcase"></i></span>
+        <span class="font-bold text-[15.5px] mt-4 block">{{ t('Une offre de TalentConnect') }}</span>
+        <span class="muted text-[13.5px] mt-1 block">{{ t('Choisissez-la parmi les offres publiées sur le site.') }}</span>
+      </button>
+      <button type="button" class="choix" @click="etape='ailleurs'">
+        <span class="logo-ent t3"><i data-lucide="globe"></i></span>
+        <span class="font-bold text-[15.5px] mt-4 block">{{ t('Une offre vue ailleurs') }}</span>
+        <span class="muted text-[13.5px] mt-1 block">{{ t('LinkedIn, Indeed, un site carrière… collez le lien ou saisissez-la.') }}</span>
+      </button>
+    </div>
+
+    {# Étape 2a : offres du site #}
+    <div x-show="etape === 'site'" x-data='{ offres: {{ offres_site|tojson }} }'>
+      <label class="champ-ville !h-12"><i data-lucide="search" class="muted"></i><input x-ref="cherche" x-model="q" placeholder="{{ t('Poste, entreprise, ville…') }}"></label>
+      <div class="mt-3 max-h-[340px] overflow-y-auto -mx-2">
+        <template x-for="o in offres.filter(o => !q || (o.titre + ' ' + o.entreprise + ' ' + o.ville).toLowerCase().includes(q.toLowerCase())).slice(0, 40)" :key="o.id">
+          <form method="post" :action="'{{ url_for('tracker.from_job', job_id=0) }}'.replace('/0', '/' + o.id)" class="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-[var(--bg)]">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <span class="logo-ent petit" x-text="o.entreprise.slice(0, 1)"></span>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold truncate" x-text="o.titre"></div>
+              <div class="text-[13px] muted truncate" x-text="o.entreprise + ' · ' + o.ville"></div>
+            </div>
+            <button class="btn btn-soft btn-sm">{{ t('Ajouter') }}</button>
+          </form>
+        </template>
+      </div>
+    </div>
+
+    {# Étape 2b : offre d'un autre site #}
+    <div x-show="etape === 'ailleurs'" class="space-y-5">
+      <form method="post" action="{{ url_for('tracker.import_url') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="project" value="{{ f.project }}">
+        <label class="label">{{ t('Lien de l\'annonce') }}</label>
+        <div class="flex gap-2.5"><input name="url" required class="input" placeholder="https://…"><button class="btn btn-primary">{{ t('Importer') }}</button></div>
+        <p class="help mt-2">{{ t('Les informations de l\'annonce sont reprises automatiquement quand le site le permet.') }}</p>
+      </form>
+      <div class="divider"></div>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <a href="{{ url_for('tracker.new', project=f.project) }}" class="btn btn-ghost"><i data-lucide="pencil-line"></i>{{ t('Saisir à la main') }}</a>
+        <a href="{{ url_for('main.offers') }}" class="btn btn-ghost"><i data-lucide="search"></i>{{ t('Chercher sur les sites partenaires') }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if view != 'table' %}
+<script src="{{ url_for('static', filename='librairies/Sortable.min.js') }}"></script>
+<script>
+  // Glisser une carte d'une colonne à l'autre enregistre la nouvelle étape
+  const csrf = {{ csrf_token()|tojson }};
+  document.querySelectorAll('.kanban-list').forEach(el => new Sortable(el, {
+    group: 'suivi', animation: 180, ghostClass: 'sortable-ghost', delay: 120, delayOnTouchOnly: true,
+    onAdd: async evt => {
+      const id = evt.item.dataset.id, stage = evt.to.dataset.stage;
+      await fetch({{ url_for('tracker.move', tid=0)|tojson }}.replace('/0/', `/${id}/`), { method: 'POST', headers: { 'X-CSRFToken': csrf, 'HX-Request': 'true' }, body: new URLSearchParams({ stage }) });
+      document.querySelectorAll('[data-colcount]').forEach(c => c.textContent = document.querySelector(`.kanban-list[data-stage="${c.dataset.colcount}"]`).children.length);
+    }
+  }));
+</script>
+{% endif %}
+{% endblock %}

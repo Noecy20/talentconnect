@@ -1,0 +1,131 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import level, avatar, stars with context %}
+{% block title %}{{ t('Mes parrainages') }}{% endblock %}
+{% block page_title %}{{ t('Mes parrainages') }}{% endblock %}
+{% block content %}
+<div x-data="{ fenetre:false }">
+
+{# ------------------------------------------------------------ présentation #}
+<section class="rounded-[28px] p-8 sm:p-10 grid lg:grid-cols-[1fr_300px] gap-8 items-center" style="background:var(--peche)">
+  <div>
+    <h2 class="text-[clamp(1.5rem,2.4vw,2rem)] font-bold tracking-tight leading-tight">{{ t('Faites-vous recommander par ceux qui vous ont vu travailler.') }}</h2>
+    <p class="mt-3 max-w-xl" style="color:var(--ink-2)">{{ t('Un ancien manager, un directeur ou une entreprise atteste vos compétences. Les recruteurs voient ces recommandations sur votre profil.') }}</p>
+    <div class="flex flex-wrap gap-8 mt-7">
+      <div><div class="text-[30px] font-bold tracking-tight leading-none">{{ strength }} %</div><div class="text-[13px] mt-1.5" style="color:var(--ink-2)">{{ t('force de vos parrainages') }}</div></div>
+      <div><div class="text-[30px] font-bold tracking-tight leading-none">{{ sps|length }}</div><div class="text-[13px] mt-1.5" style="color:var(--ink-2)">{{ t('recommandation(s)') }}</div></div>
+      <div><div class="text-[30px] font-bold tracking-tight leading-none">{{ reqs|length }}</div><div class="text-[13px] mt-1.5" style="color:var(--ink-2)">{{ t('invitation(s) envoyée(s)') }}</div></div>
+    </div>
+    <button type="button" class="btn btn-dark mt-8" @click="fenetre=true"><i data-lucide="send"></i>{{ t('Demander un parrainage') }}</button>
+  </div>
+  <img src="{{ url_for('static', filename='images/illustrations/profil.svg') }}" alt="" class="hidden lg:block w-full">
+</section>
+
+{# ------------------------------------------------------------ comment ça marche #}
+<div class="grid sm:grid-cols-3 gap-5 mt-8">
+  {% for titre, texte in [(t('Vous envoyez un lien'), t('Par e-mail ou WhatsApp, à quelqu\'un avec qui vous avez travaillé.')),
+                          (t('Il passe un court test'), t('Poste, expérience, e-mail professionnel : on vérifie qu\'il est crédible.')),
+                          (t('Il vous recommande'), t('Compétence par compétence. La recommandation apparaît sur votre profil.'))] %}
+  <div class="flex gap-4">
+    <span class="etape-num">{{ loop.index }}</span>
+    <div><div class="font-semibold">{{ titre }}</div><p class="muted text-[14px] mt-0.5">{{ texte }}</p></div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-7 mt-10 items-start">
+  {# ------------------------------------------------------------ recommandations reçues #}
+  <div class="min-w-0">
+    <h3 class="text-[18px] font-bold tracking-tight mb-4">{{ t('Recommandations reçues') }}</h3>
+    {% for s in sps %}
+    {% set sp = s.sponsor.sponsor %}
+    <article class="card p-7 mb-5">
+      <div class="flex items-start gap-4">
+        {{ avatar(s.sponsor, 48) }}
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2"><span class="font-bold">{{ s.sponsor.full_name }}</span>{{ level(sp.level if sp else None) }}
+            {% if s.status != 'active' %}<span class="chip">{{ t('En attente de validation') }}</span>{% endif %}</div>
+          <div class="text-[13.5px] muted mt-0.5">{{ sp.position if sp }}{% if s.organization %} · {{ s.organization }}{% endif %}{% if s.period %} · {{ s.period }}{% endif %}</div>
+        </div>
+      </div>
+      {% if s.recommendation %}<p class="mt-5 text-[15.5px] leading-relaxed" style="color:var(--ink-2)">« {{ s.recommendation }} »</p>{% endif %}
+      {% if s.relation %}<p class="text-[13px] muted mt-3">{{ s.relation }}</p>{% endif %}
+      {% if s.skill_ratings or s.soft_ratings %}
+      <div class="flex flex-wrap gap-2 mt-5 pt-5 border-t" style="border-color:var(--line)">
+        {% for k, v in (s.skill_ratings or {}).items() %}<span class="chip chip-terra">{{ k }} {{ stars(v) }}</span>{% endfor %}
+        {% for k, v in (s.soft_ratings or {}).items() %}<span class="chip">{{ k }} {{ stars(v) }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="card p-10 text-center">
+      <img src="{{ url_for('static', filename='images/illustrations/recherche_personne.svg') }}" alt="" class="w-36 mx-auto">
+      <p class="font-bold mt-6">{{ t('Pas encore de recommandation') }}</p>
+      <p class="muted text-[14px] mt-1 max-w-sm mx-auto">{{ t('Envoyez votre premier lien à un ancien manager ou à votre responsable de stage.') }}</p>
+      <button type="button" class="btn btn-primary mt-6" @click="fenetre=true">{{ t('Demander un parrainage') }}</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <aside class="space-y-7">
+    {# Passeport de compétences #}
+    <section class="card p-6">
+      <h3 class="font-bold">{{ t('Passeport de compétences') }}</h3>
+      <p class="text-[13px] muted mt-1">{{ t('Compétences confirmées par vos parrains.') }}</p>
+      <div class="mt-4 space-y-2.5">
+        {% for k, v in passport.items() %}
+        <div class="flex items-center gap-2 text-[14px]">
+          <i data-lucide="badge-check" class="!w-4 !h-4 text-terra-600"></i>
+          <span class="flex-1">{{ k }}</span>
+          <span class="muted text-[13px]">{{ v.count }} × · {{ v.avg }}/5</span>
+        </div>
+        {% else %}<p class="text-[14px] muted">{{ t('Rien pour l\'instant.') }}</p>{% endfor %}
+      </div>
+    </section>
+
+    {# Invitations envoyées #}
+    <section class="card">
+      <div class="entete-carte"><h3>{{ t('Invitations envoyées') }}</h3></div>
+      <div class="pb-3">
+      {% for r in reqs %}
+        {% set link = url_for('sponsor.invitation', token=r.token, _external=True) %}
+        <div class="px-6 py-3 {% if r.id == new_id %}bg-[var(--peche)]{% endif %}" x-data="{copie:false}">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-[14px] flex-1 truncate">{{ r.invitee_name or r.invitee_email or t('Lien partagé') }}</span>
+            <span class="chip {% if r.status=='completed' %}chip-green{% elif r.status=='opened' %}chip-blue{% endif %}">{{ {'sent': t('Envoyé'), 'opened': t('Ouvert'), 'completed': t('Complété'), 'declined': t('Refusé')}[r.status] }}</span>
+          </div>
+          <div class="text-[12.5px] muted mt-0.5">{{ r.created_at|ago }}</div>
+          <div class="flex gap-3 mt-2 text-[13px] font-semibold">
+            <button type="button" class="text-terra-600" @click="navigator.clipboard.writeText({{ link|js }}); copie=true; setTimeout(()=>copie=false,2000)"
+                    x-text="copie ? {{ t('Lien copié')|js }} : {{ t('Copier le lien')|js }}">{{ t('Copier le lien') }}</button>
+            <a target="_blank" rel="noopener" href="https://wa.me/?text={{ (t('Bonjour, pourriez-vous me parrainer sur TalentConnect ?') ~ ' ' ~ link)|urlencode }}" style="color:var(--success)">WhatsApp</a>
+          </div>
+        </div>
+      {% else %}<p class="px-6 py-3 text-[14px] muted">{{ t('Aucune invitation pour le moment.') }}</p>{% endfor %}
+      </div>
+    </section>
+  </aside>
+</div>
+
+{# ------------------------------------------------------------ fenêtre : demander un parrainage #}
+<div class="fenetre-fond" x-show="fenetre" x-cloak x-transition.opacity @keydown.escape.window="fenetre=false" @click.self="fenetre=false">
+  <form method="post" class="fenetre space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="flex items-center gap-3">
+      <h2 class="text-[19px] font-bold flex-1">{{ t('Demander un parrainage') }}</h2>
+      <button type="button" class="icone plat !w-9 !h-9" @click="fenetre=false" aria-label="{{ t('Fermer') }}"><i data-lucide="x"></i></button>
+    </div>
+    <p class="text-[14px] muted">{{ t('Nous créons un lien à lui envoyer. Il passera un court test avant de pouvoir vous recommander.') }}</p>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="label">{{ t('Nom du parrain') }}</label><input name="invitee_name" class="input" required></div>
+      <div><label class="label">{{ t('E-mail (facultatif)') }}</label><input name="invitee_email" type="email" class="input" placeholder="{{ t('Sinon, partagez le lien') }}"></div>
+    </div>
+    <div><label class="label">{{ t('Votre relation') }}</label><input name="relation" class="input" placeholder="{{ t('Ex : mon manager chez Orange CI (2022-2024)') }}"></div>
+    <div><label class="label">{{ t('Message personnel') }}</label><textarea name="message" class="textarea !min-h-[90px]">{{ t('Bonjour, j\'ai beaucoup appris à vos côtés. Accepteriez-vous de me recommander sur TalentConnect ?') }}</textarea></div>
+    <div class="flex justify-end gap-2.5 pt-2">
+      <button type="button" class="btn btn-ghost" @click="fenetre=false">{{ t('Annuler') }}</button>
+      <button class="btn btn-primary">{{ t('Créer le lien') }}</button>
+    </div>
+  </form>
+</div>
+</div>
+{% endblock %}

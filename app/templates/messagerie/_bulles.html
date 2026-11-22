@@ -1,0 +1,32 @@
+<div class="max-w-3xl mx-auto space-y-3">
+{% set ns = namespace(day=None) %}
+{% for m in msgs %}
+  {% set d = m.created_at.date() %}
+  {% if d != ns.day %}{% set ns.day = d %}
+  <div class="text-center my-4"><span class="chip !text-[11px]">{{ m.created_at|datefr('long') }}</span></div>
+  {% endif %}
+  {% set mine = m.sender_id == current_user.id %}
+  <div id="m{{ m.id }}" class="flex {% if mine %}justify-end{% endif %}">
+    <div class="max-w-[85%] sm:max-w-[72%]">
+      <div class="rounded-2xl px-4 py-3 text-[0.94rem] leading-relaxed shadow-sm {% if mine %}rounded-br-md text-white{% else %}rounded-bl-md border{% endif %}"
+           style="{% if mine %}background:var(--terra-600){% else %}background:var(--surface);border-color:var(--line){% endif %}">
+        {% if m.kind != 'custom' and m.subject %}
+          <div class="text-[0.8rem] font-bold mb-1.5 flex items-center gap-1.5 {% if not mine %}text-terra-700{% endif %}">
+            <i data-lucide="{{ {'ack': 'mail-check', 'interview': 'calendar-check', 'second_chance': 'sparkles', 'rejected': 'message-square-heart', 'sponsorship': 'handshake', 'system': 'bell'}.get(m.kind, 'mail') }}" class="w-3.5 h-3.5"></i>{{ m.subject }}</div>
+        {% endif %}
+        <div class="whitespace-pre-line break-words">{{ m.body }}</div>
+      </div>
+      <div class="flex items-center gap-1.5 mt-1 text-[11px] muted {% if mine %}justify-end{% endif %}">
+        <span>{{ m.created_at.strftime('%H:%M') }}</span>
+        {% if m.application %}<span>· {{ m.application.job.title }}</span>{% endif %}
+        {% if mine %}
+          {% if m.email_status == 'sent' %}<span class="inline-flex items-center gap-0.5" title="{{ t('Envoyé par e-mail') }}"><i data-lucide="mail-check" class="w-3 h-3"></i></span>{% endif %}
+          {% if m.read_at %}<span class="inline-flex items-center gap-0.5 text-terra-700" title="{{ t('Lu') }}"><i data-lucide="check-check" class="w-3.5 h-3.5"></i></span>{% else %}<i data-lucide="check" class="w-3.5 h-3.5"></i>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% else %}
+  <p class="text-center muted text-sm py-10">{{ t('Aucun message pour le moment. Écrivez le premier !') }}</p>
+{% endfor %}
+</div>

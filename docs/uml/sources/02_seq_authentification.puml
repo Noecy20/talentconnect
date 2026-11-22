@@ -1,0 +1,26 @@
+@startuml
+!include _theme.iuml
+autonumber
+actor Utilisateur as U
+participant "Navigateur" as N
+participant "Application Flask\n(blueprint auth)" as F
+database "PostgreSQL" as DB
+U -> N : Saisit e-mail et mot de passe
+N -> F : POST /auth/connexion (jeton CSRF)
+F -> DB : Rechercher l'utilisateur par e-mail
+DB --> F : Utilisateur (ou aucun)
+alt Identifiants valides
+  F -> F : Vérifier le hachage du mot de passe
+  alt Compte actif
+    F -> F : Ouvrir la session (Flask-Login)\net enregistrer la langue
+    F --> N : Redirection vers /tableau-de-bord
+    N -> F : GET /tableau-de-bord
+    F --> N : Redirection vers l'espace du rôle\n(candidat, recruteur, parrain ou admin)
+  else Compte désactivé
+    F --> N : Message « compte désactivé »
+  end
+else Identifiants invalides
+  F --> N : Message « e-mail ou mot de passe incorrect »
+end
+N --> U : Affiche la page
+@enduml

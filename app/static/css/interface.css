@@ -1,0 +1,357 @@
+/* ==========================================================================
+   TalentConnect — interface (pages publiques + espace connecté)
+
+   Chargée uniquement par public.html et espace.html : les pages Connexion /
+   Inscription ne la voient pas et gardent leur apparence.
+   Tout est rangé sous la classe .ui posée sur le <body>.
+
+   L'idée : un fond très clair, des cartes blanches bien arrondies posées
+   dessus avec une ombre légère (pas de bordures partout), de l'espace,
+   et la terracotta en accent. Les teintes pâles (pêche, sable, sauge)
+   servent à distinguer les blocs sans les alourdir.
+
+   Sommaire
+     1. Couleurs et mesures
+     2. Base
+     3. Boutons, pastilles, champs
+     4. Cartes, listes, tableaux
+     5. Mise en page de l'espace connecté (menu, en-tête)
+     6. Pièces des tableaux de bord
+     7. Kanban, messagerie, divers
+     8. Pages publiques
+     9. Mode sombre
+   ========================================================================== */
+
+
+/* 1. Couleurs et mesures --------------------------------------------------- */
+.ui{
+  --bg:#F7F4F0;          /* fond de page */
+  --bg-2:#F1ECE5;        /* fond un cran plus soutenu (colonnes kanban, survols) */
+  --surface:#FFFFFF;
+  --surface-2:#FBF9F6;
+  --ink:#1F140D; --ink-2:#3A2416; --muted:#7E6A5B;
+  --line:#EEE7DF; --line-2:#E2D8CC;
+  --terra:#D86730; --terra-600:#B04A1F; --terra-700:#8E3A1B;
+  --brown:#5A2C19; --sombre:#2B170D;
+  --peche:#FCEDE3; --sable:#F7EEDC; --sauge:#E9F2EA; --creme:#FAF4EC;
+  --success:#2F855A; --danger:#C0392B; --gold:#D9A441;
+  --ombre:0 1px 2px rgba(31,20,13,.04),0 8px 24px -12px rgba(31,20,13,.10);
+  --ombre-haute:0 24px 48px -16px rgba(31,20,13,.22);
+  --rayon:20px;
+  --menu:240px;
+  --entete:84px;         /* hauteur de l'en-tête (pages plein écran) */
+  font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;
+  font-size:15px;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+
+/* 2. Base ------------------------------------------------------------------ */
+.ui h1,.ui h2,.ui h3,.ui h4,.ui .font-display,.ui .btn,.ui .chip,.ui .label{font-family:inherit}
+.ui h1,.ui h2,.ui h3{letter-spacing:-.025em}
+.ui .muted{color:var(--muted)}
+.ui .divider{background:var(--line)}
+.ui ::selection{background:var(--terra);color:#fff}
+/* Taille par défaut des icônes, sans priorité : une classe w-… dans la page l'emporte */
+:where(.ui i[data-lucide],.ui svg.lucide){width:18px;height:18px;stroke-width:1.9}
+
+
+/* 3. Boutons, pastilles, champs -------------------------------------------- */
+.ui .btn{height:44px;padding:0 1.15rem;border-radius:12px;font-size:14px;font-weight:600;gap:.5rem;border:1px solid transparent}
+.ui .btn-sm{height:36px;padding:0 .85rem;font-size:13px;border-radius:10px}
+.ui .btn-lg{height:52px;padding:0 1.6rem;font-size:15px;border-radius:14px}
+.ui .btn-icon{width:40px;padding:0}
+:where(.ui .btn i[data-lucide],.ui .btn svg.lucide){width:17px;height:17px}
+.ui .btn-primary{background:var(--terra-600);color:#fff}
+.ui .btn-primary:hover{background:var(--terra-700)}
+.ui .btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line-2)}
+.ui .btn-ghost:hover{background:var(--surface-2);border-color:var(--ink-2)}
+.ui .btn-soft{background:var(--peche);color:var(--terra-700)}
+.ui .btn-soft:hover{background:#F9E0D0}
+.ui .btn-dark{background:var(--sombre);color:#fff}
+.ui .btn-dark:hover{background:#432414}
+
+.ui .chip{font-size:12px;font-weight:600;padding:.3rem .7rem;border-radius:999px;border:0;background:var(--bg-2);color:var(--ink-2)}
+.ui .chip-terra{background:var(--peche);color:var(--terra-700)}
+.ui .chip-green{background:var(--sauge);color:#276749}
+.ui .chip-gold{background:var(--sable);color:#8A6116}
+.ui .chip-blue{background:#E8F0F8;color:#2B6CB0}
+.ui .chip-red{background:#FBEAE8;color:#A93226}
+
+.ui .label{font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:.45rem}
+.ui .input,.ui .select,.ui .textarea{background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:.72rem .95rem;font-size:14.5px}
+.ui .input:focus,.ui .select:focus,.ui .textarea:focus{border-color:var(--terra);box-shadow:0 0 0 4px rgba(216,103,48,.12)}
+
+.ui .alerte{border:0;border-radius:14px;box-shadow:var(--ombre);padding:.9rem 1.1rem}
+
+
+/* 4. Cartes, listes, tableaux ---------------------------------------------- */
+.ui .card{background:var(--surface);border:0;border-radius:var(--rayon);box-shadow:var(--ombre)}
+.ui .card-pad{padding:1.6rem}
+.ui .card-hover:hover{box-shadow:var(--ombre-haute)}
+.ui .entete-carte{border:0;padding:1.4rem 1.6rem .6rem}
+.ui .entete-carte h3{font-size:16.5px;font-weight:700}
+.ui .ligne-liste{border:0;padding:.8rem 1.6rem;gap:.9rem}
+.ui a.ligne-liste:hover{background:var(--surface-2)}
+
+.ui .table{font-size:14px}
+.ui .table th{background:transparent;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);padding:.9rem 1.6rem}
+.ui .table td{border-bottom:1px solid var(--line);padding:1rem 1.6rem}
+.ui .table tbody tr:hover{background:var(--surface-2)}
+
+.ui .progress{height:6px;background:var(--bg-2)}
+.ui .tc-ring{background:conic-gradient(var(--c) calc(var(--p)*1%),var(--bg-2) 0)}
+.ui .stat-icon{border-radius:14px;background:var(--peche);color:var(--terra-700)}
+
+/* Initiale d'entreprise (en attendant un vrai logo) */
+.ui .logo-ent{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:none;font-weight:700;font-size:17px;background:var(--peche);color:var(--terra-700)}
+.ui .logo-ent.t2{background:var(--sable);color:#8A6116}
+.ui .logo-ent.t3{background:var(--sauge);color:#276749}
+.ui .logo-ent.t4{background:#EFE7F4;color:#6B4A86}
+.ui .logo-ent.petit{width:38px;height:38px;border-radius:12px;font-size:14px}
+
+.ui .avatar{background:var(--brown)}
+
+
+/* 5. Mise en page de l'espace connecté ------------------------------------- */
+.coque{display:flex;min-height:100vh}
+
+/* Menu latéral : blanc, pleine hauteur, entrée active en brun foncé */
+.menu{width:var(--menu);flex:none;background:var(--surface);position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;padding:1.4rem 1rem 1rem;box-shadow:1px 0 0 var(--line)}
+.menu-logo{display:flex;align-items:center;gap:.6rem;padding:0 .6rem 1.4rem}
+.menu-logo img{width:34px;height:34px;object-fit:contain}
+.menu-logo span{font-size:18px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+.menu-logo b{color:var(--terra);font-weight:700}
+.menu nav{flex:1;overflow-y:auto;scrollbar-width:none}
+.menu-titre{font-size:11.5px;font-weight:600;color:var(--muted);padding:1.1rem .85rem .5rem;opacity:.85}
+.menu-lien{display:flex;align-items:center;gap:.8rem;height:44px;padding:0 .85rem;border-radius:12px;
+  font-size:14px;font-weight:500;color:var(--muted);text-decoration:none;transition:background .15s,color .15s}
+.menu-lien:hover{background:var(--bg);color:var(--ink)}
+.menu-lien.actif{background:var(--sombre);color:#fff;font-weight:600}
+.menu-lien.actif i,.menu-lien.actif svg{color:#F0A060}
+.menu-lien .compteur{margin-left:auto;min-width:22px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--terra);color:#fff}
+.menu-lien .verrou{margin-left:auto;width:14px!important;height:14px!important;opacity:.45}
+/* Encart d'accès en bas du menu */
+.menu-encart{margin-top:1rem;border-radius:18px;padding:1.1rem;background:var(--peche);font-size:13px;color:var(--ink-2)}
+.menu-encart strong{display:block;font-size:14px;color:var(--ink);margin-bottom:.2rem}
+.menu-encart a{display:inline-flex;margin-top:.7rem;font-weight:600;color:var(--terra-700)}
+.voile{position:fixed;inset:0;background:rgba(31,20,13,.4);z-index:55}
+@media (max-width:1023px){
+  .menu{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .25s;box-shadow:var(--ombre-haute)}
+  .menu.ouvert{transform:none}
+}
+.menu.menu-replie{position:fixed;inset:0 auto 0 0;z-index:60;transform:translateX(-100%);transition:transform .25s;box-shadow:var(--ombre-haute)}
+.menu.menu-replie.ouvert{transform:none}
+
+.principal{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* En-tête : posé sur le fond, sans barre. Titre de la page à gauche. */
+.ui .entete{height:auto;background:transparent;border:0}
+.entete{display:flex;align-items:center;gap:1rem;padding:1.4rem 2.5rem 0;min-height:84px}
+.entete .titre-page{min-width:0}
+.entete .titre-page h1{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entete .titre-page ol{white-space:nowrap;overflow:hidden;gap:.4rem;font-size:13px;color:var(--muted);margin-top:.15rem}
+.entete .titre-page li+li::before{content:"/";margin-right:.4rem;opacity:.5}
+.entete .titre-page a:hover{color:var(--terra-600)}
+.recherche{display:flex;align-items:center;gap:.6rem;height:46px;width:min(340px,32vw);padding:0 .5rem 0 1rem;border-radius:999px;
+  background:var(--surface);box-shadow:var(--ombre);color:var(--muted);font-size:14px;cursor:text}
+.recherche kbd{font-family:inherit;font-size:11.5px;font-weight:600;padding:.25rem .5rem;border-radius:999px;background:var(--bg);color:var(--muted);border:0}
+.icone{width:46px;height:46px;border-radius:999px;display:grid;place-items:center;position:relative;flex:none;
+  background:var(--surface);box-shadow:var(--ombre);color:var(--ink-2);transition:color .15s}
+.icone:hover{color:var(--terra-600)}
+.icone.plat{background:transparent;box-shadow:none}
+.icone .pastille{position:absolute;top:11px;right:12px;width:8px;height:8px;border-radius:999px;background:var(--terra);box-shadow:0 0 0 2px var(--surface)}
+.profil{display:flex;align-items:center;gap:.5rem;height:46px;padding:0 .7rem 0 .3rem;border-radius:999px;background:var(--surface);box-shadow:var(--ombre)}
+
+.contenu{width:100%;max-width:1440px;padding:2rem 2.5rem 3.5rem}
+@media (max-width:767px){.entete{padding:1rem 1rem 0;min-height:70px}.entete .titre-page h1{font-size:19px}.contenu{padding:1.2rem 1rem 2.5rem}}
+
+/* Menus déroulants */
+.deroulant{position:absolute;right:0;top:calc(100% + 10px);background:var(--surface);border-radius:18px;box-shadow:var(--ombre-haute);z-index:50;overflow:hidden;border:0}
+.deroulant-lien{display:flex;align-items:center;gap:.8rem;padding:.6rem .8rem;border-radius:12px;font-size:14px;color:var(--ink-2)}
+.deroulant-lien:hover{background:var(--bg)}
+.ui .carre-icone{width:36px;height:36px;border-radius:11px}
+.profil-bandeau{background:var(--sombre);color:#fff;padding:1.2rem}
+.profil-bandeau .avatar{background:#F0A060;color:var(--sombre)}
+.profil-tuile{background:rgba(255,255,255,.07);border-radius:12px;padding:.65rem .4rem;text-align:center}
+.badge-role{font-size:11px;font-weight:700;padding:.15rem .55rem;border-radius:999px;background:rgba(240,160,96,.2);color:#F6C9A4}
+
+/* Recherche Ctrl/⌘ K */
+.ui .palette-boite{border:0;border-radius:20px}
+.ui .palette-ligne{border-radius:12px}
+
+
+/* 6. Pièces des tableaux de bord ------------------------------------------- */
+
+/* Carte d'accueil brune, en tête des tableaux de bord */
+.ui .banniere{background:var(--sombre);border-radius:24px;padding:2.2rem 2.4rem;color:#fff}
+.ui .banniere::before{opacity:.5}
+.ui .banniere::after{left:auto;right:-80px;bottom:auto;top:-120px;width:320px;height:320px;background:var(--terra);opacity:.35;filter:blur(80px)}
+.ui .banniere h1{font-size:clamp(1.6rem,2.6vw,2.2rem);font-weight:700}
+.ui .banniere .tc-ring::after{background:var(--sombre)}
+.ui .pilule{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
+.ui .btn-blanc{background:#fff;color:var(--sombre)}
+.ui .btn-translucide{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.16)}
+
+/* Tuiles de chiffres teintées */
+.tuiles{display:grid;gap:1.25rem;grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tuile{border-radius:var(--rayon);padding:1.3rem 1.4rem;background:var(--surface);box-shadow:var(--ombre)}
+.tuile .rond{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--surface)}
+.tuile .valeur{font-size:32px;font-weight:700;letter-spacing:-.035em;line-height:1;margin-top:1.1rem}
+.tuile .libelle{font-size:13.5px;font-weight:600;color:var(--ink-2);margin-top:.45rem}
+.tuile .detail{font-size:12.5px;color:var(--muted);margin-top:.15rem}
+.tuile.peche{background:var(--peche);box-shadow:none}.tuile.peche .rond{color:var(--terra-700)}
+.tuile.sable{background:var(--sable);box-shadow:none}.tuile.sable .rond{color:#8A6116}
+.tuile.sauge{background:var(--sauge);box-shadow:none}.tuile.sauge .rond{color:#276749}
+.tuile.creme{background:#EFE7F4;box-shadow:none}.tuile.creme .rond{color:#6B4A86}
+
+/* Carte d'offre */
+.offre{display:flex;flex-direction:column;gap:1rem;padding:1.4rem;border-radius:var(--rayon);background:var(--surface);box-shadow:var(--ombre);transition:box-shadow .2s,transform .2s}
+.offre:hover{box-shadow:var(--ombre-haute);transform:translateY(-2px)}
+.offre h4{font-size:15.5px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+.offre .pied{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding-top:1rem;border-top:1px dashed var(--line-2)}
+
+/* Barre de compatibilité */
+.jauge{display:flex;align-items:center;gap:.6rem;font-size:13px;font-weight:600}
+.jauge .barre{flex:1;min-width:60px;height:6px;border-radius:999px;background:var(--bg-2);overflow:hidden}
+.jauge .barre>span{display:block;height:100%;border-radius:999px;background:var(--terra)}
+
+/* Petite date (agenda) */
+.date-badge{width:48px;flex:none;border-radius:14px;background:var(--peche);text-align:center;padding:.4rem 0;line-height:1.1}
+.date-badge .mois{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--terra-700)}
+.date-badge .jour{display:block;font-size:18px;font-weight:700;color:var(--ink)}
+
+/* Initiale ronde (listes) */
+.initiale{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;font-weight:700;background:var(--bg);color:var(--ink-2)}
+
+/* Chiffres simples (ancienne grille, gardée pour les pages qui l'utilisent) */
+.chiffre{padding:1.35rem 1.6rem}
+.chiffre .libelle{display:flex;align-items:center;gap:.5rem;font-size:13px;color:var(--muted)}
+.chiffre .libelle i,.chiffre .libelle svg{width:16px;height:16px;color:var(--terra)}
+.chiffre .valeur{font-size:28px;font-weight:700;letter-spacing:-.03em;margin-top:.4rem}
+.chiffre .detail{font-size:12.5px;color:var(--muted);margin-top:.15rem}
+
+
+/* Anciens fonds « dégradé » : un aplat brun, y compris sur une carte */
+.ui .bg-grad,.ui .card.bg-grad{background:var(--sombre);color:#fff}
+
+/* 7. Kanban, messagerie, divers -------------------------------------------- */
+.ui .kanban-col{background:var(--bg-2);border-radius:20px;padding:1rem;min-width:290px;width:290px}
+.ui .kanban-card{border:0;border-radius:16px;padding:1rem;box-shadow:var(--ombre)}
+.ui .bubble-bot{border:0;box-shadow:var(--ombre)}
+.ui .likert label{border-radius:12px;border-color:var(--line-2)}
+
+
+/* 8. Pages publiques ------------------------------------------------------- */
+.ui-public{background:#fff}
+.site-entete{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+.site-entete.defile{border-color:var(--line)}
+.site-nav a{font-size:14.5px;font-weight:500;color:var(--ink-2)}
+.site-nav a:hover{color:var(--terra-600)}
+.section{max-width:1200px;margin:0 auto;padding:0 1.5rem}
+.surtitre{display:inline-block;font-size:13px;font-weight:700;color:var(--terra-600);letter-spacing:.02em}
+.titre-section{font-size:clamp(1.9rem,3.6vw,2.8rem);font-weight:700;letter-spacing:-.035em;line-height:1.12}
+/* Barre de recherche d'offres (accueil et page Offres) */
+.cherche-offres{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(31,20,13,.05),0 20px 40px -20px rgba(31,20,13,.25);border:1px solid var(--line)}
+.cherche-offres label{display:flex;align-items:center;gap:.6rem;flex:1;min-width:0;padding:0 .9rem;height:52px}
+.cherche-offres label+label{border-left:1px solid var(--line)}
+.cherche-offres input{flex:1;min-width:0;background:transparent;outline:none;font-size:15px;color:var(--ink)}
+.cherche-offres .btn{height:52px;border-radius:14px;padding:0 1.6rem}
+@media (max-width:639px){.cherche-offres{flex-direction:column;align-items:stretch}.cherche-offres label+label{border-left:0;border-top:1px solid var(--line)}}
+.bloc-teinte{border-radius:28px;background:var(--creme)}
+.etape-num{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:700;background:var(--sombre);color:#fff;flex:none}
+
+
+/* 9. Mode sombre ----------------------------------------------------------- */
+.dark .ui{
+  --bg:#17100B; --bg-2:#21170F; --surface:#21170F; --surface-2:#2A1D14;
+  --ink:#F7EDE3; --ink-2:#EBD9C8; --muted:#B39C89; --line:#33261C; --line-2:#3F2F23;
+  --peche:#3A2216; --sable:#352A18; --sauge:#1E2E22; --creme:#211810;
+  --sombre:#0F0905;
+  --ombre:0 1px 2px rgba(0,0,0,.3);
+  --ombre-haute:0 24px 48px -16px rgba(0,0,0,.6);
+}
+.dark .ui-public{background:var(--bg)}
+.dark .site-entete{background:rgba(23,16,11,.9)}
+.dark .ui .chip-terra,.dark .ui .btn-soft,.dark .ui .logo-ent,.dark .date-badge .mois{color:#F3B48C}
+.dark .ui .chip-green,.dark .ui .logo-ent.t3{color:#8FD3AA}
+.dark .ui .chip-gold,.dark .ui .logo-ent.t2{color:#EBCB86}
+.dark .ui .logo-ent.t4,.dark .tuile.creme{background:#2A2033}
+.dark .ui .logo-ent.t4,.dark .tuile.creme .rond{color:#C9A9E6}
+.dark .tuile .rond{background:rgba(255,255,255,.06)}
+.dark .menu-lien.actif{background:var(--terra-600)}
+.dark .menu-lien.actif i,.dark .menu-lien.actif svg{color:#fff}
+.dark .ui .banniere{box-shadow:inset 0 0 0 1px var(--line)}
+.dark .cherche-offres{background:var(--surface);border-color:var(--line)}
+
+
+/* 10. Logos, offres et recherche « façon Odoo » ---------------------------- */
+/* Logo d'entreprise en image : fond blanc, l'image tient dans le carré */
+.ui .logo-ent.image{background:#fff;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;color:var(--ink-2)}
+.ui .logo-ent.image img{width:62%;height:62%;object-fit:contain}
+
+/* Grille d'offres : cartes bien séparées, avec un vrai contour */
+.grille-offres{display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.offre.bordee{box-shadow:none;border:1px solid var(--line);background:var(--surface)}
+.offre.bordee:hover{border-color:var(--line-2);box-shadow:var(--ombre-haute)}
+.titre-groupe{display:flex;align-items:center;gap:.6rem;font-size:16px;font-weight:700}
+.titre-groupe span{font-size:12px;font-weight:700;padding:.15rem .55rem;border-radius:999px;background:var(--bg-2);color:var(--muted)}
+
+/* Champ de recherche avec pastilles de filtres */
+.recherche-offres{display:flex;align-items:center;gap:.75rem;min-height:56px;padding:0 .5rem 0 1.1rem;border-radius:16px;background:var(--surface);border:1px solid var(--line-2)}
+.recherche-offres:focus-within{border-color:var(--terra);box-shadow:0 0 0 4px rgba(216,103,48,.12)}
+.facette{display:inline-flex;align-items:center;gap:.35rem;height:30px;padding:0 .4rem 0 .6rem;border-radius:8px;font-size:13px;font-weight:600;background:var(--peche);color:var(--terra-700)}
+.facette i,.facette svg{width:14px!important;height:14px!important}
+.facette span{width:20px;height:20px;display:grid;place-items:center;border-radius:6px;opacity:.6}
+.facette:hover span{opacity:1;background:rgba(0,0,0,.06)}
+.facette-groupe{background:var(--sauge);color:#276749}
+.bouton-menu{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.bouton-menu:hover{background:var(--bg)}
+.champ-ville{display:flex;align-items:center;gap:.6rem;flex:1;height:50px;padding:0 1.1rem;border-radius:14px;background:var(--surface);border:1px solid var(--line-2)}
+.champ-ville input{flex:1;min-width:0;background:transparent;outline:none;font-size:15px}
+.menu-recherche{position:absolute;left:0;right:0;top:64px;z-index:40;display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--surface);border-radius:18px;box-shadow:var(--ombre-haute);border:1px solid var(--line);padding:1.1rem .6rem}
+.menu-recherche>div{padding:0 .6rem}
+.menu-recherche>div+div{border-left:1px solid var(--line)}
+.menu-recherche .titre{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:14px;padding:.2rem .6rem .6rem}
+.menu-recherche a{display:block;padding:.45rem .6rem;border-radius:8px;font-size:14px;color:var(--ink-2)}
+.menu-recherche a:hover{background:var(--bg)}
+.menu-recherche a.actif{background:var(--bg-2);font-weight:600}
+.menu-recherche a.actif::before{content:"✓";margin-right:.45rem;color:var(--terra-600)}
+.menu-recherche .separateur{height:1px;background:var(--line);margin:.5rem .6rem}
+@media (max-width:639px){.menu-recherche{grid-template-columns:1fr}.menu-recherche>div+div{border-left:0;border-top:1px solid var(--line);padding-top:.6rem;margin-top:.6rem}}
+
+/* Chiffres de l'accueil : grande icône pâle en fond, petite pastille au-dessus */
+.chiffre-fond{position:relative;overflow:hidden;border-radius:24px;padding:1.6rem 1.6rem 1.7rem}
+.chiffre-fond.peche{background:var(--peche)}.chiffre-fond.sable{background:var(--sable)}
+.chiffre-fond.sauge{background:var(--sauge)}.chiffre-fond.creme{background:#EFE7F4}
+.chiffre-fond .fond{position:absolute;right:-18px;bottom:-22px;width:120px!important;height:120px!important;stroke-width:1.2;opacity:.12}
+.chiffre-fond .pastille-icone{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#fff}
+.chiffre-fond.peche .pastille-icone{color:var(--terra-700)}.chiffre-fond.sable .pastille-icone{color:#8A6116}
+.chiffre-fond.sauge .pastille-icone{color:#276749}.chiffre-fond.creme .pastille-icone{color:#6B4A86}
+.dark .chiffre-fond.creme{background:#2A2033}
+.dark .chiffre-fond .pastille-icone{background:rgba(255,255,255,.08)}
+
+/* 11. Suivi : bascule de vue, colonnes, fenêtre d'ajout ------------------- */
+.bascule{display:inline-flex;padding:4px;border-radius:14px;background:var(--surface);box-shadow:var(--ombre)}
+.bascule a{display:inline-flex;align-items:center;gap:.4rem;height:36px;padding:0 .9rem;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.bascule a.actif{background:var(--sombre);color:#fff}
+.colonne{flex:none;width:280px;display:flex;flex-direction:column;border-radius:20px;background:var(--bg-2);padding:.9rem;max-height:calc(100vh - 220px)}
+.colonne-tete{display:flex;align-items:center;gap:.55rem;padding:.15rem .3rem .85rem}
+.colonne-tete .compte{margin-left:auto;font-size:12px;font-weight:700;min-width:24px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--surface);color:var(--muted)}
+.colonne .kanban-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem;min-height:70px;padding:2px}
+.carte-suivi{background:var(--surface);border-radius:16px;padding:1rem;box-shadow:var(--ombre);cursor:grab}
+.carte-suivi:hover{box-shadow:var(--ombre-haute)}
+.colonne-ajout{display:flex;align-items:center;gap:.4rem;margin-top:.7rem;padding:.55rem .5rem;border-radius:12px;font-size:13px;font-weight:600;color:var(--muted)}
+.colonne-ajout:hover{background:var(--surface);color:var(--terra-700)}
+.fenetre-fond{position:fixed;inset:0;z-index:90;background:rgba(31,20,13,.45);display:flex;align-items:flex-start;justify-content:center;padding:10vh 1rem 1rem}
+.fenetre{width:100%;max-width:620px;background:var(--surface);border-radius:24px;padding:1.6rem;box-shadow:var(--ombre-haute)}
+.choix{text-align:left;padding:1.4rem;border-radius:18px;border:1px solid var(--line-2);transition:border-color .15s,background .15s}
+.choix:hover{border-color:var(--terra);background:var(--creme)}
+/* Le menu profil contient le choix de langue : il ne doit pas le couper */
+.deroulant{overflow:visible}
+.profil-bandeau{border-radius:18px 18px 0 0}
+.deroulant .icone{width:38px;height:38px;box-shadow:none;background:var(--bg)}

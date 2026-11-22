@@ -1,0 +1,11 @@
+{% extends "espace.html" %}
+{% block nav_mode %}collapsed{% endblock %}
+{% block title %}{{ t('CV Builder') }}{% endblock %}
+{% block page_title %}{{ t('CV Builder') }}{% endblock %}
+
+{% block main %}
+<main class="flex-1 min-h-0">
+  {% set flash_marges = "mx-4 mt-4 !mb-4" %}{% include "composants/messages_flash.html" %}
+  <iframe src="{{ frame_url }}" title="{{ t('CV Builder') }}" class="block w-full border-0" style="height:calc(100vh - var(--entete) - 1px)"></iframe>
+</main>
+{% endblock %}

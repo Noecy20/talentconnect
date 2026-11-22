@@ -1,0 +1,84 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import empty with context %}
+{% block title %}{{ t('Mes offres') }}{% endblock %}
+{% block page_title %}{{ t('Mes offres') }}{% endblock %}
+{% block content %}
+{#
+  Les offres rangées par état, comme un tableau Kanban.
+  « En recrutement » = offre publiée qui a déjà des candidats en présélection ou en entretien.
+  Glisser une carte change l'état de l'offre (Brouillon, Publiée, Clôturée).
+#}
+{% set colonnes = [('draft', t('Brouillon'), '#8B6B57'), ('open', t('Publiée'), '#2B6CB0'), ('recrutement', t('En recrutement'), '#D86730'), ('closed', t('Clôturée'), '#7E6A5B')] %}
+{% macro etat(j) -%}
+  {%- if j.status == 'open' and (counts[j.id].interview or counts[j.id].shortlisted) %}recrutement{% else %}{{ j.status }}{% endif -%}
+{%- endmacro %}
+
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <p class="muted text-[14.5px] max-w-xl">{{ t('Glissez une offre d\'une colonne à l\'autre pour la publier, la remettre en brouillon ou la clôturer.') }}</p>
+  <a href="{{ url_for('recruiter.job_new') }}" class="btn btn-primary"><i data-lucide="plus"></i>{{ t('Nouvelle offre') }}</a>
+</div>
+
+{% if jobs %}
+<div class="flex gap-5 overflow-x-auto pb-5 mt-7">
+  {% for code, libelle, couleur in colonnes %}
+  <div class="colonne !w-[300px]">
+    <div class="colonne-tete">
+      <span class="w-2 h-2 rounded-full" style="background:{{ couleur }}"></span>
+      <span class="font-semibold text-[14px]">{{ libelle }}</span>
+      <span class="compte" data-compte="{{ code }}"></span>
+    </div>
+    <div class="kanban-list" data-etat="{{ code }}">
+      {% for j in jobs if etat(j) == code %}{% set c = counts[j.id] %}
+      <div class="carte-suivi" data-id="{{ j.id }}">
+        <div class="flex items-start gap-2">
+          <a href="{{ url_for('recruiter.job_pipeline', job_id=j.id) }}" class="flex-1 min-w-0">
+            <div class="font-semibold text-[14.5px] leading-snug hover:text-terra-600">{{ j.title }}</div>
+            <div class="text-[12.5px] muted mt-0.5">{{ j.city }} · {{ contract_label(j.contract_type) }} · {{ j.created_at|ago }}</div>
+          </a>
+          <a href="{{ url_for('recruiter.job_edit', job_id=j.id) }}" class="muted hover:text-terra-600" title="{{ t('Modifier') }}"><i data-lucide="pencil" class="!w-4 !h-4"></i></a>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+          <div class="rounded-xl py-2" style="background:var(--bg)"><div class="font-bold text-[17px]">{{ c.total }}</div><div class="text-[11px] muted">{{ t('reçues') }}</div></div>
+          <div class="rounded-xl py-2" style="background:var(--peche)"><div class="font-bold text-[17px] text-terra-700">{{ c.new }}</div><div class="text-[11px] muted">{{ t('à traiter') }}</div></div>
+          <div class="rounded-xl py-2" style="background:var(--sauge)"><div class="font-bold text-[17px]" style="color:#276749">{{ c.interview }}</div><div class="text-[11px] muted">{{ t('entretiens') }}</div></div>
+        </div>
+        <div class="flex items-center gap-3 mt-4 text-[13px] font-semibold">
+          <a href="{{ url_for('recruiter.job_pipeline', job_id=j.id) }}" class="text-terra-600">{{ t('Voir les candidats') }}</a>
+          {% if c.new %}<a href="{{ url_for('recruiter.job_triage', job_id=j.id) }}" class="ml-auto inline-flex items-center gap-1" style="color:var(--ink-2)"><i data-lucide="sparkles" class="!w-3.5 !h-3.5"></i>{{ t('Tri IA') }}</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if code == 'draft' %}<a href="{{ url_for('recruiter.job_new') }}" class="colonne-ajout"><i data-lucide="plus"></i>{{ t('Nouvelle offre') }}</a>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="card p-12 text-center mt-7">
+    <img src="{{ url_for('static', filename='images/illustrations/offres.svg') }}" alt="" class="w-52 mx-auto">
+    <p class="font-bold text-[17px] mt-7">{{ t('Aucune offre pour l\'instant') }}</p>
+    <p class="muted text-[14px] mt-1">{{ t('Publiez votre première offre : elle sera proposée automatiquement aux bons profils.') }}</p>
+    <a href="{{ url_for('recruiter.job_new') }}" class="btn btn-primary mt-6">{{ t('Publier une offre') }}</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='librairies/Sortable.min.js') }}"></script>
+<script>
+  // Compteurs des colonnes, puis glisser-déposer : on enregistre le nouvel état de l'offre
+  const csrf = {{ csrf_token()|tojson }};
+  const compter = () => document.querySelectorAll('[data-compte]').forEach(c =>
+    c.textContent = document.querySelector(`.kanban-list[data-etat="${c.dataset.compte}"]`).children.length);
+  compter();
+  document.querySelectorAll('.kanban-list').forEach(el => new Sortable(el, {
+    group: 'offres', animation: 180, ghostClass: 'sortable-ghost', delay: 120, delayOnTouchOnly: true,
+    onAdd: async evt => {
+      const etat = evt.to.dataset.etat === 'recrutement' ? 'open' : evt.to.dataset.etat;
+      await fetch({{ url_for('recruiter.job_toggle', job_id=0)|tojson }}.replace('/0/', `/${evt.item.dataset.id}/`),
+        { method: 'POST', headers: { 'X-CSRFToken': csrf, 'HX-Request': 'true' }, body: new URLSearchParams({ status: etat }) });
+      compter();
+    }
+  }));
+</script>
+{% endblock %}

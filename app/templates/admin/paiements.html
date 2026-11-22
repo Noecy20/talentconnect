@@ -1,0 +1,51 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import avatar with context %}
+{% block title %}{{ t('Paiements') }}{% endblock %}
+{% block page_title %}{{ t('Suivi des paiements') }}{% endblock %}
+{% block content %}
+<div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+  {% for key, amt in totals.items() %}
+  <div class="card card-pad"><div class="text-sm muted">{{ {'candidate': t('Candidats'), 'recruiter': t('Recruteurs')}.get(key[0], key[0]) }}</div><div class="font-display text-2xl font-bold mt-1">{{ money(amt, key[1]) }}</div></div>
+  {% else %}<div class="card card-pad muted text-sm">{{ t('Aucun revenu confirmé pour le moment.') }}</div>{% endfor %}
+</div>
+<div class="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
+  <div>
+    <div class="flex gap-2 mb-4">
+      {% for s, l in [('pending', t('À valider')), ('confirmed', t('Confirmés')), ('rejected', t('Refusés')), ('all', t('Tous'))] %}
+      <a href="{{ url_for('admin.payments', status=s) }}" class="btn btn-sm {% if status==s %}btn-primary{% else %}btn-ghost{% endif %}">{{ l }}</a>{% endfor %}
+    </div>
+    <div class="card"><div class="scroll-x"><table class="table">
+      <thead><tr><th>{{ t('Utilisateur') }}</th><th>{{ t('Formule') }}</th><th>{{ t('Montant') }}</th><th>{{ t('Moyen / réf.') }}</th><th>{{ t('Date') }}</th><th class="text-right">{{ t('Statut') }}</th></tr></thead>
+      <tbody>
+      {% for p in pays %}
+      <tr>
+        <td><div class="flex items-center gap-3">{{ avatar(p.user, 32) }}<div><div class="font-semibold text-sm">{{ p.user.full_name }}</div><div class="text-xs muted">{{ p.user.email }}</div></div></div></td>
+        <td class="text-sm">{{ p.plan.name if p.plan else '—' }}</td>
+        <td class="font-semibold">{{ money(p.amount, p.currency) }}</td>
+        <td class="text-sm"><span class="chip">{{ p.method|replace('_',' ')|title }}</span><div class="text-xs muted mt-1 font-mono">{{ p.reference }}</div></td>
+        <td class="text-sm muted">{{ p.created_at|datefr('time') }}</td>
+        <td class="text-right">
+          {% if p.status == 'pending' %}
+          <div class="inline-flex gap-1.5">
+            <form method="post" action="{{ url_for('admin.payment_action', pid=p.id, action='confirm') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success btn-sm"><i data-lucide="check" class="w-4 h-4"></i>{{ t('Valider') }}</button></form>
+            <form method="post" action="{{ url_for('admin.payment_action', pid=p.id, action='reject') }}" onsubmit="this.note.value = prompt({{ t('Motif du refus ?')|js }}) || ''"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="note"><button class="btn btn-danger btn-sm btn-icon"><i data-lucide="x" class="w-4 h-4"></i></button></form>
+          </div>
+          {% elif p.status == 'confirmed' %}<span class="chip chip-green">{{ t('Confirmé') }}</span>{% else %}<span class="chip chip-red">{{ t('Refusé') }}</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="6" class="text-center muted py-10">{{ t('Aucun paiement.') }}</td></tr>{% endfor %}
+      </tbody></table></div></div>
+  </div>
+  <form method="post" class="card card-pad space-y-3 xl:sticky xl:top-24">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h3 class="font-display font-semibold">{{ t('Enregistrer un paiement manuel') }}</h3>
+    <p class="text-xs muted">{{ t('Espèces, virement… l\'accès est activé immédiatement.') }}</p>
+    <input name="email" type="email" class="input" placeholder="{{ t('E-mail de l\'utilisateur') }}" required>
+    <select name="plan_id" class="select">{% for pl in plans %}<option value="{{ pl.id }}">{{ pl.name }} · {{ money(pl.price, pl.currency) }}</option>{% endfor %}</select>
+    <input name="amount" type="number" class="input" placeholder="{{ t('Montant (vide = prix de la formule)') }}">
+    <select name="method" class="select">{% for m in ['cash','bank','wave','orange_money','mtn_momo','moov_money','card'] %}<option value="{{ m }}">{{ m|replace('_',' ')|title }}</option>{% endfor %}</select>
+    <input name="reference" class="input" placeholder="{{ t('Référence') }}">
+    <button class="btn btn-primary w-full">{{ t('Enregistrer et activer') }}</button>
+  </form>
+</div>
+{% endblock %}

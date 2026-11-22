@@ -1,0 +1,136 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import banniere, status, empty, avatar with context %}
+{% block title %}{{ t('Tableau de bord') }}{% endblock %}
+{% block page_title %}{{ t('Bonjour, {nom}', nom=current_user.first_name or current_user.full_name) }}{% endblock %}
+{% block chemin %}<li>{{ co.name }}</li><li>{{ t('Tableau de bord') }}</li>{% endblock %}
+
+{% block content %}
+{% if pending %}
+  {% set phrase = t('{n} candidature(s) attendent une réponse : le tri IA est prêt, il ne reste qu\'à vérifier et envoyer.', n=pending|length) %}
+  {% set action_principale = (t('Ouvrir le tri IA'), url_for('recruiter.job_triage', job_id=pending[0].job.id), 'sparkles') %}
+{% else %}
+  {% set phrase = t('Toutes les candidatures reçues ont eu une réponse. Beau travail.') %}
+  {% set action_principale = (t('Mes offres'), url_for('recruiter.jobs'), 'briefcase') %}
+{% endif %}
+
+{% call banniere(
+    t('Vos recrutements en un coup d\'œil'),
+    phrase,
+    [(t('Offres actives'), open_jobs),
+     (t('Candidatures'), apps|length),
+     (t('À traiter'), pending|length),
+     (t('Délai de réponse'), (avg_days|nb ~ ' ' ~ t('j')) if avg_days is not none else '—')],
+    pilules=[(None, t('En direct')),
+             ('badge-check' if current_user.recruiter.is_verified else 'building-2', co.name),
+             ('mail-check', t('Taux de réponse affiché : {n} %', n=response_rate if response_rate is not none else 100))],
+    actions=[action_principale, (t('Publier une offre'), url_for('recruiter.job_new'), 'plus')]) %}
+{% endcall %}
+
+{# Points bloquants : vérification de l'entreprise, accès payant #}
+{% if not current_user.recruiter.is_verified or not current_user.has_access %}
+<div class="grid md:grid-cols-2 gap-5 mt-7">
+  {% if not current_user.recruiter.is_verified %}
+  <a href="{{ url_for('recruiter.verification') }}" class="card card-hover p-4 flex items-center gap-4" style="border-left:4px solid var(--gold)">
+    <span class="carre-icone carre-or !w-11 !h-11"><i data-lucide="shield-alert" class="w-5 h-5"></i></span>
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold">{{ t("Vérifiez votre appartenance à l'entreprise") }}</div>
+      <p class="text-sm muted">{{ t('E-mail professionnel ou justificatif : obligatoire pour publier des offres.') }}</p>
+    </div>
+    <i data-lucide="arrow-right" class="w-4 h-4 muted shrink-0"></i>
+  </a>
+  {% endif %}
+  {% if not current_user.has_access %}
+  <a href="{{ url_for('billing.pricing') }}" class="card card-hover p-4 flex items-center gap-4" style="border-left:4px solid var(--terra)">
+    <span class="carre-icone carre-terra !w-11 !h-11"><i data-lucide="lock-open" class="w-5 h-5"></i></span>
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold">{{ t('Activez votre accès recruteur') }}</div>
+      <p class="text-sm muted">{{ t('Publiez des offres, triez avec l\'IA et trouvez des talents parrainés.') }}</p>
+    </div>
+    <i data-lucide="arrow-right" class="w-4 h-4 muted shrink-0"></i>
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Candidatures qui attendent une réponse, puis l'entonnoir #}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-7 mt-10 items-start">
+  <section class="card">
+    <div class="entete-carte">
+      <h3>{{ t('À traiter') }}</h3>
+      <span class="text-[13px] muted">{{ pending|length }} {{ t('candidature(s)') }}</span>
+    </div>
+    <div class="pb-3">
+    {% for a in (pending|sort(attribute='match_score', reverse=True))[:6] %}
+      <a href="{{ url_for('recruiter.application', app_id=a.id) }}" class="ligne-liste">
+        {{ avatar(a.candidate, 40) }}
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold truncate">{{ a.candidate.full_name }}</div>
+          <div class="text-[13px] muted truncate">{{ a.job.title }} · {{ a.created_at|ago }}</div>
+        </div>
+        <div class="jauge w-32 hidden sm:flex"><span class="barre"><span style="width:{{ a.match_score }}%"></span></span>{{ a.match_score }} %</div>
+        {{ status(a.status) }}
+      </a>
+    {% else %}
+      <div class="px-6 py-8 flex items-center gap-5">
+        <img src="{{ url_for('static', filename='images/illustrations/tri_cv.svg') }}" alt="" class="w-28">
+        <p class="muted text-[14px]">{{ t('Toutes les candidatures ont reçu une réponse. Beau travail.') }}</p>
+      </div>
+    {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="entete-carte"><h3>{{ t('Entonnoir de recrutement') }}</h3></div>
+    <div class="px-6 pb-6 pt-2 space-y-3.5">
+      {% set maxv = [funnel.values()|max, 1]|max %}
+      {% for s in ['received','shortlisted','interview','offer','hired','second_chance','rejected'] %}
+      <div>
+        <div class="flex justify-between text-[13px] mb-1.5"><span style="color:var(--ink-2)">{{ t({'received': 'Reçues', 'shortlisted': 'Présélection', 'interview': 'Entretien', 'offer': 'Offre', 'hired': 'Embauché', 'second_chance': 'Seconde chance', 'rejected': 'Non retenue'}[s]) }}</span><b>{{ funnel[s] }}</b></div>
+        <div class="progress"><span style="width:{{ (funnel[s] / maxv * 100)|round }}%"></span></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{# Activité et offres #}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-7 mt-7 items-start">
+  <section class="card">
+    <div class="entete-carte"><h3>{{ t('Candidatures reçues, 30 derniers jours') }}</h3></div>
+    <div class="px-6 pb-6 pt-2"><canvas id="parJour" height="120"></canvas></div>
+  </section>
+  <section class="card">
+    <div class="entete-carte">
+      <h3>{{ t('Offres les plus actives') }}</h3>
+      <a href="{{ url_for('recruiter.jobs') }}" class="text-[13.5px] text-terra-600 font-semibold">{{ t('Tout voir') }}</a>
+    </div>
+    <div class="pb-3">
+    {% for j in top_jobs %}
+      <a href="{{ url_for('recruiter.job_pipeline', job_id=j.id) }}" class="ligne-liste">
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold truncate">{{ j.title }}</div>
+          <div class="text-[13px] muted">{{ j.city }} · {{ contract_label(j.contract_type) }}</div>
+        </div>
+        <span class="chip">{{ j.applications.count() }}</span>
+      </a>
+    {% else %}
+      <p class="px-6 py-4 text-[14px] muted">{{ t('Aucune offre publiée.') }} <a href="{{ url_for('recruiter.job_new') }}" class="text-terra-600 font-semibold">{{ t('Publier une offre') }}</a></p>
+    {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='librairies/chart.umd.js') }}"></script>
+<script>
+  // Courbe des candidatures reçues par jour (30 derniers jours)
+  const css = getComputedStyle(document.documentElement);
+  new Chart(document.getElementById('parJour'), { type: 'line',
+    data: { labels: {{ days|tojson }}.map(d => d.slice(8) + '/' + d.slice(5, 7)),  // 2026-11-22 -> 22/11
+            datasets: [{ data: {{ per_day|tojson }}, fill: true, backgroundColor: 'rgba(216,103,48,.12)', borderColor: '#B04A1F', tension: .3, pointRadius: 0, borderWidth: 2 }] },
+    options: { plugins: { legend: { display: false } }, interaction: { intersect: false, mode: 'index' },
+      scales: { x: { grid: { display: false }, ticks: { color: css.getPropertyValue('--muted'), maxTicksLimit: 8 } },
+                y: { beginAtZero: true, ticks: { precision: 0, color: css.getPropertyValue('--muted') }, grid: { color: css.getPropertyValue('--line') } } } } });
+</script>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends "public.html" %}
+{% block title %}{{ t('Trouvez votre prochain emploi') }}{% endblock %}
+{% block content %}
+
+{# ------------------------------------------------------------------ en-tête de page #}
+<section class="section pt-14 sm:pt-20 grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
+  <div>
+    <span class="surtitre">{{ t('Abidjan, Dakar, Montréal et partout ailleurs') }}</span>
+    <h1 class="text-[clamp(2.4rem,5.4vw,4rem)] font-bold leading-[1.04] tracking-[-.045em] mt-4">
+      {{ t('Le bon poste,') }}<br>{{ t('et enfin') }} <span class="text-terra-600">{{ t('une réponse.') }}</span>
+    </h1>
+    <p class="text-[17px] muted mt-5 max-w-lg leading-relaxed">{{ t('Toutes les offres au même endroit, un CV que les logiciels de tri savent lire, et des recruteurs qui répondent à chaque candidature.') }}</p>
+
+    {# Recherche d'offres : mène à la page qui réunit toutes les offres #}
+    <form action="{{ url_for('main.offers') }}" method="get" class="cherche-offres mt-8 max-w-xl">
+      <label><i data-lucide="search" class="muted shrink-0"></i>
+        <input name="q" placeholder="{{ t('Poste ou mot-clé') }}" aria-label="{{ t('Poste ou mot-clé') }}"></label>
+      <label><i data-lucide="map-pin" class="muted shrink-0"></i>
+        <input name="ville" placeholder="{{ t('Ville') }}" aria-label="{{ t('Ville') }}"></label>
+      <button class="btn btn-primary">{{ t('Rechercher') }}</button>
+    </form>
+    <div class="flex flex-wrap items-center gap-2 mt-5 text-[13.5px]">
+      <span class="muted">{{ t('Souvent recherché :') }}</span>
+      {% for m in ['Comptable', 'Développeur', 'Data analyst', 'Commercial', 'Marketing'] %}
+      <a href="{{ url_for('main.offers', q=m) }}" class="chip hover:bg-[var(--peche)]">{{ m }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# Aperçu de l'application : une carte, alignée, sans éléments décoratifs #}
+  <div class="hidden md:block rounded-[32px] p-7 sm:p-9" style="background:var(--peche)">
+    <div class="card p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-[13px] muted">{{ t('Offres faites pour vous') }}</div>
+          <div class="font-bold text-[17px] mt-0.5">{{ t('Analyste financier') }}</div>
+        </div>
+        <span class="chip chip-green">{{ t('Compatible à 92 %') }}</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-4">
+        <span class="chip">Abidjan</span><span class="chip chip-terra">CDI</span><span class="chip chip-gold">1 200 000 F CFA</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <div class="rounded-2xl p-4" style="background:var(--bg)">
+          <div class="text-[12px] muted">{{ t('Chance d\'être appelé') }}</div>
+          <div class="text-[24px] font-bold tracking-tight" style="color:var(--success)">48 %</div>
+        </div>
+        <div class="rounded-2xl p-4" style="background:var(--bg)">
+          <div class="text-[12px] muted">{{ t('Délai de réponse') }}</div>
+          <div class="text-[24px] font-bold tracking-tight">{{ t('5 jours') }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card p-5 mt-4 flex items-center gap-4">
+      <span class="logo-ent t3"><i data-lucide="mail-check"></i></span>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-[14.5px]">{{ t('Votre candidature a bien été reçue') }}</div>
+        <div class="text-[13px] muted">Ecobank · {{ t('réponse sous 7 jours') }}</div>
+      </div>
+    </div>
+    <div class="card p-5 mt-4 flex items-center gap-4">
+      <span class="logo-ent t2"><i data-lucide="award"></i></span>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-[14.5px]">{{ t('Recommandée par un parrain vérifié') }}</div>
+        <div class="text-[13px] muted">{{ t('Ancienne responsable, niveau Or') }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ chiffres #}
+<section class="section mt-20">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+    {% for v, l, icone, teinte in [(stats.jobs, t('offres ouvertes'), 'briefcase', 'peche'), (stats.companies, t('entreprises'), 'building-2', 'sable'),
+                                    (stats.candidates, t('talents inscrits'), 'users-round', 'sauge'), (stats.sponsors, t('parrains vérifiés'), 'award', 'creme')] %}
+    <div class="chiffre-fond {{ teinte }}">
+      <i data-lucide="{{ icone }}" class="fond"></i>
+      <span class="pastille-icone"><i data-lucide="{{ icone }}"></i></span>
+      <div class="text-[38px] font-bold tracking-[-.04em] leading-none mt-5">{{ v }}</div>
+      <div class="text-[14px] mt-2" style="color:var(--ink-2)">{{ l }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ dernières offres #}
+{% if derniers %}
+<section class="section mt-24">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <span class="surtitre">{{ t('Offres d\'emploi') }}</span>
+      <h2 class="titre-section mt-2">{{ t('Publiées cette semaine') }}</h2>
+    </div>
+    <a href="{{ url_for('main.offers') }}" class="btn btn-ghost !rounded-full">{{ t('Voir toutes les offres') }}<i data-lucide="arrow-right"></i></a>
+  </div>
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+    {% for j in derniers %}{% include "accueil/_offre_publique.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ------------------------------------------------------------------ candidats #}
+<section id="candidats" class="section mt-28">
+  <div class="max-w-2xl">
+    <span class="surtitre">{{ t('Pour les candidats') }}</span>
+    <h2 class="titre-section mt-2">{{ t('Tout ce qu\'il faut pour être rappelé.') }}</h2>
+  </div>
+  {# Blocs de tailles différentes : le CV d'abord, en grand #}
+  <div class="grid lg:grid-cols-3 gap-5 mt-12">
+    <div class="lg:col-span-2 lg:row-span-2 rounded-[28px] p-8 sm:p-10 flex flex-col" style="background:var(--peche)">
+      <span class="logo-ent !bg-white"><i data-lucide="file-text"></i></span>
+      <h3 class="text-[24px] font-bold tracking-tight mt-6">{{ t('Un CV que les recruteurs lisent vraiment') }}</h3>
+      <p class="text-[15.5px] mt-3 max-w-lg" style="color:var(--ink-2)">{{ t('Modèles au format français, canadien ou optimisé pour les logiciels de tri (ATS). Gratuit, sans créer de compte. Votre CV remplit ensuite votre profil tout seul.') }}</p>
+      <div class="mt-auto pt-8"><a href="{{ url_for('main.cv_free') }}" class="btn btn-dark">{{ t('Créer mon CV gratuitement') }}</a></div>
+    </div>
+    <div class="card card-pad">
+      <i data-lucide="target" class="text-terra-600"></i>
+      <h3 class="font-bold text-[16.5px] mt-4">{{ t('Des offres déjà triées') }}</h3>
+      <p class="muted text-[14px] mt-1.5 leading-relaxed">{{ t('Selon votre filière, votre ville et vos compétences, avec un score de compatibilité.') }}</p>
+    </div>
+    <div class="card card-pad">
+      <i data-lucide="trending-up" class="text-terra-600"></i>
+      <h3 class="font-bold text-[16.5px] mt-4">{{ t('Votre chance d\'être appelé') }}</h3>
+      <p class="muted text-[14px] mt-1.5 leading-relaxed">{{ t('Avant de postuler, vous voyez vos chances et ce qui les ferait monter.') }}</p>
+    </div>
+    <div class="rounded-[24px] p-7" style="background:var(--sauge)">
+      <i data-lucide="message-square-heart" style="color:#276749"></i>
+      <h3 class="font-bold text-[16.5px] mt-4">{{ t('Toujours une réponse') }}</h3>
+      <p class="text-[14px] mt-1.5 leading-relaxed" style="color:var(--ink-2)">{{ t('Accusé de réception, puis un retour utile si ce n\'est pas pour cette fois.') }}</p>
+    </div>
+    <div class="card card-pad">
+      <i data-lucide="kanban-square" class="text-terra-600"></i>
+      <h3 class="font-bold text-[16.5px] mt-4">{{ t('Le suivi de toutes vos candidatures') }}</h3>
+      <p class="muted text-[14px] mt-1.5 leading-relaxed">{{ t('Celles d\'ici et celles envoyées ailleurs, avec les relances à faire.') }}</p>
+    </div>
+    <div class="card card-pad">
+      <i data-lucide="compass" class="text-terra-600"></i>
+      <h3 class="font-bold text-[16.5px] mt-4">{{ t('Orientation') }}</h3>
+      <p class="muted text-[14px] mt-1.5 leading-relaxed">{{ t('Un test court pour découvrir les métiers qui vous ressemblent.') }}</p>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ recruteurs #}
+<section id="recruteurs" class="section mt-28 grid lg:grid-cols-2 gap-14 items-center">
+  <div>
+    <span class="surtitre">{{ t('Pour les recruteurs') }}</span>
+    <h2 class="titre-section mt-2">{{ t('Répondre à 200 candidats sans y passer la semaine.') }}</h2>
+    <ul class="mt-8 space-y-5">
+      {% for icon, titre, texte in [
+        ('sparkles', t('Tri assisté'), t('L\'IA propose : entretien, seconde chance ou refus. Vous validez, les réponses partent d\'un coup.')),
+        ('kanban-square', t('Pipeline visuel'), t('Glissez les candidats d\'une étape à l\'autre, de la réception à l\'embauche.')),
+        ('shield-check', t('Compétences confirmées'), t('Des parrains vérifiés attestent les compétences avant même l\'entretien.')),
+        ('users-round', t('Vivier seconde chance'), t('Les bons profils non retenus vous sont reproposés sur vos prochaines offres.'))] %}
+      <li class="flex gap-4">
+        <span class="logo-ent petit"><i data-lucide="{{ icon }}"></i></span>
+        <div><div class="font-semibold">{{ titre }}</div><p class="muted text-[14.5px] mt-0.5">{{ texte }}</p></div>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('auth.register', role='recruiter') }}" class="btn btn-primary mt-9">{{ t('Publier une offre') }}</a>
+  </div>
+
+  {# Aperçu du tri des candidatures #}
+  <div class="rounded-[32px] p-7 sm:p-9" style="background:var(--bg)">
+    <div class="card p-6">
+      <div class="flex items-center justify-between">
+        <div class="font-bold">{{ t('Analyste financier') }}</div>
+        <span class="text-[13px] muted">36 {{ t('candidatures') }}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-5 mt-5">
+        {% for libelle, couleur, noms in [(t('Entretien'), 'var(--terra)', [('Koffi A.', 88), ('Mariam D.', 81), ('Yao B.', 76)]), (t('Seconde chance'), 'var(--gold)', [('Ama T.', 64), ('Paul N.', 58)]), (t('Refus'), 'var(--muted)', [('Eric Z.', 31), ('Fanta K.', 28)])] %}
+        <div>
+          <div class="flex items-center gap-1.5 text-[12px] font-bold pb-2 border-b" style="border-color:var(--line)"><span class="w-2 h-2 rounded-full" style="background:{{ couleur }}"></span>{{ libelle }}</div>
+          {% for n, score in noms %}
+          <div class="flex items-center gap-2 py-2 text-[12.5px]">
+            <span class="w-6 h-6 rounded-full grid place-items-center text-[10px] font-bold shrink-0" style="background:var(--bg-2)">{{ n[:1] }}</span>
+            <span class="flex-1 truncate">{{ n }}</span><span class="muted">{{ score }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="flex items-center gap-2 text-[13px] muted mt-5"><i data-lucide="sparkles" class="text-terra-600"></i>{{ t('Proposé par l\'IA, validé par le recruteur, envoyé en un clic.') }}</p>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ parrainage #}
+<section id="parrains" class="section mt-28">
+  <div class="bloc-teinte p-8 sm:p-14">
+    <div class="grid lg:grid-cols-[1fr_1.3fr] gap-12">
+      <div>
+        <span class="surtitre">{{ t('Le parrainage') }}</span>
+        <h2 class="titre-section mt-2">{{ t('Une recommandation, mais vérifiée.') }}</h2>
+        <p class="muted text-[16px] mt-4 leading-relaxed">{{ t('Un ancien manager ou une entreprise atteste vos compétences. Chaque parrain passe d\'abord un test d\'éligibilité, et sa réputation dépend des candidats qu\'il recommande.') }}</p>
+        <div class="flex flex-wrap gap-2 mt-6">
+          <span class="badge-level lvl-gold">{{ t('Or') }} · 85+</span>
+          <span class="badge-level lvl-silver">{{ t('Argent') }} · 70+</span>
+          <span class="badge-level lvl-bronze">{{ t('Bronze') }} · 60+</span>
+        </div>
+        <a href="{{ url_for('auth.register', role='sponsor') }}" class="btn btn-dark mt-8">{{ t('Devenir parrain') }}</a>
+      </div>
+      <ol class="grid sm:grid-cols-2 gap-4">
+        {% for titre, texte in [
+          (t('Le candidat envoie un lien'), t('À un manager ou une entreprise avec qui il a travaillé.')),
+          (t('Le parrain passe le test'), t('Poste, expérience, e-mail professionnel : un score décide de son éligibilité.')),
+          (t('Il recommande, compétence par compétence'), t('Notes, relation, période et un mot libre.')),
+          (t('Sa réputation est en jeu'), t('Ses candidats embauchés font monter sa crédibilité.'))] %}
+        <li class="card p-6">
+          <span class="etape-num">{{ loop.index }}</span>
+          <div class="font-semibold mt-4">{{ titre }}</div>
+          <p class="muted text-[14px] mt-1">{{ texte }}</p>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ appel final #}
+<section class="section mt-28">
+  <div class="rounded-[32px] px-8 py-14 sm:p-16 text-center text-white" style="background:var(--brown)">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" class="w-20 mx-auto mb-6" alt="TalentConnect">
+    <h2 class="titre-section max-w-2xl mx-auto">{{ t('Votre prochain poste commence ici.') }}</h2>
+    <p class="text-white/70 mt-4 max-w-lg mx-auto">{{ t('Commencez gratuitement avec le CV, puis débloquez les offres, le suivi et l\'assistant quand vous êtes prêt.') }}</p>
+    <div class="flex flex-wrap justify-center gap-3 mt-8">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ t('Créer mon compte') }}</a>
+      <a href="{{ url_for('main.offers') }}" class="btn btn-lg btn-translucide" style="background:rgba(255,255,255,.1);color:#fff">{{ t('Parcourir les offres') }}</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

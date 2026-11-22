@@ -1,0 +1,88 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import banniere, avatar with context %}
+{% block title %}{{ t('Administration') }}{% endblock %}
+{% block page_title %}{{ t('Bonjour, {nom}', nom=current_user.first_name or current_user.full_name) }}{% endblock %}
+{% block chemin %}<li>{{ t('Tableau de bord') }}</li>{% endblock %}
+
+{% block content %}
+{% set revenus %}{% for cur, amt in revenue.items() %}{{ money(amt, cur) }}{% if not loop.last %} · {% endif %}{% else %}0{% endfor %}{% endset %}
+
+{% call banniere(
+    t('La plateforme aujourd\'hui'),
+    t('{p} paiement(s) à valider, {s} parrain(s) en revue et {f} parrainage(s) signalé(s).', p=pending_payments, s=pending_sponsors, f=flagged),
+    [(t('Candidats'), counts.candidate),
+     (t('Recruteurs'), counts.recruiter),
+     (t('Parrains'), counts.sponsor),
+     (t('Offres ouvertes'), jobs)],
+    pilules=[(None, t('En direct')), ('wallet', t('Revenus confirmés') ~ ' : ' ~ revenus|trim)],
+    actions=[(t('Valider les paiements'), url_for('admin.payments'), 'wallet'),
+             (t('Gérer les utilisateurs'), url_for('admin.users'), 'users')]) %}
+{% endcall %}
+
+<div class="grid xl:grid-cols-[1fr_1.6fr] gap-7 mt-7">
+  {# À traiter : une seule liste plutôt que trois cartes identiques #}
+  <div class="card">
+    <div class="entete-carte"><h3>{{ t('À traiter') }}</h3></div>
+    {% for icone, carre, libelle, detail, valeur, url in [
+      ('clock', 'carre-terra', t('Paiements à valider'), t('Activent l\'accès des comptes'), pending_payments, url_for('admin.payments')),
+      ('shield-check', 'carre-or', t('Parrains en revue'), t('Dossiers d\'éligibilité'), pending_sponsors, url_for('admin.sponsors')),
+      ('flag', 'carre-rouge', t('Parrainages signalés'), t('À vérifier'), flagged, url_for('admin.sponsors')),
+      ('users', 'carre-vert', t('Comptes avec accès'), t('Candidats et recruteurs'), paid.candidate + paid.recruiter, url_for('admin.users'))] %}
+    <a href="{{ url }}" class="ligne-liste hover:bg-[var(--surface-2)]">
+      <span class="carre-icone {{ carre }}"><i data-lucide="{{ icone }}" class="w-4 h-4"></i></span>
+      <div class="flex-1 min-w-0"><div class="text-sm font-semibold">{{ libelle }}</div><div class="text-xs muted">{{ detail }}</div></div>
+      <b class="text-lg">{{ valeur }}</b>
+      <i data-lucide="chevron-right" class="w-4 h-4 muted"></i>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="entete-carte"><h3>{{ t('Inscriptions — 30 derniers jours') }}</h3></div>
+    <div class="p-5"><canvas id="inscriptions" height="120"></canvas></div>
+  </div>
+</div>
+
+<div class="grid xl:grid-cols-[1.6fr_1fr] gap-7 mt-7">
+  <div class="card">
+    <div class="entete-carte">
+      <h3>{{ t('Derniers inscrits') }}</h3>
+      <a href="{{ url_for('admin.users') }}" class="text-sm font-semibold text-terra-600">{{ t('Gérer') }}</a>
+    </div>
+    <div class="scroll-x"><table class="table"><tbody>
+    {% for u in recent %}<tr>
+      <td><div class="flex items-center gap-3">{{ avatar(u, 34) }}<div><div class="font-semibold">{{ u.full_name }}</div><div class="text-xs muted">{{ u.email }}</div></div></div></td>
+      <td><span class="chip">{{ role_libelle(u.role) }}</span></td>
+      <td class="whitespace-nowrap">{{ country_name(u.country_code) }}</td>
+      <td>{% if u.has_access %}<span class="chip chip-green">{{ t('Accès') }}</span>{% else %}<span class="chip">{{ t('Gratuit') }}</span>{% endif %}</td>
+      <td class="text-sm muted text-right whitespace-nowrap">{{ u.created_at|ago }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="entete-carte"><h3>{{ t('Utilisateurs par pays') }}</h3></div>
+    <div class="p-5"><canvas id="pays" height="200"></canvas></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='librairies/chart.umd.js') }}"></script>
+<script>
+  const css = getComputedStyle(document.documentElement), muted = css.getPropertyValue('--muted'), line = css.getPropertyValue('--line');
+  Chart.defaults.font.family = 'Plus Jakarta Sans';
+  // Inscriptions par jour et par rôle (barres empilées)
+  new Chart(document.getElementById('inscriptions'), { type: 'bar',
+    data: { labels: {{ days|tojson }}, datasets: [
+      { label: {{ t('Candidats')|tojson }}, data: {{ signups.candidate|tojson }}, backgroundColor: '#D86730', borderRadius: 3 },
+      { label: {{ t('Recruteurs')|tojson }}, data: {{ signups.recruiter|tojson }}, backgroundColor: '#5A2C19', borderRadius: 3 },
+      { label: {{ t('Parrains')|tojson }}, data: {{ signups.sponsor|tojson }}, backgroundColor: '#D9A441', borderRadius: 3 } ] },
+    options: { plugins: { legend: { position: 'bottom', labels: { color: muted, usePointStyle: true } } },
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { color: muted, maxTicksLimit: 10 } },
+                y: { stacked: true, beginAtZero: true, ticks: { precision: 0, color: muted }, grid: { color: line } } } } });
+  // Répartition des utilisateurs par pays
+  new Chart(document.getElementById('pays'), { type: 'doughnut',
+    data: { labels: {{ countries|map('first')|map('string')|list|tojson }}, datasets: [{ data: {{ countries|map('last')|list|tojson }},
+      backgroundColor: ['#D86730','#5A2C19','#E08B5A','#A04222','#F3D2B6','#D9A441','#7E3520','#EAB089'], borderWidth: 0 }] },
+    options: { cutout: '62%', plugins: { legend: { position: 'right', labels: { color: muted, usePointStyle: true } } } } });
+</script>
+{% endblock %}

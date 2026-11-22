@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{#
+  Mise en page des pages visibles sans compte : accueil, offres, tarifs, CV gratuit.
+  En-tête simple en haut, pied de page en bas.
+#}
+{% from "composants/ui.html" import langswitch, themetoggle with context %}
+{% block body_class %}ui ui-public{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/interface.css') }}">{% block head_page %}{% endblock %}{% endblock %}
+
+{% block body %}
+<header class="site-entete" x-data="{defile:false, m:false}" @scroll.window="defile = window.scrollY > 8" :class="defile && 'defile'">
+  <div class="section h-[76px] flex items-center gap-8">
+    <a href="{{ url_for('main.index') }}" class="flex items-center gap-2.5 shrink-0">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" class="w-9 h-9 object-contain" alt="">
+      <span class="text-[19px] font-bold tracking-tight">Talent<span class="text-terra-500">Connect</span></span>
+    </a>
+    <nav class="site-nav hidden lg:flex items-center gap-7">
+      <a href="{{ url_for('main.offers') }}">{{ t('Offres d\'emploi') }}</a>
+      <a href="{{ url_for('main.index') }}#recruteurs">{{ t('Recruteurs') }}</a>
+      <a href="{{ url_for('main.index') }}#parrains">{{ t('Parrainage') }}</a>
+      <a href="{{ url_for('main.cv_free') }}">{{ t('CV gratuit') }}</a>
+      <a href="{{ url_for('billing.pricing') }}">{{ t('Tarifs') }}</a>
+    </nav>
+    <div class="ml-auto flex items-center gap-2">
+      <div class="hidden sm:flex items-center gap-1">{{ langswitch(rond=True) }}{{ themetoggle(rond=True) }}</div>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary !rounded-full">{{ t('Mon espace') }}</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn !rounded-full hidden sm:inline-flex hover:bg-[var(--bg)]">{{ t('Connexion') }}</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-dark !rounded-full">{{ t('Créer un compte') }}</a>
+      {% endif %}
+      <button class="lg:hidden icone plat" @click="m=!m" aria-label="{{ t('Menu') }}"><i data-lucide="menu"></i></button>
+    </div>
+  </div>
+  <nav x-show="m" x-cloak x-transition.opacity class="site-nav lg:hidden section pb-5 flex flex-col gap-3">
+    <a href="{{ url_for('main.offers') }}">{{ t('Offres d\'emploi') }}</a>
+    <a href="{{ url_for('main.index') }}#recruteurs">{{ t('Recruteurs') }}</a>
+    <a href="{{ url_for('main.index') }}#parrains">{{ t('Parrainage') }}</a>
+    <a href="{{ url_for('main.cv_free') }}">{{ t('CV gratuit') }}</a>
+    <a href="{{ url_for('billing.pricing') }}">{{ t('Tarifs') }}</a>
+  </nav>
+</header>
+
+<main>{% block content %}{% endblock %}</main>
+
+{% block footer %}
+<footer class="mt-28" style="background:var(--bg)">
+  <div class="section py-16 grid sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" class="w-9 h-9 object-contain" alt="">
+        <span class="text-[19px] font-bold tracking-tight">Talent<span class="text-terra-500">Connect</span></span>
+      </div>
+      <p class="muted text-[14px] mt-4 max-w-xs leading-relaxed">{{ t('La plateforme qui relie les talents aux entreprises, du CV jusqu\'à l\'embauche.') }}</p>
+    </div>
+    <div class="text-[14px] space-y-2.5"><div class="font-semibold mb-3">{{ t('Candidats') }}</div>
+      <a href="{{ url_for('main.offers') }}" class="block muted hover:text-terra-600">{{ t('Offres d\'emploi') }}</a>
+      <a href="{{ url_for('main.cv_free') }}" class="block muted hover:text-terra-600">{{ t('CV gratuit') }}</a>
+      <a href="{{ url_for('auth.register', role='candidate') }}" class="block muted hover:text-terra-600">{{ t('Créer un compte') }}</a></div>
+    <div class="text-[14px] space-y-2.5"><div class="font-semibold mb-3">{{ t('Entreprises') }}</div>
+      <a href="{{ url_for('auth.register', role='recruiter') }}" class="block muted hover:text-terra-600">{{ t('Publier une offre') }}</a>
+      <a href="{{ url_for('billing.pricing') }}" class="block muted hover:text-terra-600">{{ t('Tarifs') }}</a>
+      <a href="{{ url_for('auth.register', role='sponsor') }}" class="block muted hover:text-terra-600">{{ t('Devenir parrain') }}</a></div>
+    <div class="text-[14px] space-y-2.5"><div class="font-semibold mb-3">{{ t('Compte') }}</div>
+      <a href="{{ url_for('auth.login') }}" class="block muted hover:text-terra-600">{{ t('Connexion') }}</a>
+      <a href="{{ url_for('auth.register') }}" class="block muted hover:text-terra-600">{{ t('Inscription') }}</a></div>
+  </div>
+  <div class="section pb-10 text-[13px] muted">© {{ now.year }} TalentConnect · Abidjan</div>
+</footer>
+{% endblock %}
+{% endblock %}

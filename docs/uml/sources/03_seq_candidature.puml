@@ -1,0 +1,40 @@
+@startuml
+!include _theme.iuml
+autonumber
+actor Candidat as C
+participant "Application Flask\n(espace candidat)" as F
+participant "Service de recrutement" as H
+participant "Service de scoring\net modèles d'IA" as S
+participant "Service d'envoi\n(Brevo)" as M
+database "PostgreSQL" as DB
+actor Recruteur as R
+C -> F : Consulte l'offre
+F -> S : Calculer compatibilité et probabilité d'être contacté
+S --> F : Scores et explications
+F --> C : Détail de l'offre avec scores
+C -> F : POST /offres/{id}/postuler
+F -> F : Vérifier l'accès actif (abonnement)
+alt Offre fermée
+  F --> C : Message « offre plus ouverte »
+else Offre ouverte
+  F -> H : apply(candidat, offre, lettre)
+  H -> DB : Candidature déjà existante ?
+  alt Déjà postulé
+    H --> F : Candidature existante
+    F --> C : Message « déjà postulé »
+  else Nouvelle candidature
+    H -> S : match() + call_probability()
+    S --> H : Score, détail, probabilité
+    H -> S : triage()
+    S --> H : Groupe proposé et justification
+    H -> DB : Enregistrer la candidature
+    H -> M : Accusé de réception (e-mail + message interne)
+    H -> DB : Synchroniser le suivi (Kanban) du candidat
+    H --> F : Candidature créée
+    F --> C : Confirmation et accusé de réception
+  end
+end
+R -> F : Consulte le pipeline de l'offre
+F -> DB : Charger les candidatures et leurs scores
+F --> R : Liste triée avec groupes proposés
+@enduml

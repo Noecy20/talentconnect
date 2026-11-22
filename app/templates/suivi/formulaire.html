@@ -1,0 +1,69 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Candidature') }}{% endblock %}
+{% block page_title %}<a href="{{ url_for('tracker.board') }}" class="muted hover:text-terra-700"><i data-lucide="arrow-left" class="w-5 h-5 inline"></i></a> {{ t('Modifier la candidature') if tr.id else t('Nouvelle opportunité') }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" action="{{ url_for('tracker.edit', tid=tr.id) if tr.id else url_for('tracker.new') }}" class="grid xl:grid-cols-[1fr_360px] gap-6 items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-6">
+    {% if imported.url %}
+    <div class="card px-4 py-3 text-sm flex items-center gap-3"><i data-lucide="link" class="w-4 h-4 text-terra-600 shrink-0"></i>
+      <span class="truncate">{{ t('Importé depuis') }} <b>{{ imported.source }}</b> · <a href="{{ imported.url }}" target="_blank" rel="noopener" class="underline">{{ imported.url|truncate(70) }}</a></span></div>
+    {% endif %}
+    <section class="card card-pad space-y-4">
+      <h2 class="font-display text-lg">{{ t('L\'offre') }}</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2"><label class="label">{{ t('Poste') }}</label><input name="title" value="{{ tr.title or '' }}" required class="input text-lg font-semibold" placeholder="{{ t('Ex : Data Analyst') }}"></div>
+        <div><label class="label">{{ t('Entreprise') }}</label><input name="company" value="{{ tr.company or '' }}" class="input"></div>
+        <div><label class="label">{{ t('Ville') }}</label><input name="city" value="{{ tr.city or '' }}" class="input" placeholder="{{ t('Ex : Québec') }}"></div>
+        <div><label class="label">{{ t('Pays') }}</label>
+          <select name="country_code" class="select"><option value="">—</option>{% for code, name in countries() %}<option value="{{ code }}" {% if code==tr.country_code %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+        <div><label class="label">{{ t('Rémunération') }}</label><input name="salary" value="{{ tr.salary or '' }}" class="input" placeholder="{{ t('Ex : 900 000 F CFA / mois') }}"></div>
+        <div><label class="label">{{ t('Contrat') }}</label>
+          <select name="contract" class="select"><option value="">—</option>{% for c in contracts %}<option value="{{ c }}" {% if c==tr.contract %}selected{% endif %}>{{ contract_label(c) }}</option>{% endfor %}
+            {% if tr.contract and tr.contract not in contracts %}<option selected>{{ tr.contract }}</option>{% endif %}</select></div>
+        <div><label class="label">{{ t('Source') }}</label><input name="source" value="{{ tr.source or '' }}" list="sources" class="input" placeholder="LinkedIn, Indeed…">
+          <datalist id="sources">{% for s in ['TalentConnect','LinkedIn','Indeed','Welcome to the Jungle','Emploi.ci','Educarrière','Jobboom','Guichet-Emplois','Site carrière','Cooptation','Candidature spontanée'] %}<option value="{{ s }}">{% endfor %}</datalist></div>
+        <div class="sm:col-span-2"><label class="label">{{ t('Lien de l\'offre') }}</label><input name="url" type="url" value="{{ tr.url or '' }}" class="input" placeholder="https://…"></div>
+        <div class="sm:col-span-2"><label class="label">{{ t('Description / notes sur le poste') }}</label><textarea name="description" class="textarea">{{ tr.description or '' }}</textarea></div>
+      </div>
+    </section>
+    <section class="card card-pad space-y-4">
+      <h2 class="font-display text-lg">{{ t('Contact RH') }}</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div><label class="label">{{ t('Nom') }}</label><input name="contact_name" value="{{ tr.contact_name or '' }}" class="input"></div>
+        <div><label class="label">{{ t('Fonction') }}</label><input name="contact_role" value="{{ tr.contact_role or '' }}" class="input" placeholder="{{ t('Ex : Chargée de recrutement') }}"></div>
+        <div><label class="label">{{ t('E-mail') }}</label><input name="contact_email" type="email" value="{{ tr.contact_email or '' }}" class="input"></div>
+        <div><label class="label">{{ t('Téléphone') }}</label><input name="contact_phone" value="{{ tr.contact_phone or '' }}" class="input"></div>
+      </div>
+    </section>
+    <section class="card card-pad space-y-4">
+      <h2 class="font-display text-lg">{{ t('Mes notes') }}</h2>
+      <textarea name="notes" class="textarea" placeholder="{{ t('Pourquoi ce poste m\'intéresse, points à préparer, questions à poser…') }}">{{ tr.notes or '' }}</textarea>
+    </section>
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <section class="card card-pad space-y-4">
+      <div><label class="label">{{ t('Étape') }}</label>
+        <select name="stage" class="select">{% for k, l in stages %}<option value="{{ k }}" {% if k==tr.stage %}selected{% endif %}>{{ t(l) }}</option>{% endfor %}</select></div>
+      <div><label class="label">{{ t('Projet de mobilité') }}</label>
+        <select name="project_id" class="select"><option value="">{{ t('Aucun') }}</option>{% for p in projects %}<option value="{{ p.id }}" {% if p.id==tr.project_id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+        <a href="{{ url_for('tracker.projects') }}" class="help underline">{{ t('Créer un projet (ex. Abidjan, Québec)') }}</a></div>
+      <div><label class="label">{{ t('Priorité') }}</label>
+        <select name="priority" class="select">{% for v, l in [(1, t('Haute')), (2, t('Normale')), (3, t('Basse'))] %}<option value="{{ v }}" {% if v==(tr.priority or 2) %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">{{ t('Date limite') }}</label><input type="date" name="deadline" value="{{ tr.deadline or '' }}" class="input !px-2"></div>
+        <div><label class="label">{{ t('Candidature') }}</label><input type="date" name="applied_at" value="{{ tr.applied_at or '' }}" class="input !px-2"></div>
+      </div>
+      <div><label class="label">{{ t('Prochaine relance') }}</label><input type="date" name="next_followup" value="{{ tr.next_followup or '' }}" class="input"><p class="help">{{ t('Rempli automatiquement 7 jours après l\'envoi.') }}</p></div>
+    </section>
+    <section class="card card-pad space-y-4">
+      <h3 class="font-display font-semibold">{{ t('CV utilisé') }}</h3>
+      <select name="cv_version_id" class="select"><option value="">{{ t('CV principal du profil') }}</option>{% for v in versions %}<option value="{{ v.id }}" {% if v.id==tr.cv_version_id %}selected{% endif %}>{{ v.name }}</option>{% endfor %}</select>
+      <div><label class="label">{{ t('Ou joindre un fichier (PDF, DOCX)') }}</label><input type="file" name="cv_file" accept=".pdf,.doc,.docx" class="input !py-2 text-sm">
+        {% if tr.cv_file %}<p class="help">{{ t('Fichier actuel joint') }}</p>{% endif %}</div>
+    </section>
+    <button class="btn btn-primary btn-lg w-full">{{ t('Enregistrer') }}</button>
+  </aside>
+</form>
+{% endblock %}

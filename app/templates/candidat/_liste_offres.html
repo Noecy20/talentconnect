@@ -1,0 +1,9 @@
+{% from "composants/ui.html" import empty with context %}
+<div class="text-sm muted mb-4"><b class="text-[var(--ink)]">{{ results|length }}</b> {{ t('offre(s) trouvée(s)') }}</div>
+{% if results %}
+<div class="grille-offres">
+  {% for r in results %}{% include "candidat/_carte_offre.html" %}{% endfor %}
+</div>
+{% else %}
+  {{ empty('search-x', t('Aucune offre ne correspond'), t('Essayez d\'élargir vos filtres ou passez sur « Toutes ».')) }}
+{% endif %}

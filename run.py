@@ -10,7 +10,7 @@ app = create_app()
 with app.app_context():
     # Applique automatiquement les migrations (crée les tables au premier lancement)
     upgrade(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations"))
-    from app.cli import _bootstrap
+    from app.commandes import _bootstrap
     _bootstrap(app)
 
 if __name__ == "__main__":

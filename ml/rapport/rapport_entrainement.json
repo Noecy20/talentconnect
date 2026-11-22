@@ -1,0 +1,403 @@
+{
+  "date_entrainement": "2026-11-17 18:56",
+  "sources": {
+    "bertrand_mullainathan_2004": {
+      "reference": "Bertrand, M. & Mullainathan, S. (2004). Are Emily and Greg More Employable than Lakisha and Jamal? American Economic Review, 94(4), 991-1013.",
+      "candidatures": 4870,
+      "taux_reponse_positive": 0.0805
+    },
+    "phillips_2019": {
+      "reference": "Phillips, D. C. (2019). Do Low-Wage Employers Discriminate Against Applicants with Long Commutes? Journal of Human Resources. Données : Harvard Dataverse, doi:10.7910/DVN/GLE7OM.",
+      "candidatures": 2260,
+      "taux_reponse_positive": 0.2133
+    },
+    "karachi_it": {
+      "reference": "Resume Audit Data_IT Sector (Karachi, Pakistan). Harvard Dataverse, doi:10.7910/DVN/DOM4OS.",
+      "candidatures": 2032,
+      "taux_reponse_positive": 0.0699
+    },
+    "time_to_degree": {
+      "reference": "Time to Baccalaureate Degree in the Labor Market: Evidence from a Field Experiment. Harvard Dataverse, doi:10.7910/DVN/5QYIR2.",
+      "candidatures": 7245,
+      "taux_reponse_positive": 0.136
+    }
+  },
+  "observations": 16407,
+  "taux_moyen": 0.122,
+  "entrainement": 13125,
+  "test": 3282,
+  "variables": [
+    "years_experience",
+    "college_degree",
+    "years_college",
+    "computer_skills",
+    "special_skills",
+    "resume_quality",
+    "req_experience",
+    "meets_experience",
+    "req_education",
+    "req_computer",
+    "req_communication",
+    "req_organization",
+    "distance_km",
+    "src_bertrand_mullainathan_2004",
+    "src_phillips_2019",
+    "src_karachi_it",
+    "src_time_to_degree"
+  ],
+  "variables_exclues": [
+    "prénom",
+    "origine (race)",
+    "genre",
+    "âge",
+    "classe sociale / quartier"
+  ],
+  "comparaison_validation_croisee": {
+    "Régression logistique": {
+      "global": {
+        "auc_roc": 0.6253,
+        "average_precision": 0.172,
+        "brier": 0.1048,
+        "log_loss": 0.3595
+      },
+      "auc_moyenne_par_etude": 0.5578,
+      "auc_par_etude": {
+        "bertrand_mullainathan_2004": 0.6271,
+        "phillips_2019": 0.4996,
+        "karachi_it": 0.6054,
+        "time_to_degree": 0.4991
+      }
+    },
+    "Gradient boosting (histogrammes)": {
+      "global": {
+        "auc_roc": 0.6291,
+        "average_precision": 0.1759,
+        "brier": 0.1045,
+        "log_loss": 0.3584
+      },
+      "auc_moyenne_par_etude": 0.5669,
+      "auc_par_etude": {
+        "bertrand_mullainathan_2004": 0.6252,
+        "phillips_2019": 0.5047,
+        "karachi_it": 0.6369,
+        "time_to_degree": 0.5009
+      }
+    }
+  },
+  "modele_retenu": "Gradient boosting (histogrammes)",
+  "test_final": {
+    "global": {
+      "auc_roc": 0.6162,
+      "average_precision": 0.1657,
+      "brier": 0.1051,
+      "log_loss": 0.3617
+    },
+    "auc_moyenne_par_etude": 0.5107,
+    "auc_par_etude": {
+      "bertrand_mullainathan_2004": 0.6075,
+      "phillips_2019": 0.4734,
+      "karachi_it": 0.4618,
+      "time_to_degree": 0.5
+    },
+    "brier_reference_sans_modele": 0.107
+  },
+  "generalisation_etude_laissee_de_cote": {
+    "bertrand_mullainathan_2004": 0.4852,
+    "phillips_2019": 0.5016,
+    "karachi_it": 0.5009,
+    "time_to_degree": 0.5
+  },
+  "importance_des_variables": {
+    "years_experience": 0.022,
+    "college_degree": 0.0021,
+    "years_college": 0.0005,
+    "computer_skills": 0.0012,
+    "special_skills": 0.0205,
+    "resume_quality": 0.0,
+    "req_experience": 0.0842,
+    "meets_experience": 0.0,
+    "req_education": 0.0049,
+    "req_computer": 0.0092,
+    "req_communication": 0.0015,
+    "req_organization": 0.0018,
+    "distance_km": 0.0164,
+    "src_bertrand_mullainathan_2004": 0.0,
+    "src_phillips_2019": 0.0,
+    "src_karachi_it": 0.0015,
+    "src_time_to_degree": 0.0
+  },
+  "equite": {
+    "bertrand_mullainathan_2004": {
+      "origine (race)": {
+        "black": {
+          "taux_reel": 0.0627,
+          "taux_predit": 0.0853,
+          "n": 510
+        },
+        "white": {
+          "taux_reel": 0.0991,
+          "taux_predit": 0.0821,
+          "n": 464
+        }
+      },
+      "genre": {
+        "f": {
+          "taux_reel": 0.0804,
+          "taux_predit": 0.0841,
+          "n": 759
+        },
+        "m": {
+          "taux_reel": 0.0791,
+          "taux_predit": 0.0825,
+          "n": 215
+        }
+      }
+    },
+    "phillips_2019": {
+      "origine (race)": {
+        "black": {
+          "taux_reel": 0.2159,
+          "taux_predit": 0.2068,
+          "n": 227
+        },
+        "white": {
+          "taux_reel": 0.2124,
+          "taux_predit": 0.2085,
+          "n": 226
+        }
+      },
+      "genre": {
+        "female": {
+          "taux_reel": 0.2113,
+          "taux_predit": 0.21,
+          "n": 213
+        },
+        "male": {
+          "taux_reel": 0.2167,
+          "taux_predit": 0.2055,
+          "n": 240
+        }
+      }
+    },
+    "karachi_it": {
+      "genre": {
+        "female": {
+          "taux_reel": 0.0625,
+          "taux_predit": 0.068,
+          "n": 192
+        },
+        "male": {
+          "taux_reel": 0.0748,
+          "taux_predit": 0.0652,
+          "n": 214
+        }
+      },
+      "classe sociale": {
+        "high": {
+          "taux_reel": 0.0619,
+          "taux_predit": 0.0715,
+          "n": 194
+        },
+        "low": {
+          "taux_reel": 0.0755,
+          "taux_predit": 0.062,
+          "n": 212
+        }
+      }
+    },
+    "time_to_degree": {
+      "genre": {
+        "femme": {
+          "taux_reel": 0.122,
+          "taux_predit": 0.1359,
+          "n": 713
+        },
+        "homme": {
+          "taux_reel": 0.1495,
+          "taux_predit": 0.1359,
+          "n": 736
+        }
+      },
+      "origine (race)": {
+        "blanc": {
+          "taux_reel": 0.1301,
+          "taux_predit": 0.1359,
+          "n": 684
+        },
+        "noir": {
+          "taux_reel": 0.1412,
+          "taux_predit": 0.1359,
+          "n": 765
+        }
+      }
+    }
+  },
+  "modele_deploye": {
+    "nom": "Régression logistique (Bertrand & Mullainathan)",
+    "auc_test_bertrand_mono_source": 0.6159,
+    "auc_test_bertrand_multi_sources": 0.6075,
+    "equite_modele_etats_unis": {
+      "origine (race)": {
+        "black": {
+          "taux_reel": 0.0627,
+          "taux_predit": 0.0832,
+          "n": 510
+        },
+        "white": {
+          "taux_reel": 0.0991,
+          "taux_predit": 0.0808,
+          "n": 464
+        }
+      },
+      "genre": {
+        "f": {
+          "taux_reel": 0.0804,
+          "taux_predit": 0.0804,
+          "n": 759
+        },
+        "m": {
+          "taux_reel": 0.0791,
+          "taux_predit": 0.0879,
+          "n": 215
+        }
+      }
+    },
+    "raison": "Le modèle déployé est celui qui classe le mieux les candidats sur les variables que TalentConnect mesure réellement (compétences, expérience, études, exigences de l'offre).",
+    "combinaison": "La probabilité affichée est la moyenne du modèle États-Unis et du modèle France, chacun validé sur ses propres données."
+  },
+  "modele_france": {
+    "reference": "Behaghel, L., Crépon, B. & Le Barbanchon, T. (2015). Unintended Effects of Anonymous Résumés. American Economic Journal: Applied Economics, 7(3), 1-27. Données : openICPSR, projet 113612.",
+    "candidatures": 1471,
+    "offres": 677,
+    "taux_entretien": 0.1224,
+    "entrainement": 1173,
+    "test": 298,
+    "variables": [
+      "fr_education",
+      "fr_years_experience",
+      "fr_overqualified",
+      "fr_underqualified",
+      "fr_adequate_experience",
+      "fr_english",
+      "fr_other_language",
+      "fr_job_executive",
+      "fr_job_intermediate",
+      "fr_permanent_contract",
+      "fr_large_firm",
+      "fr_resume_good",
+      "fr_anonymous"
+    ],
+    "variables_exclues": [
+      "genre",
+      "âge",
+      "origine immigrée",
+      "quartier prioritaire",
+      "prénom à consonance musulmane"
+    ],
+    "comparaison_validation_croisee": {
+      "Régression logistique": {
+        "auc_roc": 0.5934,
+        "average_precision": 0.1704,
+        "brier": 0.1083,
+        "log_loss": 0.3739
+      },
+      "Gradient boosting (histogrammes)": {
+        "auc_roc": 0.5698,
+        "average_precision": 0.1628,
+        "brier": 0.1126,
+        "log_loss": 0.3952
+      }
+    },
+    "modele_retenu": "Régression logistique",
+    "test_final": {
+      "auc_roc": 0.533,
+      "average_precision": 0.1614,
+      "brier": 0.1027,
+      "log_loss": 0.3627,
+      "brier_reference_sans_modele": 0.1012
+    },
+    "validation_croisee_repetee": {
+      "auc_moyenne": 0.582,
+      "auc_ecart_type": 0.0105,
+      "gain_brier_moyen_vs_sans_modele": 0.00073
+    },
+    "importance_des_variables": {
+      "fr_education": 0.0158,
+      "fr_years_experience": -0.1725,
+      "fr_overqualified": -0.1876,
+      "fr_underqualified": -0.143,
+      "fr_adequate_experience": 0.0091,
+      "fr_english": -0.0279,
+      "fr_other_language": -0.134,
+      "fr_job_executive": -0.0601,
+      "fr_job_intermediate": 0.0801,
+      "fr_permanent_contract": -0.1438,
+      "fr_large_firm": 0.0502,
+      "fr_resume_good": 0.2155,
+      "fr_anonymous": 0.038,
+      "fr_years_experience_absent": 0.0047,
+      "fr_overqualified_absent": 0.0142,
+      "fr_underqualified_absent": 0.0142,
+      "fr_adequate_experience_absent": 0.0142,
+      "fr_english_absent": -0.0477,
+      "fr_other_language_absent": -0.0477,
+      "fr_resume_good_absent": 0.0142,
+      "fr_anonymous_absent": -0.128
+    },
+    "equite": {
+      "genre": {
+        "femme": {
+          "taux_reel": 0.1027,
+          "taux_predit": 0.1246,
+          "n": 146
+        },
+        "homme": {
+          "taux_reel": 0.125,
+          "taux_predit": 0.1193,
+          "n": 152
+        }
+      },
+      "origine immigrée": {
+        "non": {
+          "taux_reel": 0.1506,
+          "taux_predit": 0.1281,
+          "n": 166
+        },
+        "oui": {
+          "taux_reel": 0.0682,
+          "taux_predit": 0.1141,
+          "n": 132
+        }
+      },
+      "quartier prioritaire": {
+        "non": {
+          "taux_reel": 0.1171,
+          "taux_predit": 0.1213,
+          "n": 205
+        },
+        "oui": {
+          "taux_reel": 0.1075,
+          "taux_predit": 0.1231,
+          "n": 93
+        }
+      },
+      "âge": {
+        "26-49 ans": {
+          "taux_reel": 0.1038,
+          "taux_predit": 0.118,
+          "n": 183
+        },
+        "50 ans et plus": {
+          "taux_reel": 0.0571,
+          "taux_predit": 0.1137,
+          "n": 35
+        },
+        "moins de 26 ans": {
+          "taux_reel": 0.1625,
+          "taux_predit": 0.1344,
+          "n": 80
+        }
+      }
+    }
+  }
+}

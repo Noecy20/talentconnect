@@ -1,0 +1,43 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import tags, location with context %}
+{% block title %}{{ t('Offre') }}{% endblock %}
+{% block page_title %}{{ t('Modifier l\'offre') if job.id else t('Nouvelle offre') }}{% endblock %}
+{% block content %}
+<form method="post" class="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="space-y-6">
+    <section class="card card-pad space-y-5">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2"><label class="label">{{ t('Intitulé du poste') }}</label><input name="title" value="{{ job.title or '' }}" class="input text-lg font-semibold" required placeholder="{{ t('Ex : Comptable confirmé(e)') }}"></div>
+        <div><label class="label">{{ t('Filière') }}</label><input name="field" value="{{ job.field or '' }}" list="fields" class="input"><datalist id="fields">{% for f in fields %}<option value="{{ f }}">{% endfor %}</datalist></div>
+        <div><label class="label">{{ t('Type de contrat') }}</label><select name="contract_type" class="select">{% for c in contracts %}<option value="{{ c }}" {% if c==job.contract_type %}selected{% endif %}>{{ contract_label(c) }}</option>{% endfor %}</select></div>
+        <div><label class="label">{{ t('Niveau d\'études minimum') }}</label><select name="education_level" class="select">{% for c, r in levels %}<option value="{{ c }}" {% if c==job.education_level %}selected{% endif %}>{{ edu_label(c) }}</option>{% endfor %}</select></div>
+        <div><label class="label">{{ t('Expérience minimum (années)') }}</label><input type="number" step="0.5" min="0" name="min_experience" value="{{ job.min_experience or 0 }}" class="input"></div>
+      </div>
+      <div><label class="label">{{ t('Description') }}</label><textarea name="description" class="textarea !min-h-[200px]" required placeholder="{{ t('Missions, environnement, avantages…') }}">{{ job.description or '' }}</textarea></div>
+    </section>
+    <section class="card card-pad space-y-5">
+      <h2 class="font-display font-semibold">{{ t('Critères de sélection') }}</h2>
+      <p class="text-sm muted -mt-3">{{ t('Ils alimentent le score de compatibilité et le tri automatique.') }}</p>
+      <div><label class="label">{{ t('Compétences requises') }}</label>{{ tags('skills', job.skills, t('Ex : Excel, Sage, Fiscalité'), skill_suggestions) }}</div>
+      <div><label class="label">{{ t('Soft skills') }}</label>{{ tags('soft_skills', job.soft_skills, t('Ex : Rigueur'), ["Communication","Leadership","Travail d'équipe","Rigueur","Autonomie","Adaptabilité","Organisation","Esprit d'analyse"]) }}</div>
+      <div><label class="label">{{ t('Langues') }}</label>{{ tags('languages', job.languages, t('Ex : Anglais')) }}</div>
+    </section>
+  </div>
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <section class="card card-pad space-y-4" x-data="{cur: '{{ job.currency }}'}">
+      <h2 class="font-display font-semibold">{{ t('Lieu & rémunération') }}</h2>
+      {{ location(job.country_code, job.city) }}
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remote" class="check" {% if job.remote %}checked{% endif %}>{{ t('Télétravail possible') }}</label>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">{{ t('Salaire min') }}</label><input type="number" name="salary_min" value="{{ job.salary_min or '' }}" class="input"></div>
+        <div><label class="label">{{ t('Salaire max') }}</label><input type="number" name="salary_max" value="{{ job.salary_max or '' }}" class="input"></div>
+      </div>
+      <div><label class="label">{{ t('Devise') }}</label><input name="currency" value="{{ job.currency if job.id and job.currency != currency_for(job.country_code) else '' }}" maxlength="3" class="input uppercase" placeholder="{{ t('Auto') }} ({{ currency_for(job.country_code) }})"><p class="help">{{ t('Laissez vide : la devise suit le pays automatiquement.') }}</p></div>
+      <div><label class="label">{{ t('Date limite') }}</label><input type="date" name="deadline" value="{{ job.deadline or '' }}" class="input"></div>
+      <div><label class="label">{{ t('Statut') }}</label><select name="status" class="select"><option value="open">{{ t('Publiée') }}</option><option value="draft" {% if job.status=='draft' %}selected{% endif %}>{{ t('Brouillon') }}</option><option value="closed" {% if job.status=='closed' %}selected{% endif %}>{{ t('Fermée') }}</option></select></div>
+      <button class="btn btn-primary btn-lg w-full">{{ t('Enregistrer l\'offre') if job.id else t('Publier l\'offre') }}</button>
+    </section>
+  </aside>
+</form>
+{% endblock %}

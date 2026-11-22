@@ -1,0 +1,4 @@
+# Dépendances pour l'entraînement des modèles (non nécessaires en production)
+-r requirements.txt
+pandas>=2.0
+matplotlib>=3.8

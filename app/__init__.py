@@ -6,8 +6,8 @@ from flask_login import current_user
 
 from config import Config
 from .extensions import db, migrate, login_manager, csrf
-from . import geo
-from .i18n import t, get_locale, available_languages
+from . import geographie
+from .langues import t, get_locale, available_languages
 
 
 EDU_LABELS = {"none": "Sans diplôme", "bepc": "BEPC / Brevet", "bac": "Bac", "bac2": "Bac+2 (BTS, DUT)",
@@ -28,17 +28,17 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     csrf.init_app(app)
 
-    from .blueprints.main import bp as main_bp
-    from .blueprints.auth import bp as auth_bp
-    from .blueprints.candidate import bp as candidate_bp
-    from .blueprints.recruiter import bp as recruiter_bp
-    from .blueprints.sponsor import bp as sponsor_bp
-    from .blueprints.admin import bp as admin_bp
-    from .blueprints.billing import bp as billing_bp
-    from .blueprints.assistant import bp as assistant_bp
-    from .blueprints.messages import bp as messages_bp
-    from .blueprints.api import bp as api_bp
-    from .blueprints.tracker import bp as tracker_bp
+    from .routes.accueil import bp as main_bp
+    from .routes.authentification import bp as auth_bp
+    from .routes.candidat import bp as candidate_bp
+    from .routes.recruteur import bp as recruiter_bp
+    from .routes.parrain import bp as sponsor_bp
+    from .routes.admin import bp as admin_bp
+    from .routes.abonnement import bp as billing_bp
+    from .routes.assistant import bp as assistant_bp
+    from .routes.messagerie import bp as messages_bp
+    from .routes.api import bp as api_bp
+    from .routes.suivi import bp as tracker_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -60,22 +60,31 @@ def create_app(config_class=Config):
                 current_user.last_seen = datetime.utcnow()
                 db.session.commit()
 
+    def _callback_avg():
+        from .ia.modele_rappel import average_rate
+        return average_rate()
+
     @app.context_processor
     def _inject():
-        from .models import Message
+        from .modeles import Message
+        from . import interface
         unread = 0
         if current_user.is_authenticated:
             unread = Message.query.filter_by(recipient_id=current_user.id, read_at=None).count()
         lang = getattr(g, "lang", "fr")
         return dict(
+            # en-tête et menu de l'espace connecté (voir interface.py)
+            menu=interface.menu, creations=interface.creations,
+            role_libelle=interface.role_libelle, mini_stats=interface.mini_stats,
             t=t, lang=lang, languages=available_languages(),
             lang_dir=available_languages().get(lang, {}).get("dir", "ltr"),
-            countries=lambda: geo.countries(lang),
-            country_name=lambda c: geo.country_name(c, lang),
-            money=lambda a, c="XOF": geo.money(a, c, lang),
-            currency_for=geo.currency_for,
+            countries=lambda: geographie.countries(lang),
+            country_name=lambda c: geographie.country_name(c, lang),
+            money=lambda a, c="XOF": geographie.money(a, c, lang),
+            callback_avg=_callback_avg,
+            currency_for=geographie.currency_for,
             unread_count=unread, now=datetime.utcnow(),
-            ai_enabled=bool(app.config.get("ANTHROPIC_API_KEY")),
+            ai_enabled=bool(app.config.get("OPENROUTER_API_KEY") or app.config.get("ANTHROPIC_API_KEY")),
             edu_label=lambda c: t(EDU_LABELS.get(c, c or "")),
             contract_label=lambda c: t(CONTRACT_LABELS.get(c, c or "")),
             seniority_label=lambda c: t(SENIORITY_LABELS.get(c, c or "")),
@@ -124,13 +133,13 @@ def create_app(config_class=Config):
 
     @app.errorhandler(403)
     def _403(e):
-        return render_template("errors.html", code=403, message=t("Accès refusé.")), 403
+        return render_template("erreur.html", code=403, message=t("Accès refusé.")), 403
 
     @app.errorhandler(404)
     def _404(e):
-        return render_template("errors.html", code=404, message=t("Page introuvable.")), 404
+        return render_template("erreur.html", code=404, message=t("Page introuvable.")), 404
 
-    from .cli import register_cli
+    from .commandes import register_cli
     register_cli(app)
 
     return app

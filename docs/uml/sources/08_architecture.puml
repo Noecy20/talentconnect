@@ -1,0 +1,64 @@
+@startuml
+!include _theme.iuml
+skinparam componentStyle rectangle
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam RectangleBorderColor #8A5A3C
+skinparam ComponentBackgroundColor #FCEBDD
+skinparam ComponentBorderColor #C8642E
+skinparam CloudBackgroundColor #FFF6EC
+skinparam CloudBorderColor #E8912F
+top to bottom direction
+actor "Utilisateurs\n(visiteur, candidat, recruteur,\nparrain, administrateur)" as U
+rectangle "Couche présentation (navigateur)" {
+  [Pages HTML générées par Jinja2\nTailwind CSS · HTMX · Alpine.js] as UI
+  [Bibliothèques locales\nChart.js · SortableJS · Leaflet\nLucide · jsPDF (CV Builder)] as LIB
+}
+rectangle "Hébergement Render — serveur Gunicorn" {
+  rectangle "Couche application (Flask)" {
+    [main · auth] as B1
+    [candidate · tracker] as B2
+    [recruiter · sponsor] as B3
+    [admin · billing] as B4
+    [assistant · messages · api] as B5
+    [Sécurité : Flask-Login, CSRF,\nrôles, accès payant] as SEC
+    [Multilinguisme t() · Babel · GeoNames] as I18N
+  }
+  rectangle "Couche services métier et IA (app/services)" {
+    [scoring\n(compatibilité, tri, éligibilité,\nemployabilité)] as S1
+    [callback_model\n(modèles entraînés\nÉtats-Unis + France)] as S2
+    [hiring\n(candidature, décisions,\naccusés, retours)] as S3
+    [orientation (RIASEC)\nrag (assistant)\nllm] as S4
+    [mailer · tracker\njobsources] as S5
+  }
+  [SQLAlchemy + Flask-Migrate] as ORM
+}
+database "PostgreSQL (Neon)\n23 tables · fichiers stockés" as DB
+cloud "Services externes" {
+  [Brevo (e-mails)] as E1
+  [JSearch · Adzuna · Jooble\n(offres externes)] as E2
+  [API modèle de langage\n(optionnelle)] as E3
+}
+[UptimeRobot\n(surveillance)] as MON
+U --> UI : HTTPS
+UI ..> LIB
+UI --> B1
+UI --> B2
+UI --> B3
+UI --> B4
+UI --> B5
+B2 --> S1
+B2 --> S3
+B3 --> S1
+B3 --> S3
+B5 --> S4
+B4 --> S5
+S3 --> S5
+S1 --> S2
+B1 --> ORM
+S3 --> ORM
+ORM --> DB
+S5 --> E1
+S5 --> E2
+S4 --> E3
+MON ..> UI : /sante
+@enduml

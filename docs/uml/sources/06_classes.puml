@@ -1,0 +1,152 @@
+@startuml
+!include _theme.iuml
+hide methods
+hide circle
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 70
+class User {
+  id : Integer
+  email : String
+  password_hash : String
+  role : String
+  first_name, last_name : String
+  country_code, city : String
+  language : String
+  access_granted : Boolean
+  access_until : DateTime
+}
+class CandidateProfile {
+  headline, field : String
+  education_level : String
+  years_experience : Float
+  skills, soft_skills, languages : JSON
+  cv_data, riasec : JSON
+  visible_to_recruiters : Boolean
+}
+class RecruiterProfile {
+  position : String
+  work_email : String
+  verification_status : String
+  proof_file : String
+}
+class SponsorProfile {
+  kind : String
+  seniority : String
+  eligibility_score : Integer
+  status, level : String
+  reputation : Float
+}
+class Company {
+  name, sector, size : String
+  country_code, city : String
+  verified : Boolean
+}
+class Job {
+  title, field : String
+  contract_type : String
+  education_level : String
+  min_experience : Float
+  skills, soft_skills : JSON
+  status : String
+}
+class Application {
+  status : String
+  match_score : Integer
+  call_probability : Integer
+  match_breakdown : JSON
+  ai_group : String
+  feedback : JSON
+  ack_sent_at : DateTime
+}
+class SponsorshipRequest {
+  invitee_email : String
+  token : String
+  status : String
+}
+class Sponsorship {
+  relation : String
+  skill_ratings : JSON
+  recommendation : Text
+  status : String
+}
+class TalentPool {
+  note : String
+}
+class Message {
+  kind, subject : String
+  body : Text
+  read_at : DateTime
+}
+class MessageTemplate {
+  kind, subject : String
+  body : Text
+}
+class Plan {
+  role, name : String
+  price : Integer
+  duration_days : Integer
+}
+class Payment {
+  amount : Integer
+  method, reference : String
+  status : String
+  validated_at : DateTime
+}
+class Assistant {
+  name : String
+  public : Boolean
+}
+class KnowledgeDoc {
+  title : String
+  content : Text
+}
+class TrackedApplication {
+  title, company : String
+  stage : String
+  next_followup : Date
+}
+class TrackerEvent {
+  kind : String
+  content : Text
+}
+class CVVersion {
+  name : String
+  data : JSON
+}
+class MobilityProject {
+  name : String
+}
+class StoredFile {
+  filename : String
+  data : Binary
+}
+
+User "1" -- "0..1" CandidateProfile
+User "1" -- "0..1" RecruiterProfile
+User "1" -- "0..1" SponsorProfile
+RecruiterProfile "*" -- "1" Company
+Company "1" -- "*" Job : publie
+User "1" -- "*" Application : postule
+Job "1" -- "*" Application : reçoit
+User "1" -- "*" SponsorshipRequest : sollicite
+User "1" -- "*" Sponsorship : parraine
+SponsorshipRequest "1" -- "0..1" Sponsorship
+Company "1" -- "*" TalentPool
+TalentPool "*" -- "1" User
+User "1" -- "*" Message : envoie / reçoit
+Application "0..1" -- "*" Message
+Company "0..1" -- "*" MessageTemplate
+User "1" -- "*" Payment
+Plan "1" -- "*" Payment
+User "1" -- "1" Assistant
+Assistant "1" -- "*" KnowledgeDoc
+User "1" -- "*" TrackedApplication : suit
+TrackedApplication "1" -- "*" TrackerEvent
+TrackedApplication "*" -- "0..1" CVVersion
+TrackedApplication "*" -- "0..1" MobilityProject
+TrackedApplication "0..1" -- "0..1" Application
+User "1" -- "*" StoredFile
+User "1" -- "*" CVVersion
+User "1" -- "*" MobilityProject
+@enduml

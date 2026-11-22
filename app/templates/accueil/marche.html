@@ -1,0 +1,40 @@
+{% extends "espace.html" %}
+{% block title %}{{ t('Métiers qui recrutent') }}{% endblock %}
+{% block page_title %}{{ t('Métiers qui recrutent') }}{% endblock %}
+{% block head_page %}<link rel="stylesheet" href="{{ url_for('static', filename='librairies/leaflet/leaflet.css') }}">{% endblock %}
+{% block content %}
+<form class="flex flex-wrap items-center gap-3 mb-6">
+  <select name="country" class="select w-auto" onchange="this.form.submit()">{% for code, name in countries() %}<option value="{{ code }}" {% if code==country %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+  <span class="chip chip-terra">{{ total }} {{ t('offre(s) ouverte(s)') }}</span>
+  <div class="ml-auto flex flex-wrap gap-1.5">{% for c, n in world[:6] %}<a href="?country={{ c }}" class="chip {% if c==country %}chip-terra{% endif %}">{{ country_name(c) }} · {{ n }}</a>{% endfor %}</div>
+</form>
+<div class="grid lg:grid-cols-[1.4fr_1fr] gap-7">
+  <div class="card overflow-hidden"><div id="map" style="height:470px"></div></div>
+  <div class="card card-pad"><h3 class="font-display font-semibold">{{ t('Filières qui recrutent le plus') }}</h3><div class="relative h-[400px] mt-4"><canvas id="fields"></canvas></div></div>
+</div>
+<div class="grid lg:grid-cols-2 gap-7 mt-7">
+  <div class="card card-pad"><h3 class="font-display font-semibold mb-4">{{ t('Villes') }}</h3>
+    {% set mx = (by_city[0][1] if by_city else 1) %}
+    <div class="space-y-3">{% for c, n in by_city %}<div class="flex items-center gap-3"><span class="w-32 text-sm truncate">{{ c }}</span><div class="progress flex-1"><span data-w="{{ (n/mx*100)|round }}" style="width:0"></span></div><b class="text-sm w-8 text-right">{{ n }}</b></div>{% else %}<p class="muted text-sm">—</p>{% endfor %}</div></div>
+  <div class="card card-pad"><h3 class="font-display font-semibold mb-4">{{ t('Compétences les plus demandées') }}</h3>
+    <div class="flex flex-wrap gap-2">{% for s, n in skills %}<span class="chip chip-terra" style="font-size:{{ 0.72 + [n, 8]|min * 0.05 }}rem">{{ s }} · {{ n }}</span>{% else %}<p class="muted text-sm">—</p>{% endfor %}</div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='librairies/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='librairies/chart.umd.js') }}"></script>
+<script>
+  const pts = {{ points|tojson }};
+  const map = L.map('map', { scrollWheelZoom: false });
+  // Fond de carte OpenStreetMap : gratuit, sans clé d'API (attribution obligatoire)
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 18 }).addTo(map);
+  const max = Math.max(1, ...pts.map(p => p.n));
+  const group = L.featureGroup(pts.map(p => L.circleMarker([p.lat, p.lng], { radius: 8 + 22 * p.n / max, color: '#A04222', weight: 2, fillColor: '#D86730', fillOpacity: .55 })
+      .bindPopup(`<b>${p.city}</b><br>${p.n} {{ t('offre(s)') }}`))).addTo(map);
+  if (pts.length) map.fitBounds(group.getBounds().pad(0.3)); else map.setView([7.54, -5.55], 6);
+  const css = getComputedStyle(document.documentElement);
+  new Chart(document.getElementById('fields'), { type: 'bar',
+    data: { labels: {{ by_field|map('first')|list|tojson }}, datasets: [{ data: {{ by_field|map('last')|list|tojson }}, backgroundColor: '#D86730', borderRadius: 6 }] },
+    options: { maintainAspectRatio: false, indexAxis: 'y', datasets: { bar: { maxBarThickness: 22 } }, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, color: css.getPropertyValue('--muted') }, grid: { color: css.getPropertyValue('--line') } }, y: { ticks: { color: css.getPropertyValue('--ink'), font: { size: 11.5 }, callback(v) { const l = this.getLabelForValue(v); return l.length > 20 ? l.slice(0, 19) + '…' : l } }, grid: { display: false } } } } });
+</script>
+{% endblock %}

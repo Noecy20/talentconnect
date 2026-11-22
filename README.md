@@ -144,29 +144,30 @@ Le badge « Recruteur vérifié » s'affiche ensuite sur ses offres. Les recrute
 
 ## 3. Les modèles d'intelligence
 
-Tous les modèles sont dans `app/services/`. Ils fonctionnent sans aucun service payant.
+Tous les modèles sont dans `app/ia/`. Ils fonctionnent sans aucun service payant.
 
 | Modèle | Fichier | Principe |
 |---|---|---|
-| Éligibilité parrain | `scoring.py` | Barème sur 100, seuils réglables par l'admin |
-| Compatibilité candidat ↔ offre | `scoring.py` | 7 critères pondérés (compétences, filière, expérience, études, lieu, soft skills, langues). Rapprochement approximatif des compétences (accents, fautes) et bonus pour les compétences confirmées par un parrain |
-| Chance d'être appelé | `scoring.py` | Régression logistique sur 5 variables (compatibilité, force des parrainages, complétude du profil, concurrence, taux de réponse de l'entreprise). Elle est **remplacée automatiquement par un modèle entraîné** dès que `instance/models/call_model.joblib` existe |
-| Tri des candidatures | `scoring.py` | Seuils + raisons (points forts et manques) |
-| Retour constructif | `scoring.py`, `hiring.py` | Règles, rédigées par Claude si une clé API est configurée |
+| Éligibilité parrain | `scores.py` | Barème sur 100, seuils réglables par l'admin |
+| Compatibilité candidat ↔ offre | `scores.py` | 7 critères pondérés (compétences, filière, expérience, études, lieu, soft skills, langues). Rapprochement approximatif des compétences (accents, fautes) et bonus pour les compétences confirmées par un parrain |
+| Chance d'être appelé | `scores.py`, `modele_rappel.py` | Modèle entraîné sur de vraies candidatures publiées (États-Unis et France, voir `ml/entrainer_modele_rappel.py`), ajusté par la compatibilité, les parrainages, la réactivité de l'entreprise et la concurrence. **Remplacé automatiquement par un modèle entraîné sur les candidatures de TalentConnect** dès que `instance/modeles/modele_plateforme.joblib` existe |
+| Tri des candidatures | `scores.py` | Seuils + raisons (points forts et manques) |
+| Retour constructif | `scores.py`, `services/recrutement.py` | Règles, rédigées par Claude si une clé API est configurée |
 | Orientation | `orientation.py` | Modèle de Holland (RIASEC) + matières. Enrichissable avec O*NET |
 | Assistant (RAG) | `rag.py` | TF-IDF multilingue (n-grammes de caractères) + Claude si une clé est configurée, sinon réponse par extraction |
 
 ### Entraîner avec de vraies données
 
 ```bat
-python ml\train_call_model.py                  :: à partir des candidatures de l'app (200 décisions minimum)
-python ml\train_call_model.py --csv data.csv   :: + données externes
+python ml\entrainer_modele_rappel.py                    :: modèle sur données réelles publiées (pip install -r requirements-ml.txt)
+python ml\entrainer_modele_plateforme.py                :: à partir des candidatures de l'app (200 décisions minimum)
+python ml\entrainer_modele_plateforme.py --csv data.csv   :: + données externes
 ```
 
 Sources de données gratuites :
 
-- **O*NET** (onetcenter.org) : métiers, compétences et profils RIASEC. Importer avec `python ml\import_onet.py dossier_onet\` : l'orientation propose alors des centaines de métiers.
-- **ESCO** (esco.ec.europa.eu) : la taxonomie européenne des compétences en FR, EN, ES et PT. Importer avec `python ml\import_esco_skills.py skills_fr.csv fr`, ce qui ajoute l'autocomplétion des compétences.
+- **O*NET** (onetcenter.org) : métiers, compétences et profils RIASEC. Importer avec `python ml\importer_onet.py dossier_onet\` : l'orientation propose alors des centaines de métiers.
+- **ESCO** (esco.ec.europa.eu) : la taxonomie européenne des compétences en FR, EN, ES et PT. Importer avec `python ml\importer_competences_esco.py skills_fr.csv fr`, ce qui ajoute l'autocomplétion des compétences.
 - **Kaggle** : « LinkedIn Job Postings », « Resume Dataset », pour l'analyse de marché et les tests du matching.
 
 > Le meilleur modèle viendra de **vos propres données** : chaque décision des recruteurs (entretien ou refus) sert d'exemple d'entraînement.
@@ -244,23 +245,32 @@ Prérequis : Git, à installer depuis https://git-scm.com.
 
 ```
 app/
-  __init__.py        fabrique Flask, contexte des templates, filtres
-  models.py          tous les modèles SQLAlchemy
-  blueprints/        main, auth, candidate, recruiter, sponsor, admin, billing, assistant, messages, api
-  services/          scoring, hiring, orientation, rag, llm, mailer
-  cvbuilder/         CV Builder CVFlash d'origine + intégration
-  templates/         Jinja + Tailwind + HTMX + Alpine.js
-  static/            CSS (design system), JS, vendor/ (bibliothèques hors-ligne), logo
-  translations/      en.json, es.json, pt.json
-  data/              données importées (ESCO, O*NET)
+  __init__.py        création de l'application (create_app), contexte des gabarits, filtres
+  modeles.py         tous les modèles SQLAlchemy (tables)
+  interface.py       menu de chaque rôle, « Création rapide », statistiques du menu profil
+  outils.py          décorateurs d'accès, conversion des formulaires, fichiers envoyés
+  langues.py         traductions de l'interface
+  geographie.py      pays, villes, monnaies
+  commandes.py       commandes « flask … » (init-db, seed-demo, translate…)
+  routes/            un fichier par espace : accueil, authentification, candidat, recruteur,
+                     parrain, admin, abonnement, assistant, messagerie, suivi, api
+  ia/                scores, modele_rappel (+ modele_rappel.joblib), orientation, llm, rag
+  services/          recrutement, emails, suivi (candidatures), offres_externes (API d'offres)
+  generateur_cv/     CV Builder CVFlash d'origine + intégration
+  templates/         base.html -> espace.html (connecté) / public.html (sans compte)
+                     composants/ : en-tête, menu latéral, recherche, messages, macros (ui.html)
+                     puis un dossier par espace : candidat/, recruteur/, parrain/, admin/…
+  static/            css/ (style.css + tailwind.css), js/principal.js, images/, librairies/
+  traductions/       en.json, es.json, pt.json
 migrations/          migrations Alembic (appliquées au démarrage)
-ml/                  entraînement et imports de données
+ml/                  entraînement des modèles, imports ESCO / O*NET, export Power BI
+tests/               test_parcours.py (toutes les pages), test_roles_performances.py
 ```
 
 Pour modifier le design :
 
 1. Lancez `npm install`, puis `npm run css`. Cela recompile Tailwind après l'ajout de nouvelles classes.
-2. Les composants (cartes, boutons, chips…) sont dans `app/static/css/app.css`.
+2. Les couleurs et les composants (cartes, boutons, bannière, en-tête…) sont dans `app/static/css/style.css`, avec un sommaire en tête de fichier.
 
 ---
 
