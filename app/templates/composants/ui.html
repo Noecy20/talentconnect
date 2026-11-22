@@ -82,12 +82,16 @@
 {% set nom = co.name or '?' %}
 {% set site = (co.website or '')|replace('https://', '')|replace('http://', '')|replace('www.', '') %}
 {% set teinte = 't' ~ ((nom|length % 4) + 1) %}
+{# Si l'image ne charge pas, ou si Google renvoie son petit globe gris (16 px, site sans icône),
+   on revient à l'initiale sur une pastille colorée #}
+{% set secours = "var p=this.parentNode;p.className='logo-ent " ~ teinte ~ " " ~ classe ~ "';p.textContent='" ~ nom[:1]|replace("'", "")|replace('"', '')|replace('\\', '') ~ "'" %}
 {% if co.logo_url %}
-  <span class="logo-ent image {{ classe }}"><img src="{{ co.logo_url }}" alt="" loading="lazy" onerror="this.parentNode.textContent={{ nom[:1]|tojson|forceescape }}"></span>
+  <span class="logo-ent image {{ classe }}"><img src="{{ co.logo_url }}" alt="" loading="lazy" onerror="{{ secours }}"></span>
 {% elif co.logo %}
-  <span class="logo-ent image {{ classe }}"><img src="{{ url_for('main.company_logo', cid=co.id) }}" alt="" loading="lazy"></span>
+  <span class="logo-ent image {{ classe }}"><img src="{{ url_for('main.company_logo', cid=co.id) }}" alt="" loading="lazy" onerror="{{ secours }}"></span>
 {% elif site %}
-  <span class="logo-ent image {{ classe }}"><img src="https://www.google.com/s2/favicons?domain={{ site.split('/')[0] }}&sz=128" alt="" loading="lazy" onerror="this.parentNode.textContent={{ nom[:1]|tojson|forceescape }}"></span>
+  <span class="logo-ent image {{ classe }}"><img src="https://www.google.com/s2/favicons?domain={{ site.split('/')[0] }}&sz=128" alt="" loading="lazy"
+        onerror="{{ secours }}" onload="if(this.naturalWidth<=16){ {{ secours }} }"></span>
 {% else %}
   <span class="logo-ent {{ teinte }} {{ classe }}">{{ nom[:1] }}</span>
 {% endif %}
