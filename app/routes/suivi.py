@@ -212,6 +212,40 @@ def from_job(job_id):
     return redirect(url_for("tracker.detail", tid=tr.id))
 
 
+@bp.route("/depuis-le-web", methods=["POST"])
+def from_external():
+    """Offre d'un autre site (Emploi.ci, Educarriere, LinkedIn via JSearch…) ajoutée au suivi
+    en un clic : bouton « J'ai postulé » ou réponse à la question « Avez-vous postulé ? »."""
+    f = request.form
+    url, titre = (f.get("url") or "").strip()[:1000], (f.get("title") or "").strip()[:200]
+    if not titre or not url.startswith(("http://", "https://")):
+        abort(400)
+    etape = f.get("stage") if f.get("stage") in ("identified", "to_apply", "sent") else "sent"
+    source = (f.get("source") or "").strip()[:60] or svc.source_from_url(url)
+    tr = TrackedApplication.query.filter_by(user_id=current_user.id, url=url).first()
+    nouveau = tr is None
+    if nouveau:
+        tr = TrackedApplication(user_id=current_user.id, title=titre, url=url, source=source,
+                                company=(f.get("company") or "")[:200], city=(f.get("city") or "")[:120],
+                                country_code=(f.get("country_code") or "")[:2].upper(),
+                                contract=(f.get("contract") or "")[:30], salary=(f.get("salary") or "")[:120],
+                                stage="identified")
+        db.session.add(tr)
+        db.session.flush()
+        svc.add_event(tr, "stage", t("Ajoutée au suivi depuis {s}", s=source or t("le web")))
+    # On n'avance l'étape que vers l'avant (une offre déjà en entretien ne redevient pas « envoyée »)
+    if STAGE_KEYS.index(etape) > STAGE_KEYS.index(tr.stage):
+        svc.set_stage(tr, etape, t("Candidature envoyée sur {s}", s=source) if etape == "sent" else None)
+    if tr.archived:
+        tr.archived = False
+    db.session.commit()
+    if request.accept_mimetypes.best == "application/json" or request.headers.get("HX-Request"):
+        return jsonify(ok=True, id=tr.id, stage=tr.stage, nouveau=nouveau,
+                       lien=url_for("tracker.detail", tid=tr.id))
+    flash(t("Offre ajoutée à votre suivi."), "success")
+    return redirect(request.referrer or url_for("tracker.board"))
+
+
 @bp.route("/<int:tid>", methods=["GET"])
 def detail(tid):
     tr = _own(tid)

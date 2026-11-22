@@ -47,6 +47,8 @@
   </div>
   {% endblock %}
 
+  {# « Avez-vous postulé ? » au retour d'une offre ouverte sur un autre site #}
+  {% if current_user.is_authenticated and current_user.role == 'candidate' %}{% include "composants/retour_offre.html" %}{% endif %}
   <script src="{{ url_for('static', filename='librairies/htmx.min.js') }}"></script>
   <script defer src="{{ url_for('static', filename='librairies/alpine.min.js') }}"></script>
   <script src="{{ url_for('static', filename='librairies/lucide.min.js') }}"></script>

@@ -64,6 +64,16 @@ def create_app(config_class=Config):
         from .ia.modele_rappel import average_rate
         return average_rate()
 
+    def _urls_suivies():
+        """Liens des offres déjà dans le suivi du candidat connecté (une requête par page)."""
+        if not (current_user.is_authenticated and current_user.role == "candidate"):
+            return set()
+        if not hasattr(g, "_urls_suivies"):
+            from .modeles import TrackedApplication
+            g._urls_suivies = {u for (u,) in db.session.query(TrackedApplication.url)
+                               .filter(TrackedApplication.user_id == current_user.id, TrackedApplication.url != "")}
+        return g._urls_suivies
+
     @app.context_processor
     def _inject():
         from .modeles import Message
@@ -74,7 +84,7 @@ def create_app(config_class=Config):
         lang = getattr(g, "lang", "fr")
         return dict(
             # en-tête et menu de l'espace connecté (voir interface.py)
-            menu=interface.menu, creations=interface.creations,
+            menu=interface.menu, creations=interface.creations, urls_suivies=_urls_suivies,
             role_libelle=interface.role_libelle, mini_stats=interface.mini_stats,
             t=t, lang=lang, languages=available_languages(),
             lang_dir=available_languages().get(lang, {}).get("dir", "ltr"),

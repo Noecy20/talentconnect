@@ -1,0 +1,115 @@
+{#
+  « Avez-vous postulé ? » — pour les candidats connectés.
+  Quand le candidat ouvre une offre d'un autre site, on la retient dans son navigateur.
+  À son retour sur TalentConnect, on lui demande s'il a postulé :
+    - Oui          -> l'offre arrive dans son suivi Kanban, colonne « Candidature envoyée »
+                      (date du jour, relance prévue 7 jours plus tard) ;
+    - Pas encore   -> elle arrive dans la colonne « À postuler » ;
+    - ×            -> on oublie l'offre.
+  Le bouton « J'ai postulé » des cartes d'offres passe par la même fonction.
+#}
+<div x-data="retourOffre" x-cloak x-show="offre || fait" x-transition.opacity class="retour-offre" role="dialog" aria-live="polite">
+  <template x-if="offre && !fait">
+    <div>
+      <div class="flex items-start gap-3">
+        <span class="carre-icone carre-terra shrink-0"><i data-lucide="send"></i></span>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-[15px]">{{ t('Avez-vous postulé ?') }}</div>
+          <div class="text-[13.5px] muted mt-0.5 leading-snug" x-text="offre.title + (offre.company ? ' · ' + offre.company : '')"></div>
+          <div class="text-[12px] muted mt-0.5" x-show="offre.source" x-text="'{{ t('Sur') }} ' + offre.source"></div>
+        </div>
+        <button type="button" class="muted hover:text-terra-600 shrink-0" @click="oublier()" aria-label="{{ t('Non, fermer') }}"><i data-lucide="x"></i></button>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4">
+        <button type="button" class="btn btn-primary btn-sm" :disabled="envoi" @click="repondre('sent')">{{ t('Oui, ajouter à mon suivi') }}</button>
+        <button type="button" class="btn btn-ghost btn-sm" :disabled="envoi" @click="repondre('to_apply')">{{ t('Pas encore') }}</button>
+      </div>
+    </div>
+  </template>
+  <template x-if="fait">
+    <div class="flex items-center gap-3">
+      <span class="carre-icone shrink-0" style="background:var(--sauge);color:#276749"><i data-lucide="check"></i></span>
+      <div class="flex-1 min-w-0 text-[14px]">
+        <b x-text="fait.stage === 'sent' ? '{{ t('Ajoutée à votre suivi') }}' : '{{ t('Gardée dans « À postuler »') }}'"></b>
+        <a :href="fait.lien" class="block text-terra-600 font-semibold text-[13px] mt-0.5">{{ t('Voir dans mon suivi') }} →</a>
+      </div>
+      <button type="button" class="muted shrink-0" @click="fait=null" aria-label="{{ t('Fermer') }}"><i data-lucide="x"></i></button>
+    </div>
+  </template>
+</div>
+
+<script>
+(() => {
+  const CLE = 'tc_offre_ouverte';
+  const URL_AJOUT = {{ url_for('tracker.from_external')|tojson }};
+  const CSRF = {{ csrf_token()|tojson }};
+  const lire = () => { try { return JSON.parse(localStorage.getItem(CLE) || 'null'); } catch (e) { return null; } };
+  const ecrire = o => { try { o ? localStorage.setItem(CLE, JSON.stringify(o)) : localStorage.removeItem(CLE); } catch (e) {} };
+  const icones = () => window.lucide && setTimeout(() => lucide.createIcons(), 0);
+
+  // Envoie l'offre au suivi ; renvoie {ok, id, stage, lien} ou null (et redirige si l'accès est fermé)
+  async function ajouter(offre, etape) {
+    const corps = new URLSearchParams({ ...offre, stage: etape });
+    const rep = await fetch(URL_AJOUT, { method: 'POST', body: corps,
+      headers: { 'X-CSRFToken': CSRF, 'Accept': 'application/json' } });
+    if (rep.ok && (rep.headers.get('content-type') || '').includes('json')) return rep.json();
+    window.location = rep.redirected ? rep.url : {{ url_for('tracker.board')|tojson }};
+    return null;
+  }
+
+  // Bouton « J'ai postulé » d'une carte devenu « Dans mon suivi »
+  function marquer(carte, lien) {
+    const b = carte && carte.querySelector('[data-postule]');
+    if (!b) return;
+    const a = document.createElement('a');
+    a.href = lien; a.className = 'bouton-postule fait';
+    a.innerHTML = '<i data-lucide="check"></i>' + {{ t('Dans mon suivi')|tojson }};
+    b.replaceWith(a); icones();
+  }
+  const carteDe = url => [...document.querySelectorAll('[data-offre-externe]')]
+    .find(c => { try { return JSON.parse(c.dataset.offreExterne).url === url; } catch (e) { return false; } });
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('retourOffre', () => ({
+      offre: null, fait: null, envoi: false,
+      init() {
+        // Un clic sur une offre externe : on la retient (sauf si elle est déjà suivie)
+        document.addEventListener('click', async e => {
+          const bouton = e.target.closest('[data-postule]');
+          const carte = e.target.closest('[data-offre-externe]');
+          if (!carte) return;
+          const o = JSON.parse(carte.dataset.offreExterne);
+          if (bouton) {
+            e.preventDefault(); bouton.disabled = true;
+            const r = await ajouter(o, 'sent');
+            if (r) { marquer(carte, r.lien); if ((lire() || {}).url === o.url) { ecrire(null); this.offre = null; } this.afficherFait(r); }
+            return;
+          }
+          if (e.target.closest('a.lien-etire') && carte.querySelector('[data-postule]')) ecrire({ ...o, at: Date.now() });
+        });
+        // Retour sur l'onglet (l'annonce s'ouvre dans un nouvel onglet) ou nouvelle page
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) this.verifier(); });
+        this.verifier();
+      },
+      verifier() {
+        const o = lire();
+        if (!o) return;
+        const age = Date.now() - (o.at || 0);
+        if (age > 3 * 24 * 3600 * 1000) { ecrire(null); return; }   // trop ancien : on n'insiste pas
+        if (age < 4000) return;                                     // à peine parti
+        this.offre = o; icones();
+      },
+      async repondre(etape) {
+        this.envoi = true;
+        const r = await ajouter(this.offre, etape);
+        this.envoi = false;
+        if (!r) return;
+        marquer(carteDe(this.offre.url), r.lien);
+        ecrire(null); this.offre = null; this.afficherFait(r);
+      },
+      afficherFait(r) { this.fait = r; icones(); clearTimeout(this._t); this._t = setTimeout(() => this.fait = null, 6000); },
+      oublier() { ecrire(null); this.offre = null; },
+    }));
+  });
+})();
+</script>

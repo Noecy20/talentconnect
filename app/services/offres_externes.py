@@ -191,7 +191,7 @@ def _emploi_ci(q, where, country, days):
         img = carte.select_one("picture img") or carte.select_one("img")
         logo = (img.get("data-src") or img.get("src") or "") if img else ""
         entreprise = carte.select_one(".card-job-company")
-        url = carte.get("data-href") or urllib.parse.urljoin("https://www.emploi.ci", lien.get("href", ""))
+        url = urllib.parse.urljoin("https://www.emploi.ci", lien.get("href") or carte.get("data-href") or "")
         out.append({"title": (lien.get("title") or lien.get_text(strip=True)).strip(),
                     "company": entreprise.get_text(strip=True) if entreprise else "",
                     "city": infos.get("region de", "Côte d'Ivoire"), "country_code": "CI", "url": url,

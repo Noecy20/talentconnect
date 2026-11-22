@@ -359,3 +359,13 @@
 .deroulant{overflow:visible}
 .profil-bandeau{border-radius:18px 18px 0 0}
 .deroulant .icone{width:38px;height:38px;box-shadow:none;background:var(--bg)}
+
+/* Offres d'autres sites : lien étiré sur la carte, bouton « J'ai postulé », question au retour */
+.lien-etire::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:0}
+.bouton-postule{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;gap:.35rem;height:32px;padding:0 .8rem;border-radius:999px;font-size:12.5px;font-weight:700;background:var(--peche);color:var(--terra-700);transition:filter .15s}
+.bouton-postule:hover{filter:brightness(.96)}
+.bouton-postule svg{width:14px!important;height:14px!important}
+.bouton-postule.fait{background:var(--sauge);color:#276749}
+.dark .bouton-postule{background:rgba(216,103,48,.16);color:#F0A060}.dark .bouton-postule.fait{background:rgba(47,133,90,.2);color:#8FD3A8}
+.retour-offre{position:fixed;z-index:60;right:1.5rem;bottom:1.5rem;width:min(380px,calc(100vw - 2rem));background:var(--surface);border-radius:20px;padding:1.1rem 1.2rem;box-shadow:0 24px 60px -20px rgba(31,20,13,.45),0 2px 6px rgba(31,20,13,.08);border:1px solid var(--line)}
+@media (max-width:639px){.retour-offre{right:1rem;left:1rem;bottom:1rem;width:auto}}
