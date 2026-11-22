@@ -208,7 +208,8 @@ def jobs_web():
         texte = f"{o.get('title', '')} {o.get('description', '')}".lower()
         o["retrouvees"] = [c for c in competences if c.lower() in texte][:5]
     offres.sort(key=lambda o: -len(o["retrouvees"]))
-    return render_template("candidat/_offres_web.html", offres=offres[:30], erreurs=erreurs, q=q, ville=ville,
+    limite = min(request.args.get("limite", type=int) or 30, 30)
+    return render_template("candidat/_offres_web.html", offres=offres[:limite], erreurs=erreurs, q=q, ville=ville,
                            sources=offres_externes.providers())
 
 

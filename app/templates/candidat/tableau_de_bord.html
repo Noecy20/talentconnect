@@ -109,7 +109,12 @@
           {% endfor %}
         </div>
       {% else %}
-        <div class="card card-pad muted text-[14px]">{{ t('Pas encore d\'offre correspondante.') }} <a class="text-terra-600 font-semibold" href="{{ url_for('candidate.profile') }}">{{ t('Compléter mon profil') }}</a></div>
+        {# Aucune offre TalentConnect pour ce profil : on montre directement celles du web #}
+        <div hx-get="{{ url_for('candidate.jobs_web', limite=4) }}" hx-trigger="load">
+          <div class="card card-pad flex items-center gap-3 muted text-[14px]">
+            <span class="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin"></span>{{ t('Recherche des offres sur LinkedIn, Indeed et les autres sites…') }}
+          </div>
+        </div>
       {% endif %}
     </section>
 

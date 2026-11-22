@@ -1,6 +1,6 @@
 from collections import Counter
 
-from flask import Blueprint, render_template, redirect, url_for, request, session, g, abort
+from flask import Blueprint, render_template, redirect, url_for, request, session, g, abort, current_app
 from flask_login import current_user, login_required
 from sqlalchemy import func
 
@@ -31,12 +31,10 @@ _ACCUEIL = {"quand": 0, "stats": None, "ids": []}
 def index():
     import time
     if time.time() - _ACCUEIL["quand"] > 300 or _ACCUEIL["stats"] is None:
-        _ACCUEIL.update(quand=time.time(), stats=_chiffres_accueil(),
-                        ids=[j.id for j in Job.query.filter_by(status="open").order_by(Job.created_at.desc()).limit(6)])
-    from sqlalchemy.orm import joinedload
-    derniers = (Job.query.options(joinedload(Job.company)).filter(Job.id.in_(_ACCUEIL["ids"]))
-                .order_by(Job.created_at.desc()).all()) if _ACCUEIL["ids"] else []
-    return render_template("accueil/index.html", stats=_ACCUEIL["stats"], derniers=derniers)
+        _ACCUEIL.update(quand=time.time(), stats=_chiffres_accueil())
+    # Les dernières offres sont chargées à part (offers_preview), pour afficher la page sans attendre les API
+    return render_template("accueil/index.html", stats=_ACCUEIL["stats"],
+                           nb_sources=len(offres_externes.providers()))
 
 
 def _chiffres_accueil():
@@ -83,10 +81,13 @@ def offers():
         from sqlalchemy.orm import contains_eager
         internes = req.options(contains_eager(Job.company)).order_by(Job.created_at.desc()).limit(90).all()
 
-    # 2. Offres des sites partenaires (seulement sur une recherche précise)
+    # 2. Offres des sites partenaires. Sans mot-clé, on montre les dernières offres du pays
+    #    (recherche générale « emploi », gardée en mémoire 6 h pour ménager les quotas des API).
     externes, erreurs = [], []
-    if f["q"] and f["source"] != "talentconnect":
-        externes, erreurs = offres_externes.search(f["q"], f["ville"])
+    if f["source"] != "talentconnect":
+        mot = f["q"] or current_app.config.get("OFFRES_RECHERCHE_DEFAUT", "emploi")
+        pays = "" if f["ville"] else current_app.config.get("DEFAULT_COUNTRY", "CI")
+        externes, erreurs = offres_externes.search(mot, f["ville"], pays)
         if f["teletravail"]:
             externes = [r for r in externes if "remote" in (r.get("city") or "").lower()
                         or "télétravail" in (r.get("city") or "").lower() or r.get("source") in ("Remotive", "Jobicy")]
@@ -109,6 +110,21 @@ def offers():
                            nb_internes=len(internes), nb_externes=len(externes),
                            sources=offres_externes.providers(), regroupements=REGROUPEMENTS,
                            contrats=CONTRACT_TYPES)
+
+
+@bp.route("/offres/apercu")
+def offers_preview():
+    """Quelques offres pour la page d'accueil, chargées après l'affichage de la page :
+    celles de TalentConnect d'abord, complétées par les dernières offres du web."""
+    from sqlalchemy.orm import joinedload
+    internes = (Job.query.options(joinedload(Job.company)).filter_by(status="open")
+                .order_by(Job.created_at.desc()).limit(6).all())
+    externes = []
+    if len(internes) < 6:
+        externes, _ = offres_externes.search(current_app.config.get("OFFRES_RECHERCHE_DEFAUT", "emploi"), "",
+                                             current_app.config.get("DEFAULT_COUNTRY", "CI"))
+    offres = [dict(type="tc", job=j) for j in internes] + [dict(type="ext", r=r) for r in externes]
+    return render_template("accueil/_apercu_offres.html", offres=offres[:6])
 
 
 @bp.route("/entreprise/<int:cid>/logo")

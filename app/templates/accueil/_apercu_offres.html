@@ -1,0 +1,6 @@
+{# Aperçu des offres sur la page d'accueil (voir routes/accueil.py : offers_preview) #}
+{% if offres %}
+<div class="grille-offres">{% for o in offres %}{% include "accueil/_offre_liste.html" %}{% endfor %}</div>
+{% else %}
+<p class="muted text-[14.5px]">{{ t('Les offres arrivent bientôt.') }} <a href="{{ url_for('main.offers') }}" class="text-terra-600 font-semibold">{{ t('Rechercher une offre') }}</a></p>
+{% endif %}

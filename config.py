@@ -53,6 +53,8 @@ class Config:
     JSEARCH_API_KEY = os.getenv("JSEARCH_API_KEY", "")
     JSEARCH_FOURNISSEUR = os.getenv("JSEARCH_FOURNISSEUR", "openwebninja")  # ou « rapidapi »
     OFFRES_SANS_CLE = os.getenv("OFFRES_SANS_CLE", "1")  # Remotive, Arbeitnow, Jobicy
+    # Recherche faite quand personne n'a tapé de mot-clé (page Offres, accueil)
+    OFFRES_RECHERCHE_DEFAUT = os.getenv("OFFRES_RECHERCHE_DEFAUT", "emploi")
     ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
     ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
     JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")

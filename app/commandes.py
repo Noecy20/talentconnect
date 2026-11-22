@@ -61,6 +61,38 @@ def register_cli(app):
                         kind="system", sync=True)
         click.echo(f"Relances envoyées à {len(by_user)} candidat(s).")
 
+    @app.cli.command("supprimer-offres-demo")
+    @click.option("--oui", is_flag=True, help="Ne pas demander de confirmation.")
+    def supprimer_offres_demo(oui):
+        """Supprime définitivement les offres de démonstration (celles des recruteurs « @demo.tc »)
+        et ce qui en dépend : candidatures, messages liés, entrées de vivier.
+        Les comptes de démo eux-mêmes ne sont pas touchés."""
+        from .modeles import Job, Application, Message, TalentPool, TrackedApplication, User
+        recruteurs = [u.id for u in User.query.filter(User.email.like("%@demo.tc"), User.role == "recruiter")]
+        offres = Job.query.filter(Job.recruiter_id.in_(recruteurs)).all() if recruteurs else []
+        if not offres:
+            click.echo("Aucune offre de démonstration trouvée.")
+            return
+        ids = [j.id for j in offres]
+        candidatures = [a.id for a in Application.query.filter(Application.job_id.in_(ids))]
+        click.echo(f"{len(offres)} offre(s) de démo et {len(candidatures)} candidature(s) liée(s) vont être supprimées :")
+        for j in offres:
+            click.echo(f"  - {j.title} ({j.company.name})")
+        if not oui and not click.confirm("Suppression définitive, impossible à annuler. Continuer ?"):
+            click.echo("Rien n'a été supprimé.")
+            return
+        # On détache d'abord ce qui pointe vers ces offres et candidatures
+        if candidatures:
+            Message.query.filter(Message.application_id.in_(candidatures)).update({"application_id": None}, synchronize_session=False)
+            TrackedApplication.query.filter(TrackedApplication.application_id.in_(candidatures)).update(
+                {"application_id": None}, synchronize_session=False)
+        TrackedApplication.query.filter(TrackedApplication.job_id.in_(ids)).update({"job_id": None}, synchronize_session=False)
+        TalentPool.query.filter(TalentPool.source_job_id.in_(ids)).delete(synchronize_session=False)
+        Application.query.filter(Application.job_id.in_(ids)).delete(synchronize_session=False)
+        Job.query.filter(Job.id.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        click.echo(f"✓ {len(offres)} offre(s) de démo supprimée(s).")
+
     @app.cli.command("ia-test")
     def ia_test():
         """Vérifie l'IA générative : fournisseur, modèles gratuits disponibles, et une vraie réponse."""

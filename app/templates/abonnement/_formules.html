@@ -5,23 +5,12 @@
   </div>
 </div>
 <div class="flex flex-wrap justify-center items-stretch gap-6 max-w-6xl mx-auto [&>*]:w-full [&>*]:sm:w-[340px]">
-  {% if role == 'candidate' %}
-  <div class="card card-pad flex flex-col ">
-    <div class="font-display font-semibold text-lg">{{ t('Gratuit') }}</div>
-    <div class="font-display text-4xl font-bold mt-3">0</div>
-    <p class="text-sm muted mt-2">{{ t('Pour toujours') }}</p>
-    <ul class="mt-6 space-y-2.5 text-sm flex-1">
-      {% for f in [t('CV Builder ATS (modèles CVFlash)'), t('Export PDF illimité'), t('Profil candidat')] %}<li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-terra-500 flex-none mt-0.5"></i>{{ f }}</li>{% endfor %}
-    </ul>
-    <a href="{{ url_for('main.cv_free') }}" class="btn btn-ghost w-full mt-6">{{ t('Créer mon CV') }}</a>
-  </div>
-  {% endif %}
   {% for p in plans %}
   <div class="card card-pad flex flex-col relative {% if p.highlighted %}!border-terra-500 ring-4 ring-terra-500/10 md:-translate-y-2{% endif %}" style="{% if p.highlighted %}box-shadow:var(--shadow-lg){% endif %}" x-data="{pay:false}">
     {% if p.highlighted %}<span class="absolute -top-3 left-1/2 -translate-x-1/2 chip !bg-terra-500 !text-white !border-terra-500"><i data-lucide="star" class="w-3 h-3"></i>{{ t('Recommandé') }}</span>{% endif %}
     <div class="font-display font-semibold text-lg">{{ p.name }}</div>
     <div class="font-display text-4xl font-bold mt-3">{{ money(p.price, p.currency) }}</div>
-    <p class="text-sm muted mt-2">{% if p.duration_days %}{{ t('pour {d} jours', d=p.duration_days) }}{% else %}{{ t('accès illimité') }}{% endif %}{% if p.description %} · {{ p.description }}{% endif %}</p>
+    <p class="text-sm muted mt-2">{% if p.duration_days and p.duration_days % 365 == 0 %}{{ t('pour 1 an') if p.duration_days == 365 else t('pour {n} ans', n=p.duration_days // 365) }}{% elif p.duration_days %}{{ t('pour {d} jours', d=p.duration_days) }}{% else %}{{ t('accès illimité') }}{% endif %}{% if p.description %} · {{ p.description }}{% endif %}</p>
     <ul class="mt-6 space-y-2.5 text-sm flex-1">
       {% for f in p.features or [] %}<li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-terra-500 flex-none mt-0.5"></i>{{ t(f) }}</li>{% endfor %}
     </ul>
@@ -42,3 +31,7 @@
   <div class="card card-pad text-center muted md:col-span-2">{{ t('Les formules seront bientôt disponibles.') }}</div>
   {% endfor %}
 </div>
+{# Le CV Builder reste gratuit : on le rappelle sans en faire une formule #}
+{% if role == 'candidate' %}
+<p class="text-center text-[14px] muted mt-8">{{ t('Le CV Builder reste gratuit, sans compte.') }} <a href="{{ url_for('main.cv_free') }}" class="text-terra-600 font-semibold">{{ t('Créer mon CV') }}</a></p>
+{% endif %}

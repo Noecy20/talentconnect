@@ -71,7 +71,9 @@
 {# ------------------------------------------------------------------ chiffres #}
 <section class="section mt-20">
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
-    {% for v, l, icone, teinte in [(stats.jobs, t('offres ouvertes'), 'briefcase', 'peche'), (stats.companies, t('entreprises'), 'building-2', 'sable'),
+    {# Tant que les recruteurs n'ont rien publié, on met en avant les sites d'emploi réunis #}
+    {% set premier = (stats.jobs, t('offres publiées ici'), 'briefcase', 'peche') if stats.jobs else (nb_sources, t('sites d\'emploi réunis'), 'globe', 'peche') %}
+    {% for v, l, icone, teinte in [premier, (stats.companies, t('entreprises'), 'building-2', 'sable'),
                                     (stats.candidates, t('talents inscrits'), 'users-round', 'sauge'), (stats.sponsors, t('parrains vérifiés'), 'award', 'creme')] %}
     <div class="chiffre-fond {{ teinte }}">
       <i data-lucide="{{ icone }}" class="fond"></i>
@@ -84,20 +86,21 @@
 </section>
 
 {# ------------------------------------------------------------------ dernières offres #}
-{% if derniers %}
+{# Chargées juste après la page : TalentConnect d'abord, puis les offres du web #}
 <section class="section mt-24">
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
       <span class="surtitre">{{ t('Offres d\'emploi') }}</span>
-      <h2 class="titre-section mt-2">{{ t('Publiées cette semaine') }}</h2>
+      <h2 class="titre-section mt-2">{{ t('Les dernières offres') }}</h2>
     </div>
     <a href="{{ url_for('main.offers') }}" class="btn btn-ghost !rounded-full">{{ t('Voir toutes les offres') }}<i data-lucide="arrow-right"></i></a>
   </div>
-  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
-    {% for j in derniers %}{% include "accueil/_offre_publique.html" %}{% endfor %}
+  <div class="mt-10" hx-get="{{ url_for('main.offers_preview') }}" hx-trigger="load">
+    <div class="flex items-center gap-3 muted text-[14px]">
+      <span class="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin"></span>{{ t('Chargement des offres…') }}
+    </div>
   </div>
 </section>
-{% endif %}
 
 {# ------------------------------------------------------------------ candidats #}
 <section id="candidats" class="section mt-28">
