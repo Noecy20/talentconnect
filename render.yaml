@@ -1,8 +1,11 @@
 # Déploiement sur Render (Blueprint) : application Flask. Base PostgreSQL hébergée sur Neon (DATABASE_URL).
+# Région Frankfurt : la même que la base Neon (eu-central-1). Si le site et la base sont sur
+# deux continents, chaque lecture en base traverse l'océan et les pages deviennent lentes.
 services:
   - type: web
-    name: talentconnect
+    name: talentconnect-eu
     runtime: python
+    region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app --preload --workers 1 --threads 4 --timeout 120
@@ -13,8 +16,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-      - key: APP_URL
-        value: https://talentconnect.onrender.com
+      - key: APP_URL          # adresse exacte du site, affichée par Render après la création
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
