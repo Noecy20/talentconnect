@@ -43,6 +43,7 @@
     {% endif %}
 
     <div class="hidden sm:flex items-center gap-2.5">
+      {{ langswitch(rond=True) }}{{ themetoggle(rond=True) }}
       <a href="{{ url_for('messages.inbox') }}" class="icone" title="{{ t('Messages') }}">
         <i data-lucide="bell"></i>
         {% if unread_count %}<span class="pastille" aria-label="{{ t('{n} message(s) non lu(s)', n=unread_count) }}"></span>{% endif %}
@@ -88,8 +89,8 @@
           <a href="{{ url_for('billing.pricing') }}" class="deroulant-lien">
             <span class="carre-icone carre-or"><i data-lucide="credit-card"></i></span>{{ t('Abonnement') }}</a>
           {% endif %}
-          {# Langue et thème, rangés ici pour alléger l'en-tête #}
-          <div class="flex items-center gap-2 px-2 py-2">
+          {# Sur téléphone, langue et thème sont rangés ici (l'en-tête est trop étroit) #}
+          <div class="sm:hidden flex items-center gap-2 px-2 py-2">
             <span class="text-[13px] muted flex-1">{{ t('Langue et affichage') }}</span>
             {{ langswitch(rond=True) }}{{ themetoggle(rond=True) }}
           </div>

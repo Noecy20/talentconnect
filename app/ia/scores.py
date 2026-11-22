@@ -210,6 +210,62 @@ def match(candidate_user, job):
     return int(score), detail
 
 
+_MOTS_VIDES = {"de", "du", "des", "la", "le", "les", "en", "et", "a", "au", "aux", "un", "une", "pour", "h", "f",
+               "hf", "junior", "senior", "stagiaire", "stage", "cdi", "cdd", "abidjan", "cote", "ivoire", "d", "l"}
+
+
+def _mots_cles(texte):
+    return {m for m in norm(texte).replace(".", " ").split() if len(m) > 2 and m not in _MOTS_VIDES}
+
+
+def match_externe(candidate_user, offre):
+    """Compatibilité (0..100) avec une offre d'un autre site, dont on ne connaît que le texte :
+    intitulé proche du poste visé, compétences retrouvées dans l'annonce, filière, lieu, contrat.
+    Renvoie (score, compétences retrouvées)."""
+    cp = candidate_user.candidate
+    if cp is None:
+        return 0, []
+    titre = offre.get("title") or ""
+    texte = norm(f"{titre} {offre.get('company', '')} {offre.get('description', '')}")
+
+    # 1. Intitulé : part des mots du poste visé (ou du titre du profil) présents dans l'intitulé
+    vise = _mots_cles(f"{cp.desired_position or ''} {cp.headline or ''}")
+    mots_titre = _mots_cles(titre)
+    if vise and mots_titre:
+        communs = {m for m in vise if any(similar(m, t2) for t2 in mots_titre)}
+        s_titre = min(1.0, len(communs) / max(1, min(len(vise), len(mots_titre), 3)))
+    else:
+        s_titre = 0.3
+
+    # 2. Compétences : celles du candidat retrouvées dans l'annonce (5 suffisent pour le maximum)
+    competences = [c for c in (cp.skills or []) if c]
+    trouvees = [c for c in competences if norm(c) and re.search(r"(^|\s)" + re.escape(norm(c)) + r"(\s|$)", texte)]
+    s_comp = min(1.0, len(trouvees) / max(1, min(len(competences), 5))) if competences else 0.3
+
+    # 3. Filière
+    filiere = _mots_cles((cp.field or "").replace("/", " "))
+    s_filiere = 1.0 if filiere and any(m in texte for m in filiere) else (0.4 if filiere else 0.5)
+
+    # 4. Lieu
+    ville = norm(offre.get("city"))
+    villes = [norm(c) for c in [candidate_user.city] + list(cp.desired_cities or []) if c]
+    pays = (offre.get("country_code") or "").upper()
+    if any(v and v in ville for v in villes):
+        s_lieu = 1.0
+    elif not pays or pays == (candidate_user.country_code or "").upper():
+        s_lieu = 0.75
+    else:
+        s_lieu = 0.5 if cp.open_to_international else 0.15
+
+    # 5. Contrat souhaité
+    contrat = norm(offre.get("contract"))
+    voulus = [norm(c) for c in (cp.desired_contracts or []) if c]
+    s_contrat = 1.0 if not voulus or not contrat or any(v in contrat or contrat in v for v in voulus) else 0.4
+
+    score = 0.38 * s_titre + 0.30 * s_comp + 0.12 * s_filiere + 0.12 * s_lieu + 0.08 * s_contrat
+    return int(round(score * 100)), trouvees[:5]
+
+
 def profile_completeness(candidate_user):
     cp = candidate_user.candidate
     if not cp:

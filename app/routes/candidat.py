@@ -148,46 +148,11 @@ def cv_builder_frame():
 @bp.route("/offres")
 @access_required
 def jobs():
-    p = cp()
-    u = current_user
-    a = request.args
-    for_me = a.get("mode", "me") == "me"
-    # Filtres pré-remplis à partir du profil du candidat
-    country = a.get("country", u.country_code if for_me else "")
-    field = a.get("field", p.field if for_me else "")
-    city = a.get("city", "")
-    q = a.get("q", "").strip()
-    company = a.get("company", "").strip()
-    contract = a.get("contract", "")
-    level = a.get("level", "")
-    posted = a.get("posted", type=int) or 0
-    query = Job.query.filter_by(status="open").join(Company)
-    if country:
-        query = query.filter(or_(Job.country_code == country, Job.remote.is_(True)))
-    if city:
-        query = query.filter(Job.city.ilike(f"%{city}%"))
-    if field:
-        query = query.filter(or_(Job.field.ilike(f"%{field}%"), Job.title.ilike(f"%{field}%")))
-    if q:
-        query = query.filter(or_(Job.title.ilike(f"%{q}%"), Job.description.ilike(f"%{q}%")))
-    if company:
-        query = query.filter(Company.name.ilike(f"%{company}%"))
-    if contract:
-        query = query.filter(Job.contract_type == contract)
-    if level:
-        query = query.filter(Job.education_level == level)
-    if posted:
-        from datetime import datetime, timedelta
-        query = query.filter(Job.created_at >= datetime.utcnow() - timedelta(days=posted))
-    results = recommended_jobs(jobs=query.order_by(Job.created_at.desc()).limit(300).all())
-    if a.get("sort") == "recent":
-        results.sort(key=lambda x: x["job"].created_at, reverse=True)
-    applied = {x.job_id for x in Application.query.filter_by(candidate_id=u.id).all()}
-    tpl = "candidat/_liste_offres.html" if request.headers.get("HX-Request") else "candidat/offres.html"
-    return render_template(tpl, results=results, applied=applied, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
-                           f=dict(country=country, field=field, city=city, q=q, company=company, contract=contract,
-                                  level=level, posted=posted, mode="me" if for_me else "all", sort=a.get("sort", "match")),
-                           field_suggestions=FIELDS_SUGGESTIONS)
+    """Toutes les offres (TalentConnect + autres sites) avec la même recherche que la page publique,
+    triées par compatibilité avec le profil du candidat."""
+    from .accueil import recherche_offres
+    return render_template("candidat/offres.html", point="candidate.jobs",
+                           **recherche_offres(request.args, candidat=current_user))
 
 
 @bp.route("/offres/web")
@@ -203,11 +168,10 @@ def jobs_web():
     pays = a.get("country", "") or u.country_code or ""
     offres, erreurs = offres_externes.search(q, ville, pays) if q else ([], [])
     # Compétences du candidat retrouvées dans chaque annonce : une indication simple et honnête
-    competences = [c for c in (p.skills or []) if c]
+    offres = [dict(o) for o in offres]   # copies : on y ajoute le score sans toucher au cache
     for o in offres:
-        texte = f"{o.get('title', '')} {o.get('description', '')}".lower()
-        o["retrouvees"] = [c for c in competences if c.lower() in texte][:5]
-    offres.sort(key=lambda o: -len(o["retrouvees"]))
+        o["score"], o["retrouvees"] = scores.match_externe(u, o)
+    offres.sort(key=lambda o: -o["score"])
     limite = min(request.args.get("limite", type=int) or 30, 30)
     return render_template("candidat/_offres_web.html", offres=offres[:limite], erreurs=erreurs, q=q, ville=ville,
                            sources=offres_externes.providers())

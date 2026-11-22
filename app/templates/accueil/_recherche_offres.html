@@ -1,0 +1,78 @@
+{# Recherche d'offres façon Odoo : un champ, les filtres actifs en pastilles, et un menu
+   Filtres / Regrouper par / Origine (et Trier pour un candidat connecté).
+   Partagée par la page publique (point = 'main.offers') et l'espace candidat (point = 'candidate.jobs'). #}
+{% macro lien() -%}
+{%- set p = {'q': f.q or None, 'ville': f.ville or None, 'source': f.source if f.source != 'toutes' else None,
+             'contrat': f.contrat or None, 'teletravail': '1' if f.teletravail else None,
+             'recentes': '1' if f.recentes else None, 'groupe': f.groupe or None, 'pays': f.pays,
+             'tri': f.tri if point == 'candidate.jobs' else None} -%}
+{%- set _ = p.update(kwargs) -%}
+{{ url_for(point, **p) }}
+{%- endmacro %}
+{% set candidat_connecte = point == 'candidate.jobs' %}
+
+<form method="get" action="{{ url_for(point) }}" class="relative" x-data="{ menu:false }" @click.outside="menu=false">
+  <input type="hidden" name="source" value="{{ f.source }}">
+  {% for c in f.contrat %}<input type="hidden" name="contrat" value="{{ c }}">{% endfor %}
+  {% if f.teletravail %}<input type="hidden" name="teletravail" value="1">{% endif %}
+  {% if f.recentes %}<input type="hidden" name="recentes" value="1">{% endif %}
+  {% if f.groupe %}<input type="hidden" name="groupe" value="{{ f.groupe }}">{% endif %}
+  {% if candidat_connecte %}<input type="hidden" name="tri" value="{{ f.tri }}">{% endif %}
+
+  <div class="recherche-offres">
+    <i data-lucide="search" class="muted shrink-0"></i>
+    <div class="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 py-2">
+      {% for c in f.contrat %}
+        <a href="{{ lien(contrat=f.contrat|reject('equalto', c)|list or None) }}" class="facette"><i data-lucide="filter"></i>{{ contract_label(c) }}<span>×</span></a>
+      {% endfor %}
+      {% if f.teletravail %}<a href="{{ lien(teletravail=None) }}" class="facette"><i data-lucide="filter"></i>{{ t('Télétravail') }}<span>×</span></a>{% endif %}
+      {% if f.recentes %}<a href="{{ lien(recentes=None) }}" class="facette"><i data-lucide="filter"></i>{{ t('7 derniers jours') }}<span>×</span></a>{% endif %}
+      {% if f.source != 'toutes' %}<a href="{{ lien(source=None) }}" class="facette"><i data-lucide="globe"></i>{{ 'TalentConnect' if f.source == 'talentconnect' else t('Autres sites') }}<span>×</span></a>{% endif %}
+      {% if f.groupe %}<a href="{{ lien(groupe=None) }}" class="facette facette-groupe"><i data-lucide="layers"></i>{{ t(regroupements[f.groupe]) }}<span>×</span></a>{% endif %}
+      <input name="q" value="{{ f.q }}" class="flex-1 min-w-[140px] bg-transparent outline-none text-[15px] h-9" placeholder="{{ t('Poste, entreprise, mot-clé…') }}" aria-label="{{ t('Rechercher') }}">
+    </div>
+    <button type="button" class="bouton-menu" @click="menu=!menu" :aria-expanded="menu" aria-label="{{ t('Filtres et regroupements') }}"><i data-lucide="chevron-down"></i></button>
+  </div>
+  <div class="flex flex-col sm:flex-row gap-2.5 mt-3">
+    <label class="champ-ville"><i data-lucide="map-pin" class="muted"></i>
+      <input name="ville" value="{{ f.ville }}" placeholder="{{ t('Ville') }}" aria-label="{{ t('Ville') }}"></label>
+    <label class="champ-ville !flex-none sm:!w-[210px]"><i data-lucide="globe-2" class="muted"></i>
+      <select name="pays" class="flex-1 min-w-0 bg-transparent outline-none text-[15px] cursor-pointer" aria-label="{{ t('Pays') }}" onchange="this.form.submit()">
+        {% for code in pays_recherche %}<option value="{{ code }}" {% if f.pays == code %}selected{% endif %}>{{ country_name(code) }}</option>{% endfor %}
+        <option value="monde" {% if f.pays == 'monde' %}selected{% endif %}>{{ t('Partout dans le monde') }}</option>
+      </select></label>
+    <button class="btn btn-primary !h-[50px] !rounded-[14px] !px-7">{{ t('Rechercher') }}</button>
+  </div>
+
+  {# Menu déroulant : Filtres | Regrouper par | Origine (+ Trier) #}
+  <div class="menu-recherche" x-show="menu" x-cloak x-transition.opacity>
+    <div>
+      <div class="titre"><i data-lucide="filter" style="color:var(--terra-600)"></i>{{ t('Filtres') }}</div>
+      {% for c in contrats %}
+        {% set actif = c in f.contrat %}
+        <a href="{{ lien(contrat=(f.contrat|reject('equalto', c)|list if actif else f.contrat + [c]) or None) }}" class="{{ 'actif' if actif }}">{{ contract_label(c) }}</a>
+      {% endfor %}
+      <div class="separateur"></div>
+      <a href="{{ lien(teletravail=None if f.teletravail else '1') }}" class="{{ 'actif' if f.teletravail }}">{{ t('Télétravail possible') }}</a>
+      <a href="{{ lien(recentes=None if f.recentes else '1') }}" class="{{ 'actif' if f.recentes }}">{{ t('Publiées ces 7 derniers jours') }}</a>
+    </div>
+    <div>
+      <div class="titre"><i data-lucide="layers" style="color:#2F855A"></i>{{ t('Regrouper par') }}</div>
+      {% for code, libelle in regroupements.items() %}
+        <a href="{{ lien(groupe=None if f.groupe == code else code) }}" class="{{ 'actif' if f.groupe == code }}">{{ t(libelle) }}</a>
+      {% endfor %}
+      {% if candidat_connecte %}
+      <div class="separateur"></div>
+      <div class="titre !mt-1"><i data-lucide="arrow-down-wide-narrow" style="color:#6B4A86"></i>{{ t('Trier') }}</div>
+      <a href="{{ lien(tri='score') }}" class="{{ 'actif' if f.tri == 'score' }}">{{ t('Les plus compatibles') }}</a>
+      <a href="{{ lien(tri='recent') }}" class="{{ 'actif' if f.tri == 'recent' }}">{{ t('Les plus récentes') }}</a>
+      {% endif %}
+    </div>
+    <div>
+      <div class="titre"><i data-lucide="globe" style="color:#8A6116"></i>{{ t('Origine') }}</div>
+      {% for code, libelle in [('toutes', t('Toutes les offres')), ('talentconnect', 'TalentConnect'), ('externes', t('Autres sites d\'emploi'))] %}
+        <a href="{{ lien(source=code if code != 'toutes' else None) }}" class="{{ 'actif' if f.source == code }}">{{ libelle }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</form>

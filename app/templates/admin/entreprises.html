@@ -1,15 +1,89 @@
 {% extends "espace.html" %}
+{% from "composants/ui.html" import logo with context %}
 {% block title %}{{ t('Entreprises') }}{% endblock %}
 {% block page_title %}{{ t('Entreprises') }}{% endblock %}
 {% block content %}
-<div class="card"><div class="scroll-x"><table class="table">
-  <thead><tr><th>{{ t('Entreprise') }}</th><th>{{ t('Secteur') }}</th><th>{{ t('Lieu') }}</th><th>RCCM</th><th>{{ t('Offres') }}</th><th>{{ t('Taux de réponse') }}</th><th class="text-right">{{ t('Vérification') }}</th></tr></thead>
+{#
+  Les entreprises en Kanban : À vérifier, Vérifiées, Recrutent en ce moment (vérifiées avec au
+  moins une offre ouverte). Glisser une carte entre « À vérifier » et « Vérifiées » change sa vérification.
+  La vue Liste garde l'ancien tableau détaillé.
+#}
+{% set colonnes = [('a_verifier', t('À vérifier'), '#D9A441'), ('verifiees', t('Vérifiées'), '#2B6CB0'), ('recrutent', t('Recrutent en ce moment'), '#2F855A')] %}
+{% macro colonne_de(c) -%}
+  {%- if not c.verified %}a_verifier{% elif ouvertes.get(c.id) %}recrutent{% else %}verifiees{% endif -%}
+{%- endmacro %}
+
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <p class="muted text-[14.5px] max-w-xl">{{ t('{n} entreprise(s). Glissez une carte vers « Vérifiées » pour confirmer une entreprise.', n=cos|length) }}</p>
+  <div class="bascule">
+    <a href="{{ url_for('admin.companies', vue='kanban') }}" class="{{ 'actif' if vue == 'kanban' }}"><i data-lucide="kanban-square"></i>Kanban</a>
+    <a href="{{ url_for('admin.companies', vue='liste') }}" class="{{ 'actif' if vue == 'liste' }}"><i data-lucide="table-2"></i>{{ t('Liste') }}</a>
+  </div>
+</div>
+
+{% if vue == 'kanban' %}
+<div class="flex gap-5 overflow-x-auto pb-5 mt-7">
+  {% for code, libelle, couleur in colonnes %}
+  <div class="colonne !w-[320px]">
+    <div class="colonne-tete">
+      <span class="w-2 h-2 rounded-full" style="background:{{ couleur }}"></span>
+      <span class="font-semibold text-[14px]">{{ libelle }}</span>
+      <span class="compte" data-compte="{{ code }}"></span>
+    </div>
+    <div class="kanban-list" data-etat="{{ code }}">
+      {% for c in cos if colonne_de(c) == code %}
+      <div class="carte-suivi" data-id="{{ c.id }}">
+        <div class="flex items-start gap-3">
+          {{ logo(c, 'petit') }}
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-[14.5px] leading-snug truncate">{{ c.name }}{% if c.verified %} <i data-lucide="badge-check" class="!w-3.5 !h-3.5 inline -mt-0.5 text-terra-500"></i>{% endif %}</div>
+            <div class="text-[12.5px] muted truncate mt-0.5">{{ c.sector or '—' }} · {{ c.city or country_name(c.country_code) }}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+          <div class="rounded-xl py-2" style="background:var(--bg)"><div class="font-bold text-[16px]">{{ ouvertes.get(c.id, 0) }}</div><div class="text-[11px] muted">{{ t('offres ouvertes') }}</div></div>
+          <div class="rounded-xl py-2" style="background:var(--sauge)"><div class="font-bold text-[16px]" style="color:#276749">{{ (rates[c.id] ~ '%') if rates[c.id] is not none else '—' }}</div><div class="text-[11px] muted">{{ t('réponses') }}</div></div>
+          <div class="rounded-xl py-2" style="background:var(--sable)"><div class="font-bold text-[16px]" style="color:#8A6116">{{ c.registration_number and 'RCCM' or '—' }}</div><div class="text-[11px] muted">{{ t('registre') }}</div></div>
+        </div>
+        {% if c.website %}<a href="{{ c.website if c.website.startswith('http') else 'https://' ~ c.website }}" target="_blank" rel="noopener" class="text-[12.5px] text-terra-600 font-semibold mt-3 inline-flex items-center gap-1 truncate max-w-full"><i data-lucide="external-link" class="!w-3.5 !h-3.5"></i>{{ c.website|replace('https://', '')|replace('http://', '') }}</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card mt-7"><div class="overflow-x-auto"><table class="table">
+  <thead><tr><th>{{ t('Entreprise') }}</th><th>{{ t('Secteur') }}</th><th>{{ t('Lieu') }}</th><th>RCCM</th><th>{{ t('Offres ouvertes') }}</th><th>{{ t('Taux de réponse') }}</th><th class="text-right">{{ t('Vérification') }}</th></tr></thead>
   <tbody>{% for c in cos %}<tr>
-    <td><div class="font-semibold">{{ c.name }}</div><div class="text-xs muted">{{ c.website }}</div></td>
+    <td><div class="flex items-center gap-3">{{ logo(c, 'petit') }}<div><div class="font-semibold">{{ c.name }}</div><div class="text-xs muted">{{ c.website }}</div></div></div></td>
     <td class="text-sm">{{ c.sector }}</td><td class="text-sm">{{ c.city }}, {{ country_name(c.country_code) }}</td>
-    <td class="text-xs font-mono">{{ c.registration_number or '—' }}</td><td>{{ c.jobs.count() }}</td>
+    <td class="text-xs font-mono">{{ c.registration_number or '—' }}</td><td>{{ ouvertes.get(c.id, 0) }}</td>
     <td>{% if rates[c.id] is not none %}<span class="chip {% if rates[c.id] >= 90 %}chip-green{% endif %}">{{ rates[c.id] }}%</span>{% else %}—{% endif %}</td>
     <td class="text-right"><form method="post" action="{{ url_for('admin.company_verify', cid=c.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-sm {% if c.verified %}btn-success{% else %}btn-ghost{% endif %}"><i data-lucide="badge-check" class="w-4 h-4"></i>{{ t('Vérifiée') if c.verified else t('Vérifier') }}</button></form></td>
   </tr>{% endfor %}</tbody></table></div></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if vue == 'kanban' %}
+<script src="{{ url_for('static', filename='librairies/Sortable.min.js') }}"></script>
+<script>
+  const csrf = {{ csrf_token()|tojson }};
+  const compter = () => document.querySelectorAll('[data-compte]').forEach(c =>
+    c.textContent = document.querySelector(`.kanban-list[data-etat="${c.dataset.compte}"]`).children.length);
+  compter();
+  document.querySelectorAll('.kanban-list').forEach(el => new Sortable(el, {
+    group: 'entreprises', animation: 180, ghostClass: 'sortable-ghost', delay: 120, delayOnTouchOnly: true,
+    onAdd: async evt => {
+      const verifiee = evt.to.dataset.etat === 'a_verifier' ? '0' : '1';
+      await fetch({{ url_for('admin.company_verify', cid=0)|tojson }}.replace('/0/', `/${evt.item.dataset.id}/`),
+        { method: 'POST', headers: { 'X-CSRFToken': csrf, 'HX-Request': 'true' }, body: new URLSearchParams({ verifiee }) });
+      compter();
+    }
+  }));
+</script>
+{% endif %}
 {% endblock %}

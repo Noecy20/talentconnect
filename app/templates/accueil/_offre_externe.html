@@ -22,6 +22,12 @@
     {% if r.contract %}<span class="chip chip-terra">{{ r.contract|truncate(22, True, '…') }}</span>{% endif %}
     {% if r.salary %}<span class="chip chip-gold">{{ r.salary|truncate(26, True, '…') }}</span>{% endif %}
   </div>
+  {% if r.score is defined %}
+  <div>
+    <div class="text-[12px] muted mb-1.5">{{ t('Compatibilité') }}</div>
+    <div class="jauge"><span class="barre"><span style="width:{{ r.score }}%"></span></span>{{ r.score }} %</div>
+  </div>
+  {% endif %}
   {% if r.retrouvees %}
   <div class="text-[12.5px]" style="color:var(--success)"><i data-lucide="check" class="!w-3.5 !h-3.5 inline -mt-0.5"></i> {{ r.retrouvees|join(', ') }}</div>
   {% endif %}

@@ -1,0 +1,153 @@
+{% extends "espace.html" if current_user.is_authenticated else "public.html" %}
+{% block title %}{{ t('Test de personnalité') }}{% endblock %}
+{% block page_title %}{{ t('Test de personnalité') }}{% endblock %}
+{% block content %}
+{#
+  Test de personnalité (Ennéagramme) — tout se passe dans la page :
+  genre (accords uniquement) -> instructions -> 18 pages de 5 affirmations -> fin -> envoi au serveur.
+  Les réponses sont gardées dans le navigateur pour reprendre le test si la page est rechargée.
+#}
+<div class="test-perso {{ 'section' if not current_user.is_authenticated }}" x-data="testPerso" x-cloak>
+
+  {# ---------------------------------------------------------------- étape 0 : accueil + genre #}
+  <section x-show="etape === 'genre'" class="test-ecran">
+    <img src="{{ url_for('static', filename='images/illustrations/pensees.svg') }}" alt="" class="w-full max-w-[300px] mx-auto">
+    <h1 class="text-[clamp(1.7rem,4vw,2.5rem)] font-bold tracking-[-.035em] leading-tight mt-8">{{ t('Découvrez qui vous êtes vraiment avec le test de personnalité') }}</h1>
+    <p class="muted text-[16px] mt-3">{{ t('Avec ce test, vous découvrirez votre type de personnalité précis.') }}</p>
+    {% if deja %}<a href="{{ url_for('main.personality_result') }}" class="inline-flex items-center gap-1.5 text-terra-600 font-semibold text-[14px] mt-4"><i data-lucide="file-text" class="!w-4 !h-4"></i>{{ t('Voir mon dernier résultat') }}</a>{% endif %}
+    <p class="font-bold text-[16px] mt-9">{{ t('Sélectionnez votre genre :') }}</p>
+    <div class="flex justify-center gap-4 mt-4">
+      <button type="button" class="choix-genre" @click="choisirGenre('H')"><i data-lucide="user-round"></i>{{ t('Homme') }}</button>
+      <button type="button" class="choix-genre" @click="choisirGenre('F')"><i data-lucide="user-round"></i>{{ t('Femme') }}</button>
+    </div>
+    <p class="text-[12.5px] muted mt-4">{{ t('Le genre sert uniquement aux accords grammaticaux. Il ne change jamais le résultat.') }}</p>
+  </section>
+
+  {# ---------------------------------------------------------------- étape 1 : instructions #}
+  <section x-show="etape === 'instructions'" class="test-ecran">
+    <img src="{{ url_for('static', filename='images/illustrations/reflexion.svg') }}" alt="" class="w-full max-w-[260px] mx-auto">
+    <h2 class="text-[28px] font-bold tracking-tight mt-8">{{ t('Instructions') }}</h2>
+    <ul class="test-consignes mt-6">
+      <li><i data-lucide="check"></i>{{ t('Répondez à chaque affirmation selon votre propre ressenti, pas selon ce qui serait « idéal ».') }}</li>
+      <li><i data-lucide="check"></i>{{ t('Vous ne pouvez pas sauter de question, mais vous pouvez revenir en arrière.') }}</li>
+      <li><i data-lucide="check"></i>{{ t('Comptez environ 10 minutes pour {n} affirmations.', n=questions|length) }}</li>
+    </ul>
+    <button type="button" class="btn btn-primary !h-[52px] !px-9 !rounded-full mt-9" @click="commencer()">{{ t('Commencer le test') }}</button>
+  </section>
+
+  {# ---------------------------------------------------------------- étape 2 : questions #}
+  <section x-show="etape === 'questions'" class="test-questions">
+    <div class="test-progres">
+      <div class="flex justify-between text-[13px] font-semibold"><span x-text="pourcent + ' %'"></span><span class="muted" x-text="'{{ t('Page') }} ' + (page + 1) + ' / ' + nbPages"></span></div>
+      <div class="test-barre mt-2"><span :style="`width:${pourcent}%`"></span></div>
+    </div>
+
+    <div class="flex items-start gap-3 mt-8">
+      <button type="button" class="test-retour" x-show="page > 0" @click="precedent()" aria-label="{{ t('Précédent') }}"><i data-lucide="chevron-left"></i></button>
+      <h2 class="flex-1 text-center text-[clamp(1.15rem,2.4vw,1.45rem)] font-bold tracking-tight leading-snug">{{ t('Choisissez dans quelle mesure chaque affirmation vous correspond.') }}</h2>
+      <span class="w-10" x-show="page > 0"></span>
+    </div>
+
+    {# Légende de l'échelle #}
+    <div class="test-legende mt-7" aria-hidden="true">
+      {% for v, l in echelle %}
+      <div><span class="rond-echelle r{{ v }}"></span><span class="libelle">{% if loop.first or loop.last %}{{ t(l) }}{% endif %}</span></div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-6 space-y-5">
+      <template x-for="(q, i) in pageCourante" :key="q.code">
+        <div class="test-carte" :id="'q-' + q.code" :class="{ 'manquante': erreur && rep[q.code] === undefined }">
+          <p class="text-[16.5px] leading-relaxed text-center" x-text="genre === 'F' ? q.F : q.H"></p>
+          <div class="test-choix mt-5" role="radiogroup" :aria-label="genre === 'F' ? q.F : q.H">
+            {% for v, l in echelle %}
+            <button type="button" role="radio" class="rond-echelle r{{ v }}" :class="{ 'choisi': rep[q.code] === {{ v }} }"
+                    :aria-checked="rep[q.code] === {{ v }}" aria-label="{{ t(l) }}" title="{{ t(l) }}" @click="repondre(q.code, {{ v }}, i)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <p class="test-erreur mt-6" x-show="erreur" x-transition>{{ t('Vous devez répondre à toutes les questions pour pouvoir continuer.') }}</p>
+
+    <div class="flex items-center justify-between gap-3 mt-8">
+      <button type="button" class="btn btn-ghost !h-[50px] !rounded-full !px-6" x-show="page > 0" @click="precedent()"><i data-lucide="arrow-left"></i>{{ t('Précédent') }}</button>
+      <span x-show="page === 0"></span>
+      <button type="button" class="btn btn-primary !h-[50px] !rounded-full !px-8" @click="suivant()">
+        <span x-text="page === nbPages - 1 ? '{{ t('Terminer') }}' : '{{ t('Suivant') }}'"></span><i data-lucide="arrow-right"></i></button>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- étape 3 : fin #}
+  <section x-show="etape === 'fin'" class="test-ecran">
+    <img src="{{ url_for('static', filename='images/illustrations/evolution.svg') }}" alt="" class="w-full max-w-[300px] mx-auto">
+    <h2 class="text-[30px] font-bold tracking-tight mt-8">{{ t('Félicitations !') }}</h2>
+    <p class="muted text-[16px] mt-2">{{ t('Vous avez terminé le test de personnalité.') }}</p>
+    <div class="flex flex-wrap justify-center gap-3 mt-8">
+      <button type="button" class="btn btn-primary !h-[52px] !px-8 !rounded-full" @click="envoyer()">{{ t('Obtenir mes résultats') }}</button>
+      <button type="button" class="btn btn-ghost !h-[52px] !px-7 !rounded-full" @click="modifier()">{{ t('Modifier mes réponses') }}</button>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- analyse (attente) #}
+  <section x-show="etape === 'analyse'" class="test-ecran">
+    <div class="test-analyse"><span></span><span></span><span></span></div>
+    <p class="font-semibold text-[17px] mt-8">{{ t('Nous analysons vos réponses et préparons le rapport sur votre type de personnalité…') }}</p>
+  </section>
+
+  <form x-ref="formulaire" method="post" action="{{ url_for('main.personality_test') }}" class="hidden">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="genre" :value="genre">
+    <template x-for="q in questions" :key="q.code"><input type="hidden" :name="q.code" :value="rep[q.code]"></template>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => Alpine.data('testPerso', () => ({
+    questions: {{ questions|tojson }}, parPage: {{ par_page }},
+    etape: 'genre', genre: 'F', page: 0, rep: {}, erreur: false,
+    get nbPages() { return Math.ceil(this.questions.length / this.parPage); },
+    get pageCourante() { return this.questions.slice(this.page * this.parPage, (this.page + 1) * this.parPage); },
+    get pourcent() { return Math.round(Object.keys(this.rep).length / this.questions.length * 100); },
+    init() {
+      // Reprise d'un test commencé (même navigateur)
+      try {
+        const s = JSON.parse(localStorage.getItem('tc_test_perso') || 'null');
+        if (s && s.rep && Object.keys(s.rep).length) Object.assign(this, { genre: s.genre, rep: s.rep, page: s.page || 0, etape: 'questions' });
+      } catch (e) {}
+      this.$watch('rep', () => this.sauver()); this.$watch('page', () => this.sauver());
+    },
+    sauver() { try { localStorage.setItem('tc_test_perso', JSON.stringify({ genre: this.genre, rep: this.rep, page: this.page })); } catch (e) {} },
+    haut() { window.scrollTo({ top: 0, behavior: 'smooth' }); this.$nextTick(() => window.lucide && lucide.createIcons()); },
+    choisirGenre(g) { this.genre = g; this.etape = 'instructions'; this.haut(); },
+    commencer() { this.etape = 'questions'; this.page = 0; this.haut(); },
+    repondre(code, v, i) {
+      this.rep = { ...this.rep, [code]: v };
+      if (this.erreur && this.pageCourante.every(q => this.rep[q.code] !== undefined)) this.erreur = false;
+      // On fait défiler doucement vers l'affirmation suivante sans réponse
+      const suivante = this.pageCourante.slice(i + 1).find(q => this.rep[q.code] === undefined);
+      if (suivante) setTimeout(() => document.getElementById('q-' + suivante.code)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 160);
+    },
+    suivant() {
+      const manquante = this.pageCourante.find(q => this.rep[q.code] === undefined);
+      if (manquante) {
+        this.erreur = true;
+        document.getElementById('q-' + manquante.code)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      this.erreur = false;
+      if (this.page < this.nbPages - 1) { this.page++; this.haut(); } else { this.etape = 'fin'; this.haut(); }
+    },
+    precedent() { this.erreur = false; if (this.page > 0) { this.page--; this.haut(); } },
+    modifier() { this.etape = 'questions'; this.page = 0; this.haut(); },
+    envoyer() {
+      this.etape = 'analyse'; this.haut();
+      try { localStorage.removeItem('tc_test_perso'); } catch (e) {}
+      setTimeout(() => this.$refs.formulaire.submit(), 1800);
+    },
+  })));
+</script>
+{% endblock %}

@@ -3,38 +3,143 @@
 {% block page_title %}{{ t('Métiers qui recrutent') }}{% endblock %}
 {% block head_page %}<link rel="stylesheet" href="{{ url_for('static', filename='librairies/leaflet/leaflet.css') }}">{% endblock %}
 {% block content %}
-<form class="flex flex-wrap items-center gap-3 mb-6">
-  <select name="country" class="select w-auto" onchange="this.form.submit()">{% for code, name in countries() %}<option value="{{ code }}" {% if code==country %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-  <span class="chip chip-terra">{{ total }} {{ t('offre(s) ouverte(s)') }}</span>
-  <div class="ml-auto flex flex-wrap gap-1.5">{% for c, n in world[:6] %}<a href="?country={{ c }}" class="chip {% if c==country %}chip-terra{% endif %}">{{ country_name(c) }} · {{ n }}</a>{% endfor %}</div>
-</form>
-<div class="grid lg:grid-cols-[1.4fr_1fr] gap-7">
-  <div class="card overflow-hidden"><div id="map" style="height:470px"></div></div>
-  <div class="card card-pad"><h3 class="font-display font-semibold">{{ t('Filières qui recrutent le plus') }}</h3><div class="relative h-[400px] mt-4"><canvas id="fields"></canvas></div></div>
+{#
+  Ce que disent les offres ouvertes du pays : celles de TalentConnect et celles lues sur
+  les autres sites (voir services/marche.py). Les chiffres sont recalculés toutes les heures.
+#}
+<div class="flex flex-wrap items-center gap-3">
+  <form>
+    <label class="champ-ville !h-[46px] !w-[230px] !flex-none"><i data-lucide="globe-2" class="muted"></i>
+      <select name="country" class="flex-1 min-w-0 bg-transparent outline-none text-[15px] cursor-pointer" onchange="this.form.submit()" aria-label="{{ t('Pays') }}">
+        {% for code in pays_recherche %}<option value="{{ code }}" {% if code == country %}selected{% endif %}>{{ country_name(code) }}</option>{% endfor %}
+      </select></label>
+  </form>
+  <p class="text-[13.5px] muted">{{ t('D\'après les offres ouvertes sur TalentConnect et sur les sites d\'emploi, mises à jour toutes les heures.') }}</p>
 </div>
-<div class="grid lg:grid-cols-2 gap-7 mt-7">
-  <div class="card card-pad"><h3 class="font-display font-semibold mb-4">{{ t('Villes') }}</h3>
-    {% set mx = (by_city[0][1] if by_city else 1) %}
-    <div class="space-y-3">{% for c, n in by_city %}<div class="flex items-center gap-3"><span class="w-32 text-sm truncate">{{ c }}</span><div class="progress flex-1"><span data-w="{{ (n/mx*100)|round }}" style="width:0"></span></div><b class="text-sm w-8 text-right">{{ n }}</b></div>{% else %}<p class="muted text-sm">—</p>{% endfor %}</div></div>
-  <div class="card card-pad"><h3 class="font-display font-semibold mb-4">{{ t('Compétences les plus demandées') }}</h3>
-    <div class="flex flex-wrap gap-2">{% for s, n in skills %}<span class="chip chip-terra" style="font-size:{{ 0.72 + [n, 8]|min * 0.05 }}rem">{{ s }} · {{ n }}</span>{% else %}<p class="muted text-sm">—</p>{% endfor %}</div></div>
+
+<div class="tuiles mt-6">
+  {% for teinte, icone, val, libelle, detail in [
+      ('peche', 'briefcase', m.total, t('Offres analysées'), m.internes ~ ' ' ~ t('sur TalentConnect')),
+      ('sauge', 'building-2', m.entreprises|length if m.entreprises|length < 10 else '10+', t('Entreprises qui recrutent'), t('les plus actives ci-dessous')),
+      ('sable', 'map-pin', m.villes|length, t('Villes'), (m.villes[0][0] ~ ' ' ~ t('en tête')) if m.villes else '—'),
+      ('creme', 'globe', m.sources|length, t('Sources'), m.sources|map('first')|join(', ')|truncate(34, True, '…'))] %}
+  <div class="tuile {{ teinte }}">
+    <span class="rond"><i data-lucide="{{ icone }}"></i></span>
+    <div class="valeur">{{ val }}</div>
+    <div class="libelle">{{ libelle }}</div>
+    <div class="detail truncate">{{ detail }}</div>
+  </div>
+  {% endfor %}
 </div>
+
+{% if not m.total %}
+<div class="card p-12 text-center mt-7">
+  <img src="{{ url_for('static', filename='images/illustrations/recherche_personne.svg') }}" alt="" class="w-48 mx-auto">
+  <p class="font-bold text-[17px] mt-6">{{ t('Pas encore d\'offres pour ce pays') }}</p>
+  <p class="muted text-[14px] mt-1">{{ t('Les sites d\'emploi n\'ont rien renvoyé pour l\'instant. Réessayez plus tard ou choisissez un autre pays.') }}</p>
+</div>
+{% else %}
+
+{# Carte + métiers #}
+<div class="grid lg:grid-cols-[1.35fr_1fr] gap-6 mt-7">
+  <div class="card overflow-hidden flex flex-col">
+    <div class="entete-carte flex items-center justify-between"><h3>{{ t('Où recrute-t-on ?') }}</h3><span class="text-[12.5px] muted">{{ t('Taille du cercle = nombre d\'offres') }}</span></div>
+    <div id="carte" class="carte-marche"></div>
+  </div>
+  <div class="card card-pad">
+    <h3 class="font-bold text-[16.5px]">{{ t('Métiers les plus recherchés') }}</h3>
+    {% set mx = m.metiers[0][1] if m.metiers else 1 %}
+    <div class="mt-5 space-y-3.5">
+      {% for nom, n in m.metiers %}
+      <a href="{{ url_for('candidate.jobs', q=nom) if current_user.role == 'candidate' else url_for('main.offers', q=nom) }}" class="flex items-center gap-3 group">
+        <span class="w-6 text-[12px] font-bold muted text-right">{{ loop.index }}</span>
+        <span class="flex-1 min-w-0">
+          <span class="flex justify-between gap-2 text-[13.5px]"><span class="truncate font-semibold group-hover:text-terra-600">{{ nom }}</span><b>{{ n }}</b></span>
+          <span class="barre-fine mt-1.5"><span style="width:{{ (n / mx * 100)|round }}%"></span></span>
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# Filières + villes #}
+<div class="grid lg:grid-cols-[1.35fr_1fr] gap-6 mt-6">
+  <div class="card card-pad">
+    <h3 class="font-bold text-[16.5px]">{{ t('Filières qui recrutent le plus') }}</h3>
+    <div class="relative mt-4" style="height:{{ 60 + 34 * m.filieres|length }}px"><canvas id="filieres"></canvas></div>
+  </div>
+  <div class="card card-pad">
+    <h3 class="font-bold text-[16.5px]">{{ t('Villes') }}</h3>
+    {% set mx = m.villes[0][1] if m.villes else 1 %}
+    <div class="mt-5 space-y-3.5">
+      {% for v, n in m.villes %}
+      <div class="flex items-center gap-3">
+        <i data-lucide="map-pin" class="!w-4 !h-4 text-terra-600 shrink-0"></i>
+        <span class="flex-1 min-w-0">
+          <span class="flex justify-between gap-2 text-[13.5px]"><span class="truncate font-semibold">{{ v }}</span><b>{{ n }}</b></span>
+          <span class="barre-fine mt-1.5"><span style="width:{{ (n / mx * 100)|round }}%"></span></span>
+        </span>
+      </div>
+      {% else %}<p class="muted text-[14px]">{{ t('Les annonces ne précisent pas la ville.') }}</p>{% endfor %}
+    </div>
+  </div>
+</div>
+
+{# Entreprises + compétences #}
+<div class="grid lg:grid-cols-2 gap-6 mt-6">
+  <div class="card card-pad">
+    <h3 class="font-bold text-[16.5px]">{{ t('Entreprises qui recrutent le plus') }}</h3>
+    <div class="mt-4 divide-y" style="border-color:var(--line)">
+      {% for e, n in m.entreprises %}
+      <div class="flex items-center gap-3 py-2.5">
+        <span class="logo-ent petit t{{ loop.index0 % 4 + 1 }}">{{ e[:1]|upper }}</span>
+        <span class="flex-1 min-w-0 truncate text-[14px] font-semibold">{{ e }}</span>
+        <span class="chip">{{ n }} {{ t('offre(s)') }}</span>
+      </div>
+      {% else %}<p class="muted text-[14px]">—</p>{% endfor %}
+    </div>
+  </div>
+  <div class="card card-pad">
+    <h3 class="font-bold text-[16.5px]">{{ t('Compétences les plus demandées') }}</h3>
+    <div class="flex flex-wrap gap-2 mt-4">
+      {% for c, n in m.competences %}<span class="chip chip-terra">{{ c }} <span class="opacity-60">· {{ n }}</span></span>
+      {% else %}<p class="muted text-[14px]">{{ t('Les annonces lues ne listent pas encore de compétences.') }}</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
+
 {% block scripts %}
+{% if m.total %}
 <script src="{{ url_for('static', filename='librairies/leaflet/leaflet.js') }}"></script>
 <script src="{{ url_for('static', filename='librairies/chart.umd.js') }}"></script>
 <script>
-  const pts = {{ points|tojson }};
-  const map = L.map('map', { scrollWheelZoom: false });
-  // Fond de carte OpenStreetMap : gratuit, sans clé d'API (attribution obligatoire)
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 18 }).addTo(map);
+  // Carte : fond CARTO (clair ou sombre selon le thème), gratuit et sans clé d'API
+  const pts = {{ m.points|tojson }};
+  const sombre = document.documentElement.classList.contains('dark');
+  const carte = L.map('carte', { scrollWheelZoom: false, zoomControl: true });
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${sombre ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
+    subdomains: 'abcd', maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(carte);
   const max = Math.max(1, ...pts.map(p => p.n));
-  const group = L.featureGroup(pts.map(p => L.circleMarker([p.lat, p.lng], { radius: 8 + 22 * p.n / max, color: '#A04222', weight: 2, fillColor: '#D86730', fillOpacity: .55 })
-      .bindPopup(`<b>${p.city}</b><br>${p.n} {{ t('offre(s)') }}`))).addTo(map);
-  if (pts.length) map.fitBounds(group.getBounds().pad(0.3)); else map.setView([7.54, -5.55], 6);
+  const groupe = L.featureGroup(pts.map(p => L.circleMarker([p.lat, p.lng], {
+      radius: 9 + 24 * Math.sqrt(p.n / max), color: '#A04222', weight: 2, fillColor: '#D86730', fillOpacity: .5 })
+    .bindTooltip(`<b>${p.city}</b> · ${p.n} {{ t('offre(s)') }}`, { direction: 'top' }))).addTo(carte);
+  if (pts.length > 1) carte.fitBounds(groupe.getBounds().pad(0.35), { maxZoom: 9 });
+  else if (pts.length === 1) carte.setView([pts[0].lat, pts[0].lng], 8);
+  else carte.setView([7.54, -5.55], 6);
+  // La carte est dans une grille : on recalcule sa taille une fois la page posée
+  setTimeout(() => carte.invalidateSize(), 200);
+
   const css = getComputedStyle(document.documentElement);
-  new Chart(document.getElementById('fields'), { type: 'bar',
-    data: { labels: {{ by_field|map('first')|list|tojson }}, datasets: [{ data: {{ by_field|map('last')|list|tojson }}, backgroundColor: '#D86730', borderRadius: 6 }] },
-    options: { maintainAspectRatio: false, indexAxis: 'y', datasets: { bar: { maxBarThickness: 22 } }, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, color: css.getPropertyValue('--muted') }, grid: { color: css.getPropertyValue('--line') } }, y: { ticks: { color: css.getPropertyValue('--ink'), font: { size: 11.5 }, callback(v) { const l = this.getLabelForValue(v); return l.length > 20 ? l.slice(0, 19) + '…' : l } }, grid: { display: false } } } } });
+  new Chart(document.getElementById('filieres'), { type: 'bar',
+    data: { labels: {{ m.filieres|map('first')|list|tojson }}, datasets: [{ data: {{ m.filieres|map('last')|list|tojson }}, backgroundColor: '#D86730', borderRadius: 8 }] },
+    options: { maintainAspectRatio: false, indexAxis: 'y', datasets: { bar: { maxBarThickness: 20 } }, plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0, color: css.getPropertyValue('--muted') }, grid: { color: css.getPropertyValue('--line') } },
+                y: { ticks: { color: css.getPropertyValue('--ink'), font: { size: 12 } }, grid: { display: false } } } } });
 </script>
+{% endif %}
 {% endblock %}

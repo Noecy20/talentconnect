@@ -31,7 +31,7 @@
         </div>
         <div class="text-xs font-semibold muted uppercase tracking-wider mt-4">{{ t('Métiers') }}</div>
         <div class="flex flex-wrap gap-1.5 mt-2">{% for j in r.jobs %}<span class="chip">{{ t(j) }}</span>{% endfor %}</div>
-        <a href="{{ url_for('candidate.jobs', mode='all', field=r.field.split('/')[0].strip()) }}" class="text-sm font-semibold text-terra-600 mt-4 inline-flex items-center gap-1">
+        <a href="{{ url_for('candidate.jobs', q=r.field.split('/')[0].strip()) }}" class="text-sm font-semibold text-terra-600 mt-4 inline-flex items-center gap-1">
           {{ open_by_field.get(r.field, 0) }} {{ t('offre(s) ouverte(s)') }}<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
       </div>
       {% endfor %}

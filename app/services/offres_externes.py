@@ -93,7 +93,7 @@ def _jsearch(q, where, country, days):
 
 _PAYS_FRANCOPHONES = {"CI", "SN", "FR", "BE", "CH", "CM", "BJ", "TG", "BF", "ML", "NE", "GA", "CG", "CD", "GN", "MA", "TN", "DZ", "MG", "RW", "HT"}
 _NOMS_PAYS = {"CI": "Côte d'Ivoire", "SN": "Sénégal", "FR": "France", "CA": "Canada", "BE": "Belgique", "CH": "Suisse",
-              "CM": "Cameroun", "BJ": "Bénin", "TG": "Togo", "BF": "Burkina Faso", "ML": "Mali", "MA": "Maroc", "GA": "Gabon"}
+              "CM": "Cameroun", "BJ": "Bénin", "TG": "Togo", "BF": "Burkina Faso", "ML": "Mali", "MA": "Maroc", "GA": "Gabon", "GN": "Guinée", "NE": "Niger"}
 
 
 def _adzuna(q, where, country, days):
@@ -120,13 +120,20 @@ def _adzuna(q, where, country, days):
 
 
 def _jooble(q, where, country, days):
-    res = _get(f"https://jooble.org/api/{current_app.config['JOOBLE_API_KEY']}", data={"keywords": q, "location": where or ""})
+    """Jooble : sans lieu, l'API répond pour le monde entier ; on lui donne donc le pays."""
+    lieu = where or _NOMS_PAYS.get((country or "").upper(), "")
+    url = f"https://jooble.org/api/{current_app.config['JOOBLE_API_KEY']}"
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        pages = list(pool.map(lambda n: _get(url, data={"keywords": q, "location": lieu, "page": str(n)}), (1, 2)))
     out = []
-    for j in res.get("jobs", []) or []:
-        out.append({"title": j.get("title"), "company": j.get("company") or "", "city": j.get("location") or "",
-                    "country_code": (country or "")[:2], "url": j.get("link"), "contract": (j.get("type") or "").lower(),
-                    "salary": j.get("salary") or "", "posted": (j.get("updated") or "")[:10], "source": j.get("source") or "Jooble",
-                    "description": (j.get("snippet") or "")[:1500]})
+    for res in pages:
+        for j in res.get("jobs", []) or []:
+            out.append({"title": j.get("title"), "company": j.get("company") or "", "city": j.get("location") or "",
+                        "country_code": (country or "")[:2] if lieu else "", "url": j.get("link"),
+                        "contract": (j.get("type") or "").lower(), "salary": j.get("salary") or "",
+                        "posted": (j.get("updated") or "")[:10], "source": j.get("source") or "Jooble",
+                        "description": _sans_html(j.get("snippet"))})
     return out
 
 
@@ -166,6 +173,9 @@ def _hors_ci(country):
     return bool(country) and country.upper() != "CI"
 
 
+PAGES_EMPLOI_CI = 4
+
+
 def _emploi_ci(q, where, country, days):
     if _hors_ci(country):
         return []
@@ -173,9 +183,20 @@ def _emploi_ci(q, where, country, days):
     base = "https://www.emploi.ci/recherche-jobs-cote-ivoire"
     if mots:
         base += "/" + urllib.parse.quote(" ".join(mots))
-    soupe = _page(base)
+    # Les 4 premières pages de résultats (25 offres chacune), téléchargées en même temps
+    from concurrent.futures import ThreadPoolExecutor
+
+    def page(n):
+        try:
+            return _page(base + (f"?page={n}" if n else "")).select(".card-job")
+        except Exception:
+            if n == 0:
+                raise
+            return []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        cartes = [c for liste in pool.map(page, range(PAGES_EMPLOI_CI)) for c in liste]
     out = []
-    for carte in soupe.select(".card-job"):
+    for carte in cartes:
         lien = carte.select_one("h3 a")
         if not lien:
             continue
@@ -197,6 +218,7 @@ def _emploi_ci(q, where, country, days):
                     "city": infos.get("region de", "Côte d'Ivoire"), "country_code": "CI", "url": url,
                     "contract": infos.get("contrat propose", ""), "salary": "", "posted": posted,
                     "logo": logo if logo.startswith("http") and "default-logo" not in logo else "", "source": "Emploi.ci",
+                    "skills": [c.strip() for c in infos.get("competences cles", "").split(" - ") if c.strip()][:12],
                     "description": " · ".join(v for k, v in infos.items() if k.startswith(("competences", "niveau")))[:1500]})
     return _filtre_ville(out, where)
 
@@ -241,6 +263,8 @@ def _educarriere(q, where, country, days):
         if url in vus or not o["title"] or (mots and not _correspond(f"{o['title']} {o['company']}", mots)):
             continue
         vus.add(url)
+        if o["title"].isupper():   # « COMPTABLE SENIOR » -> « Comptable senior »
+            o["title"] = o["title"].capitalize()
         if o["company"].lower().startswith(("limite", "expire")):
             o["company"] = ""
         d = o.pop("deadline")

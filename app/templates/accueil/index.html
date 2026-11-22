@@ -2,6 +2,40 @@
 {% block title %}{{ t('Trouvez votre prochain emploi') }}{% endblock %}
 {% block content %}
 
+{# ------------------------------------------------------------------ écran de bienvenue
+   Montré à la première visite de la session : logo, slogan, illustration.
+   Il s'efface tout seul après quelques secondes (ou d'un clic). #}
+<div id="bienvenue" class="bienvenue" x-data="bienvenue" x-show="visible" x-cloak
+     x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+     @keydown.escape.window="fermer()" role="dialog" aria-label="{{ t('Bienvenue sur TalentConnect') }}">
+  <div class="bienvenue-contenu">
+    <div class="flex items-center justify-center gap-3 bienvenue-anim" style="--d:0s">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" class="w-14 h-14 object-contain" alt="">
+      <span class="text-[30px] sm:text-[34px] font-bold tracking-tight">Talent<span class="text-terra-500">Connect</span></span>
+    </div>
+    <img src="{{ url_for('static', filename='images/illustrations/bienvenue.svg') }}" alt="" class="bienvenue-image bienvenue-anim" style="--d:.15s">
+    <h1 class="text-[clamp(1.7rem,4vw,2.6rem)] font-bold tracking-[-.035em] leading-tight bienvenue-anim" style="--d:.3s">{{ t('Bienvenue !') }}</h1>
+    <p class="text-[16px] sm:text-[17px] muted mt-3 max-w-md mx-auto leading-relaxed bienvenue-anim" style="--d:.45s">
+      {{ t('Le bon poste, et enfin une réponse.') }}<br>{{ t('Toutes les offres d\'emploi réunies, de la Côte d\'Ivoire au reste du monde.') }}</p>
+    <button type="button" class="btn btn-primary !h-[50px] !px-8 !rounded-full mt-8 bienvenue-anim" style="--d:.6s" @click="fermer()">
+      {{ t('Découvrir TalentConnect') }}<i data-lucide="arrow-right"></i></button>
+    <div class="bienvenue-barre"><span></span></div>
+  </div>
+</div>
+<script>
+  document.addEventListener('alpine:init', () => Alpine.data('bienvenue', () => ({
+    visible: false,
+    init() {
+      let deja = false;
+      try { deja = sessionStorage.getItem('tc_bienvenue') === '1'; sessionStorage.setItem('tc_bienvenue', '1'); } catch (e) {}
+      if (deja || location.hash) return;
+      this.visible = true; document.documentElement.style.overflow = 'hidden';
+      this._t = setTimeout(() => this.fermer(), 4500);
+    },
+    fermer() { clearTimeout(this._t); this.visible = false; document.documentElement.style.overflow = ''; },
+  })));
+</script>
+
 {# ------------------------------------------------------------------ en-tête de page #}
 <section class="section pt-14 sm:pt-20 grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
   <div>
@@ -27,43 +61,16 @@
     </div>
   </div>
 
-  {# Aperçu de l'application : une carte, alignée, sans éléments décoratifs #}
-  <div class="hidden md:block rounded-[32px] p-7 sm:p-9" style="background:var(--peche)">
-    <div class="card p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-[13px] muted">{{ t('Offres faites pour vous') }}</div>
-          <div class="font-bold text-[17px] mt-0.5">{{ t('Analyste financier') }}</div>
-        </div>
-        <span class="chip chip-green">{{ t('Compatible à 92 %') }}</span>
-      </div>
-      <div class="flex flex-wrap gap-1.5 mt-4">
-        <span class="chip">Abidjan</span><span class="chip chip-terra">CDI</span><span class="chip chip-gold">1 200 000 F CFA</span>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mt-5">
-        <div class="rounded-2xl p-4" style="background:var(--bg)">
-          <div class="text-[12px] muted">{{ t('Chance d\'être appelé') }}</div>
-          <div class="text-[24px] font-bold tracking-tight" style="color:var(--success)">48 %</div>
-        </div>
-        <div class="rounded-2xl p-4" style="background:var(--bg)">
-          <div class="text-[12px] muted">{{ t('Délai de réponse') }}</div>
-          <div class="text-[24px] font-bold tracking-tight">{{ t('5 jours') }}</div>
-        </div>
-      </div>
+  {# Illustration (unDraw) avec deux petites cartes qui résument ce que fait TalentConnect #}
+  <div class="illustration-hero">
+    <img src="{{ url_for('static', filename='images/illustrations/chasse_emploi.svg') }}" alt="{{ t('Une personne qui cherche un emploi') }}">
+    <div class="bulle haut">
+      <span class="logo-ent t3 petit"><i data-lucide="sparkles"></i></span>
+      <div><div class="text-[12px] muted">{{ t('Analyste financier · Abidjan') }}</div><div class="font-bold text-[14px]">{{ t('Compatible à 92 %') }}</div></div>
     </div>
-    <div class="card p-5 mt-4 flex items-center gap-4">
-      <span class="logo-ent t3"><i data-lucide="mail-check"></i></span>
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-[14.5px]">{{ t('Votre candidature a bien été reçue') }}</div>
-        <div class="text-[13px] muted">Ecobank · {{ t('réponse sous 7 jours') }}</div>
-      </div>
-    </div>
-    <div class="card p-5 mt-4 flex items-center gap-4">
-      <span class="logo-ent t2"><i data-lucide="award"></i></span>
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold text-[14.5px]">{{ t('Recommandée par un parrain vérifié') }}</div>
-        <div class="text-[13px] muted">{{ t('Ancienne responsable, niveau Or') }}</div>
-      </div>
+    <div class="bulle bas">
+      <span class="logo-ent t2 petit"><i data-lucide="mail-check"></i></span>
+      <div><div class="font-bold text-[14px]">{{ t('Candidature reçue') }}</div><div class="text-[12px] muted">{{ t('réponse sous 7 jours') }}</div></div>
     </div>
   </div>
 </section>

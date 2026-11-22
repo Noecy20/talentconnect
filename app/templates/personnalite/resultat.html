@@ -1,0 +1,133 @@
+{% extends "espace.html" if current_user.is_authenticated else "public.html" %}
+{% block title %}{{ t('Mon type de personnalité') }}{% endblock %}
+{% block page_title %}{{ t('Test de personnalité') }}{% endblock %}
+{% block content %}
+{# Rapport du test de personnalité (Ennéagramme). `r` vient de ia/personnalite.rapport(). #}
+<div class="rapport-perso {{ 'section pt-10' if not current_user.is_authenticated }}">
+
+  {# ---------------------------------------------------------------- 1. votre type #}
+  <section class="rapport-tete">
+    <div class="flex-1 min-w-0">
+      <span class="text-[13px] font-semibold uppercase tracking-[.12em]" style="color:#F0A060">{{ t('Votre type') }}</span>
+      <h1 class="text-[clamp(1.8rem,4vw,2.7rem)] font-bold tracking-[-.035em] leading-tight mt-2">
+        {{ t('Type') }} {{ r.type }} — {{ t(r.nom) }}<span class="font-semibold opacity-70">, {{ t('aile') }} {{ r.aile }}</span></h1>
+      <p class="text-[16.5px] mt-3 leading-relaxed opacity-90 max-w-2xl">{{ r.portrait }}</p>
+      <div class="flex flex-wrap gap-2 mt-5">
+        <span class="pastille-claire">{{ r.code }}</span>
+        <span class="pastille-claire">{{ r.motivation }}</span>
+      </div>
+    </div>
+    <div class="rapport-numero" aria-hidden="true">{{ r.type }}</div>
+  </section>
+
+  {% if not r.fiable %}
+  <div class="rapport-alerte mt-6"><i data-lucide="alert-triangle"></i><div><b>{{ t('Résultat peu fiable') }}</b> — {{ t('plus de 80 % de vos réponses sont identiques. Pour un portrait plus juste, nuancez davantage vos réponses.') }}
+    <a href="{{ url_for('main.personality_test') }}" class="font-semibold text-terra-600 ml-1">{{ t('Refaire le test') }}</a></div></div>
+  {% endif %}
+  {% if r.mixte %}
+  <div class="rapport-alerte info mt-6"><i data-lucide="git-compare"></i><div><b>{{ t('Profil mixte') }}</b> — {{ t('vos scores sont identiques pour le Type {a} et le Type {b}. Lisez les deux descriptions : celle qui vous ressemble le plus est sans doute la vôtre.', a=r.mixte[0], b=r.mixte[1]) }}</div></div>
+  {% elif r.nuance %}
+  <div class="rapport-alerte info mt-6"><i data-lucide="info"></i><div><b>{{ t('Profil nuancé') }}</b> — {{ t('votre deuxième type, le Type {n} ({nom}), est très proche. Lisez aussi sa description.', n=r.second, nom=t(r.nom_second)) }}</div></div>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- 2. scores + 3. qui vous êtes #}
+  <div class="grid lg:grid-cols-[1fr_1.15fr] gap-6 mt-7">
+    <section class="card card-pad">
+      <h2 class="rapport-titre"><i data-lucide="bar-chart-3"></i>{{ t('Vos scores') }}</h2>
+      <div class="mt-5 space-y-3.5">
+        {% for n, nom, p in r.scores %}
+        <div class="flex items-center gap-3 {{ 'font-bold' if n == r.type }}">
+          <span class="rapport-pastille {{ 'actif' if n == r.type }}">{{ n }}</span>
+          <span class="flex-1 min-w-0">
+            <span class="flex justify-between gap-2 text-[13.5px]"><span class="truncate">{{ t(nom) }}</span><span>{{ p }} %</span></span>
+            <span class="barre-fine mt-1.5 {{ 'pale' if n != r.type }}"><span style="width:{{ p }}%"></span></span>
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="card card-pad flex flex-col">
+      <h2 class="rapport-titre"><i data-lucide="sparkles"></i>{{ t('Qui vous êtes') }}</h2>
+      <p class="text-[15px] leading-[1.75] mt-4" style="color:var(--ink-2)">{{ r.qui }}</p>
+      <img src="{{ url_for('static', filename='images/illustrations/reflexion.svg') }}" alt="" class="w-full max-w-[220px] mx-auto mt-auto pt-6">
+    </section>
+  </div>
+
+  {# ---------------------------------------------------------------- 4. forces + 5. vigilance #}
+  <div class="grid lg:grid-cols-2 gap-6 mt-6">
+    <section class="card card-pad">
+      <h2 class="rapport-titre"><i data-lucide="zap" style="color:#2F855A"></i>{{ t('Vos forces') }}</h2>
+      <ul class="rapport-liste mt-4">{% for x in r.forces %}<li class="vert"><i data-lucide="check"></i>{{ x }}</li>{% endfor %}</ul>
+    </section>
+    <section class="card card-pad">
+      <h2 class="rapport-titre"><i data-lucide="eye" style="color:#B7791F"></i>{{ t('Vos points de vigilance') }}</h2>
+      <ul class="rapport-liste mt-4">{% for x in r.vigilance %}<li class="or"><i data-lucide="lightbulb"></i>{{ x }}</li>{% endfor %}</ul>
+    </section>
+  </div>
+
+  {# ---------------------------------------------------------------- 6. au travail #}
+  <section class="card card-pad mt-6">
+    <h2 class="rapport-titre"><i data-lucide="briefcase"></i>{{ t('Au travail') }}</h2>
+    <div class="grid md:grid-cols-3 gap-4 mt-5">
+      <div class="rapport-bloc peche"><div class="etiquette">{{ t('Environnement idéal') }}</div><p>{{ r.environnement }}</p></div>
+      <div class="rapport-bloc sauge"><div class="etiquette">{{ t('Style de collaboration') }}</div><p>{{ r.collaboration }}</p></div>
+      <div class="rapport-bloc sable"><div class="etiquette">{{ t('Métiers ou rôles qui vous conviennent') }}</div>
+        <div class="flex flex-col gap-2 mt-1">
+          {% for m in r.metiers %}
+          {% set mot = m.split(' ou ')[0].split(',')[0] %}
+          <a href="{{ url_for('candidate.jobs', q=mot) if current_user.is_authenticated and current_user.role == 'candidate' else url_for('main.offers', q=mot) }}" class="inline-flex items-center gap-1.5 font-semibold text-[14px] hover:text-terra-600"><i data-lucide="search" class="!w-3.5 !h-3.5"></i>{{ m }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- 7. en relation #}
+  <section class="card card-pad mt-6">
+    <h2 class="rapport-titre"><i data-lucide="heart-handshake"></i>{{ t('En relation') }}</h2>
+    <div class="grid md:grid-cols-3 gap-4 mt-5">
+      <div class="rapport-bloc creme"><div class="etiquette">{{ t('Ce que vous apportez') }}</div><p>{{ r.apporte }}</p></div>
+      <div class="rapport-bloc peche"><div class="etiquette">{{ t('Ce dont vous avez besoin') }}</div><p>{{ r.besoin }}</p></div>
+      <div class="rapport-bloc sable"><div class="etiquette">{{ t('Source de tension fréquente') }}</div><p>{{ r.tension }}</p></div>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- 8. stress / croissance #}
+  <div class="grid md:grid-cols-2 gap-6 mt-6">
+    <section class="card card-pad">
+      <h2 class="rapport-titre"><i data-lucide="trending-down" style="color:#C0392B"></i>{{ t('Sous stress') }} <span class="rapport-fleche">{{ r.type }} → {{ r.stress_type }}</span></h2>
+      <p class="text-[15px] leading-relaxed mt-3" style="color:var(--ink-2)">{{ t('Sous pression,') }} {{ r.stress }}.</p>
+    </section>
+    <section class="card card-pad">
+      <h2 class="rapport-titre"><i data-lucide="trending-up" style="color:#2F855A"></i>{{ t('En croissance') }} <span class="rapport-fleche vert">{{ r.type }} → {{ r.croissance_type }}</span></h2>
+      <p class="text-[15px] leading-relaxed mt-3" style="color:var(--ink-2)">{{ t('Quand vous vous épanouissez,') }} {{ r.croissance }}.</p>
+    </section>
+  </div>
+
+  {# ---------------------------------------------------------------- 9. défis des 7 prochains jours #}
+  <section class="card card-pad mt-6">
+    <h2 class="rapport-titre"><i data-lucide="calendar-check"></i>{{ t('Défis des 7 prochains jours') }}</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+      {% for d in r.defis %}
+      <div class="rapport-defi"><span class="jour">{{ t('Jour') }} {{ loop.index }}</span><p>{{ d }}</p></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- 10. mention #}
+  <div class="flex flex-wrap items-center justify-between gap-4 mt-8 pb-4">
+    <p class="text-[13px] muted flex items-center gap-2"><i data-lucide="shield" class="!w-4 !h-4"></i>{{ t('Ce test est un outil de connaissance de soi, pas un diagnostic.') }}</p>
+    <div class="flex flex-wrap gap-2.5 imprimer-non">
+      <button type="button" onclick="window.print()" class="btn btn-ghost !rounded-full"><i data-lucide="printer"></i>{{ t('Imprimer / PDF') }}</button>
+      <a href="{{ url_for('main.personality_test') }}" class="btn btn-primary !rounded-full"><i data-lucide="rotate-ccw"></i>{{ t('Refaire le test') }}</a>
+    </div>
+  </div>
+  {% if not current_user.is_authenticated %}
+  <div class="card card-pad mt-2 mb-12 flex flex-wrap items-center gap-4 imprimer-non">
+    <div class="flex-1 min-w-[240px]"><b>{{ t('Gardez ce résultat dans votre profil') }}</b>
+      <p class="muted text-[14px] mt-1">{{ t('Créez votre compte candidat : votre type sera enregistré et vos offres seront mieux choisies.') }}</p></div>
+    <a href="{{ url_for('auth.register', role='candidate') }}" class="btn btn-dark !rounded-full">{{ t('Créer mon compte') }}</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

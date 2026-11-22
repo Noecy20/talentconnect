@@ -49,8 +49,42 @@ EMBED_CSS = """
     .panel.open,.gallery.open{position:fixed;left:272px;top:0;bottom:0;width:440px;max-height:none;overflow:auto;
       z-index:70;box-shadow:12px 0 40px rgba(0,0,0,.25)}
     .toast{left:calc(50% + 136px)}
+    .tc-voile,.tc-fermer{display:none!important}
+  }
+  /* Téléphone et tablette : une seule ligne d'outils qui défile, panneaux en tiroir par le bas */
+  @media (max-width:1023px){
+    .toolbar{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .toolbar::-webkit-scrollbar{display:none}
+    .toolbar .btn{flex:none;white-space:nowrap;padding:8px 11px;font-size:12.5px}
+    .toolbar .spacer{display:none}
+    .swatches{flex:none;padding:0 4px}
+    .panel.open,.gallery.open{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:72vh;overflow:auto;z-index:90;
+      border-radius:20px 20px 0 0;padding:22px 18px 26px;box-shadow:0 -14px 40px rgba(0,0,0,.3)}
+    .tc-voile{position:fixed;inset:0;z-index:85;background:rgba(20,10,5,.45)}
+    .tc-fermer{position:fixed;z-index:95;right:14px;bottom:calc(72vh - 22px);width:40px;height:40px;border-radius:50%;
+      border:0;background:#fff;color:#3B1A0E;font:700 20px/1 'Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+    .stage{padding:14px 8px 30px}
   }
 </style>
+<script>
+  // Fermer les panneaux Modèles / Sections : bouton × ou toucher le fond (téléphone)
+  document.addEventListener('DOMContentLoaded', () => {
+    const voile = Object.assign(document.createElement('div'), { className: 'tc-voile', hidden: true });
+    const fermer = Object.assign(document.createElement('button'), { className: 'tc-fermer', hidden: true, type: 'button', textContent: '×' });
+    fermer.setAttribute('aria-label', 'Fermer');
+    document.body.append(voile, fermer);
+    const panneaux = ['panel', 'gallery'].map(id => document.getElementById(id)).filter(Boolean);
+    const tout_fermer = () => panneaux.forEach(p => p.classList.remove('open'));
+    voile.onclick = fermer.onclick = tout_fermer;
+    const maj = () => {
+      const ouvert = panneaux.find(p => p.classList.contains('open'));
+      voile.hidden = fermer.hidden = !ouvert;
+      if (ouvert) requestAnimationFrame(() => { fermer.style.bottom = (ouvert.offsetHeight - 20) + 'px'; });
+    };
+    panneaux.forEach(p => new MutationObserver(maj).observe(p, { attributes: true, attributeFilter: ['class'] }));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') tout_fermer(); });
+  });
+</script>
 """
 
 

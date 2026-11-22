@@ -26,6 +26,7 @@ MENUS = {
         ]),
         ("Évoluer", [
             ("candidate.orientation", "compass", "Orientation", True),
+            ("main.personality_test", "brain", "Test de personnalité", False),
             ("assistant.mine", "bot", "Mon assistant IA", True),
         ]),
     ],

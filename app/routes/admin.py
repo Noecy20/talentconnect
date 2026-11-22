@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, jsonify
 from flask_login import current_user
 from sqlalchemy import func, or_
 
@@ -248,17 +248,26 @@ def sponsorship_action(sid, action):
 # --------------------------------------------------------------------------- entreprises
 @bp.route("/entreprises")
 def companies():
+    """Entreprises en Kanban (À vérifier / Vérifiées / Recrutent en ce moment) ou en liste."""
+    vue = request.args.get("vue", "kanban")
     cos = Company.query.order_by(Company.created_at.desc()).all()
     rates = {c.id: scores.company_response_rate(c.id) for c in cos}
-    return render_template("admin/entreprises.html", cos=cos, rates=rates)
+    ouvertes = dict(db.session.query(Job.company_id, db.func.count(Job.id))
+                    .filter(Job.status == "open").group_by(Job.company_id).all())
+    return render_template("admin/entreprises.html", cos=cos, rates=rates, ouvertes=ouvertes,
+                           vue="liste" if vue == "liste" else "kanban")
 
 
 @bp.route("/entreprises/<int:cid>/verifier", methods=["POST"])
 def company_verify(cid):
+    """Bascule la vérification, ou la fixe avec verifiee=1/0 (glisser-déposer du Kanban)."""
     c = db.get_or_404(Company, cid)
-    c.verified = not c.verified
+    v = request.form.get("verifiee")
+    c.verified = (v == "1") if v in ("0", "1") else not c.verified
     db.session.commit()
-    return redirect(url_for("admin.companies"))
+    if request.headers.get("HX-Request"):
+        return jsonify(ok=True, verified=c.verified)
+    return redirect(request.referrer or url_for("admin.companies"))
 
 
 # --------------------------------------------------------------------------- réglages des modèles

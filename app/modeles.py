@@ -115,6 +115,7 @@ class CandidateProfile(db.Model):
     linkedin = db.Column(db.String(255), default="")
     cv_data = db.Column(db.JSON)                                       # état du CV Builder (CVFlash)
     riasec = db.Column(db.JSON)                                        # résultat orientation
+    personnalite = db.Column(db.JSON)                                  # résultat du test Ennéagramme
     visible_to_recruiters = db.Column(db.Boolean, default=True)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 

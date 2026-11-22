@@ -14,11 +14,12 @@
       <img src="{{ url_for('static', filename='images/logo.png') }}" class="w-9 h-9 object-contain" alt="">
       <span class="text-[19px] font-bold tracking-tight">Talent<span class="text-terra-500">Connect</span></span>
     </a>
-    <nav class="site-nav hidden lg:flex items-center gap-7">
+    <nav class="site-nav hidden lg:flex items-center gap-6">
       <a href="{{ url_for('main.offers') }}">{{ t('Offres d\'emploi') }}</a>
       <a href="{{ url_for('main.index') }}#recruteurs">{{ t('Recruteurs') }}</a>
       <a href="{{ url_for('main.index') }}#parrains">{{ t('Parrainage') }}</a>
       <a href="{{ url_for('main.cv_free') }}">{{ t('CV gratuit') }}</a>
+      <a href="{{ url_for('main.personality_test') }}">{{ t('Personnalité') }}</a>
       <a href="{{ url_for('billing.pricing') }}">{{ t('Tarifs') }}</a>
     </nav>
     <div class="ml-auto flex items-center gap-1.5 sm:gap-2">
@@ -37,8 +38,10 @@
     <a href="{{ url_for('main.index') }}#recruteurs">{{ t('Recruteurs') }}</a>
     <a href="{{ url_for('main.index') }}#parrains">{{ t('Parrainage') }}</a>
     <a href="{{ url_for('main.cv_free') }}">{{ t('CV gratuit') }}</a>
+    <a href="{{ url_for('main.personality_test') }}">{{ t('Test de personnalité') }}</a>
     <a href="{{ url_for('billing.pricing') }}">{{ t('Tarifs') }}</a>
     {% if not current_user.is_authenticated %}<a href="{{ url_for('auth.login') }}" class="sm:hidden">{{ t('Connexion') }}</a>{% endif %}
+    <div class="sm:hidden flex items-center gap-2 pt-2">{{ langswitch(rond=True) }}{{ themetoggle(rond=True) }}<span class="text-[13px] muted">{{ t('Langue et thème') }}</span></div>
   </nav>
 </header>
 
@@ -57,6 +60,7 @@
     <div class="text-[14px] space-y-2.5"><div class="font-semibold mb-3">{{ t('Candidats') }}</div>
       <a href="{{ url_for('main.offers') }}" class="block muted hover:text-terra-600">{{ t('Offres d\'emploi') }}</a>
       <a href="{{ url_for('main.cv_free') }}" class="block muted hover:text-terra-600">{{ t('CV gratuit') }}</a>
+      <a href="{{ url_for('main.personality_test') }}" class="block muted hover:text-terra-600">{{ t('Test de personnalité') }}</a>
       <a href="{{ url_for('auth.register', role='candidate') }}" class="block muted hover:text-terra-600">{{ t('Créer un compte') }}</a></div>
     <div class="text-[14px] space-y-2.5"><div class="font-semibold mb-3">{{ t('Entreprises') }}</div>
       <a href="{{ url_for('auth.register', role='recruiter') }}" class="block muted hover:text-terra-600">{{ t('Publier une offre') }}</a>

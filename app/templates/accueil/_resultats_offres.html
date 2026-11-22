@@ -1,0 +1,39 @@
+{# Résultats de la recherche d'offres (page publique et espace candidat).
+   Les 30 premières offres s'affichent, « Afficher plus » montre les suivantes. #}
+{% from "composants/ui.html" import empty with context %}
+<div class="flex flex-wrap items-baseline justify-between gap-3 pb-5 border-b" style="border-color:var(--line)">
+  <h2 class="text-[19px] font-bold tracking-tight">
+    {{ offres|length }} {{ t('offre(s)') }}
+    <span class="muted font-medium text-[14px] ml-2">{{ nb_internes }} TalentConnect · {{ nb_externes }} {{ t('autres sites') }}</span>
+  </h2>
+  {% if sources and f.source != 'talentconnect' %}<span class="text-[13px] muted">{{ t('Sources :') }} {{ sources|join(', ') }}</span>{% endif %}
+</div>
+
+{% if f.source != 'talentconnect' and not f.q %}
+  <p class="text-[14px] muted mt-5 flex items-center gap-2"><i data-lucide="info"></i>{{ t('Les dernières offres publiées. Tapez un poste pour affiner la recherche.') }}</p>
+{% endif %}
+
+{% if not offres %}
+  <div class="mt-8">{{ empty('search-x', t('Aucune offre ne correspond'), t('Essayez un autre mot-clé, un autre pays ou retirez un filtre.')) }}</div>
+{% elif groupes %}
+  {% for nom, liste in groupes %}
+  <div class="mt-10">
+    <h3 class="titre-groupe">{{ nom }} <span>{{ liste|length }}</span></h3>
+    <div class="grille-offres mt-5">{% for o in liste %}{% include "accueil/_offre_liste.html" %}{% endfor %}</div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div x-data="{ n: 30 }">
+    <div class="grille-offres mt-8">
+      {% for o in offres %}<div class="contents" {% if loop.index0 >= 30 %}x-show="n > {{ loop.index0 }}" x-cloak{% endif %}>{% include "accueil/_offre_liste.html" %}</div>{% endfor %}
+    </div>
+    {% if offres|length > 30 %}
+    <div class="text-center mt-8" x-show="n < {{ offres|length }}">
+      <button type="button" class="btn btn-ghost" @click="n += 30; $nextTick(() => window.lucide && lucide.createIcons())">
+        <i data-lucide="chevrons-down"></i>{{ t('Afficher plus') }} <span class="muted" x-text="'(' + ({{ offres|length }} - n) + ')'"></span></button>
+    </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if erreurs and config.DEBUG %}<p class="text-[12px] muted mt-6">{{ t('Certaines sources n\'ont pas répondu :') }} {{ erreurs|map('truncate', 60)|join(' · ') }}</p>{% endif %}

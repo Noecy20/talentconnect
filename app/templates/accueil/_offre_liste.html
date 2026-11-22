@@ -1,3 +1,5 @@
-{# Une offre de la page « Offres d'emploi » : `o.type` vaut « tc » (TalentConnect) ou « ext » (site partenaire). #}
-{% if o.type == 'tc' %}{% set j = o.job %}{% include "accueil/_offre_publique.html" %}
+{# Une offre de la recherche : `o.type` vaut « tc » (TalentConnect) ou « ext » (autre site).
+   Pour un candidat connecté, `o.score` (et `o.prob`) donnent la compatibilité. #}
+{% if o.type == 'tc' and o.score is defined %}{% set r = {'job': o.job, 'score': o.score, 'prob': o.prob} %}{% include "candidat/_carte_offre.html" %}
+{% elif o.type == 'tc' %}{% set j = o.job %}{% include "accueil/_offre_publique.html" %}
 {% else %}{% set r = o.r %}{% include "accueil/_offre_externe.html" %}{% endif %}
