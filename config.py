@@ -22,7 +22,8 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "change-moi-en-production")
     SQLALCHEMY_DATABASE_URI = _db_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    # pool_recycle : Neon coupe les connexions inactives ; on les renouvelle avant qu'il ne le fasse
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 240}
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 Mo par upload
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "instance", "uploads")
     WTF_CSRF_TIME_LIMIT = None

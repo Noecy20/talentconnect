@@ -100,10 +100,27 @@ def update_reputation(sponsor_user_id, delta):
 
 
 # --------------------------------------------------------------------------- passeport de compétences
+def _par_requete(cle, calcul):
+    """Mémorise un résultat le temps d'une requête HTTP (évite de refaire la même
+    lecture en base pour chaque offre d'une liste)."""
+    from flask import g, has_app_context
+    if not has_app_context():
+        return calcul()
+    memo = g.setdefault("_scores", {})
+    if cle not in memo:
+        memo[cle] = calcul()
+    return memo[cle]
+
+
+def _parrainages_actifs(candidate_user):
+    return _par_requete(("parrainages", candidate_user.id), lambda: Sponsorship.query.filter_by(
+        candidate_id=candidate_user.id, status="active").all())
+
+
 def skill_passport(candidate_user):
     """{compétence: {"count": n, "avg": note}} à partir des parrainages actifs."""
     out = {}
-    sps = Sponsorship.query.filter_by(candidate_id=candidate_user.id, status="active").all()
+    sps = _parrainages_actifs(candidate_user)
     for s in sps:
         for k, v in list((s.skill_ratings or {}).items()) + list((s.soft_ratings or {}).items()):
             d = out.setdefault(k, {"count": 0, "total": 0})
@@ -116,10 +133,17 @@ def skill_passport(candidate_user):
 
 def sponsorship_strength(candidate_user):
     """0..1 : nombre de parrains pondéré par leur niveau et leur réputation."""
-    sps = Sponsorship.query.filter_by(candidate_id=candidate_user.id, status="active").all()
+    return _par_requete(("force", candidate_user.id), lambda: _force(candidate_user))
+
+
+def _force(candidate_user):
+    sps = _parrainages_actifs(candidate_user)
+    # Tous les profils de parrain en une seule requête
+    ids = [s.sponsor_id for s in sps]
+    profils = {p.user_id: p for p in SponsorProfile.query.filter(SponsorProfile.user_id.in_(ids)).all()} if ids else {}
     total = 0.0
     for s in sps:
-        sp = SponsorProfile.query.filter_by(user_id=s.sponsor_id).first()
+        sp = profils.get(s.sponsor_id)
         if not sp or not sp.is_approved:
             continue
         lvl = {"gold": 1.0, "silver": 0.8, "bronze": 0.6}.get(sp.level or "bronze", 0.6)

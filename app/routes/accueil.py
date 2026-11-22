@@ -22,16 +22,30 @@ def health():
     return "ok", 200, {"Content-Type": "text/plain"}
 
 
+# Chiffres de la page d'accueil, recalculés au plus toutes les 5 minutes :
+# c'est la page la plus visitée, inutile d'interroger la base à chaque visite.
+_ACCUEIL = {"quand": 0, "stats": None, "ids": []}
+
+
 @bp.route("/")
 def index():
-    stats = dict(
+    import time
+    if time.time() - _ACCUEIL["quand"] > 300 or _ACCUEIL["stats"] is None:
+        _ACCUEIL.update(quand=time.time(), stats=_chiffres_accueil(),
+                        ids=[j.id for j in Job.query.filter_by(status="open").order_by(Job.created_at.desc()).limit(6)])
+    from sqlalchemy.orm import joinedload
+    derniers = (Job.query.options(joinedload(Job.company)).filter(Job.id.in_(_ACCUEIL["ids"]))
+                .order_by(Job.created_at.desc()).all()) if _ACCUEIL["ids"] else []
+    return render_template("accueil/index.html", stats=_ACCUEIL["stats"], derniers=derniers)
+
+
+def _chiffres_accueil():
+    return dict(
         candidates=User.query.filter_by(role="candidate").count(),
         companies=Company.query.count(),
         sponsors=SponsorProfile.query.filter_by(status="approved").count(),
         jobs=Job.query.filter_by(status="open").count(),
     )
-    derniers = Job.query.filter_by(status="open").order_by(Job.created_at.desc()).limit(6).all()
-    return render_template("accueil/index.html", stats=stats, derniers=derniers)
 
 
 # Façons de regrouper la liste des offres (menu « Regrouper par » de la recherche)
@@ -66,7 +80,8 @@ def offers():
         if f["recentes"]:
             from datetime import datetime, timedelta
             req = req.filter(Job.created_at >= datetime.utcnow() - timedelta(days=7))
-        internes = req.order_by(Job.created_at.desc()).limit(90).all()
+        from sqlalchemy.orm import contains_eager
+        internes = req.options(contains_eager(Job.company)).order_by(Job.created_at.desc()).limit(90).all()
 
     # 2. Offres des sites partenaires (seulement sur une recherche précise)
     externes, erreurs = [], []

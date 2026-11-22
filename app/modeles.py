@@ -424,13 +424,20 @@ class Setting(db.Model):
 
     @classmethod
     def get(cls, key):
-        row = db.session.get(cls, key)
-        if row is None:
-            return cls.DEFAULTS.get(key)
-        return row.value
+        # Gardé en mémoire le temps d'une requête : une page qui calcule 20 scores
+        # n'interroge la base qu'une fois par réglage (base distante = chaque aller-retour compte).
+        from flask import g, has_app_context
+        cache = g.setdefault("_reglages", {}) if has_app_context() else {}
+        if key not in cache:
+            row = db.session.get(cls, key)
+            cache[key] = cls.DEFAULTS.get(key) if row is None else row.value
+        return cache[key]
 
     @classmethod
     def set(cls, key, value):
+        from flask import g, has_app_context
+        if has_app_context():
+            g.pop("_reglages", None)
         row = db.session.get(cls, key)
         if row is None:
             row = cls(key=key, value=value)
