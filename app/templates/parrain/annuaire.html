@@ -5,7 +5,7 @@
 {% block content %}
 <p class="muted text-[14.5px] max-w-2xl">{{ t('Des professionnels certifiés qui recommandent des talents auprès des recruteurs. Cherchez par nom, organisation, niveau ou pays, puis ouvrez un profil.') }}</p>
 
-<form method="get" class="card card-pad mt-6" x-data="{plus: {{ 'true' if filtres_actifs > 1 else 'false' }}}">
+<form method="get" class="mt-6 pb-6 ligne-plate" x-data="{plus: {{ 'true' if filtres_actifs > 1 else 'false' }}}">
   <div class="flex flex-wrap gap-3 items-end">
     <div class="flex-1 min-w-[240px]"><label class="label">{{ t('Rechercher') }}</label>
       <div class="relative"><i data-lucide="search" class="w-4 h-4 muted absolute left-3 top-1/2 -translate-y-1/2"></i>
@@ -43,31 +43,26 @@
 </div>
 
 {% if parrains %}
-<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+<div>
   {% for sp in parrains %}
-  <a href="{{ url_for('main.sponsor_profile', sid=sp.id) }}" class="card card-pad card-hover block">
-    <div class="flex items-center gap-3">{{ avatar(sp.user, 46) }}
-      <div class="flex-1 min-w-0">
-        <div class="font-semibold truncate hover:text-terra-600">{{ sp.user.full_name }}</div>
-        <div class="text-[12.5px] muted truncate">{{ sp.position }}{% if sp.organization %} · {{ sp.organization }}{% endif %}</div>
-      </div>
-      {{ level(sp.level) }}
+  <a href="{{ url_for('main.sponsor_profile', sid=sp.id) }}" class="flex flex-wrap items-center gap-4 py-4 ligne-plate group">
+    {{ avatar(sp.user, 44) }}
+    <div class="flex-1 min-w-[200px]">
+      <div class="flex items-center gap-2"><span class="font-semibold group-hover:text-terra-600">{{ sp.user.full_name }}</span>{{ level(sp.level) }}</div>
+      <div class="text-[13px] muted">{{ sp.position }}{% if sp.organization %} · {{ sp.organization }}{% endif %}</div>
+      <div class="text-xs muted mt-0.5">{{ t('Entreprise') if sp.kind == 'company' else seniority_label(sp.seniority) }} · {{ sp.years_experience }} {{ t('ans d\'expérience') }}{% if sp.user.city or sp.user.country_code %} · {{ sp.user.city or country_name(sp.user.country_code) }}{% endif %}</div>
     </div>
-    <div class="flex flex-wrap gap-1.5 mt-3.5">
-      <span class="chip">{{ t('Entreprise') if sp.kind == 'company' else seniority_label(sp.seniority) }}</span>
-      <span class="chip">{{ sp.years_experience }} {{ t('ans d\'expérience') }}</span>
-      {% if sp.user.city or sp.user.country_code %}<span class="chip"><i data-lucide="map-pin" class="w-3 h-3"></i>{{ sp.user.city or country_name(sp.user.country_code) }}</span>{% endif %}
+    <div class="flex gap-7 text-center">
+      <div><div class="font-bold">{{ sp.reputation|round|int }}</div><div class="text-[11px] muted">{{ t('réputation') }}</div></div>
+      <div><div class="font-bold text-terra-700">{{ recos.get(sp.user_id, 0) }}</div><div class="text-[11px] muted">{{ t('recommandations') }}</div></div>
+      <div><div class="font-bold" style="color:#276749">{{ embauches.get(sp.user_id, 0) }}</div><div class="text-[11px] muted">{{ t('embauchés') }}</div></div>
     </div>
-    <div class="stats-carte">
-      <div><b>{{ sp.reputation|round|int }}</b><span>{{ t('réputation') }}</span></div>
-      <div><b class="text-terra-700">{{ recos.get(sp.user_id, 0) }}</b><span>{{ t('recommandations') }}</span></div>
-      <div><b style="color:#276749">{{ embauches.get(sp.user_id, 0) }}</b><span>{{ t('embauchés') }}</span></div>
-    </div>
+    <i data-lucide="chevron-right" class="w-4 h-4 muted"></i>
   </a>
   {% endfor %}
 </div>
 {% else %}
-<div class="card p-12 text-center">
+<div class="py-12 text-center">
   <img src="{{ url_for('static', filename='images/illustrations/recherche_personne.svg') }}" alt="" class="w-40 mx-auto">
   <p class="font-bold text-[17px] mt-7">{{ t('Aucun parrain ne correspond à votre recherche') }}</p>
   <p class="muted text-[14px] mt-1">{{ t('Essayez avec moins de filtres.') }}</p>

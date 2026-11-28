@@ -115,7 +115,7 @@
 {% else %}
 {# ------------------------------------------------------------ vue Kanban #}
 <p class="text-[13px] muted mt-5 mb-4 flex items-center gap-2"><i data-lucide="move" class="!w-4 !h-4"></i>{{ t('Glissez une carte pour changer d\'étape. Les dates et les rappels de relance se remplissent tout seuls.') }}</p>
-<div class="flex gap-4 overflow-x-auto pb-5">
+<div class="flex gap-4 overflow-x-auto pb-5 defile-kanban">
   {% for key, label in stages %}
   {% set col = items|selectattr('stage', 'equalto', key)|list %}
   <div class="colonne">
@@ -123,6 +123,7 @@
       <span class="w-2 h-2 rounded-full" style="background:{{ STAGE_COLORS[key] }}"></span>
       <span class="font-semibold text-[14px]">{{ t(label) }}</span>
       <span class="compte" data-colcount="{{ key }}">{{ col|length }}</span>
+      <a href="{{ url_for('tracker.new', stage=key, project=f.project) }}" class="plus" title="{{ t('Ajouter') }}"><i data-lucide="plus" class="!w-4 !h-4"></i></a>
     </div>
     <div class="kanban-list" data-stage="{{ key }}">
       {% for x in col %}
@@ -145,7 +146,6 @@
       </div>
       {% endfor %}
     </div>
-    <a href="{{ url_for('tracker.new', stage=key, project=f.project) }}" class="colonne-ajout"><i data-lucide="plus"></i>{{ t('Ajouter') }}</a>
   </div>
   {% endfor %}
 </div>

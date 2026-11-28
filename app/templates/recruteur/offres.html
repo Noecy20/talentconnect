@@ -19,13 +19,14 @@
 </div>
 
 {% if jobs %}
-<div class="flex gap-5 overflow-x-auto pb-5 mt-7">
+<div class="flex gap-5 overflow-x-auto pb-5 mt-7 defile-kanban">
   {% for code, libelle, couleur in colonnes %}
   <div class="colonne !w-[300px]">
     <div class="colonne-tete">
       <span class="w-2 h-2 rounded-full" style="background:{{ couleur }}"></span>
       <span class="font-semibold text-[14px]">{{ libelle }}</span>
       <span class="compte" data-compte="{{ code }}"></span>
+      {% if code == 'draft' %}<a href="{{ url_for('recruiter.job_new') }}" class="plus" title="{{ t('Nouvelle offre') }}"><i data-lucide="plus" class="!w-4 !h-4"></i></a>{% endif %}
     </div>
     <div class="kanban-list" data-etat="{{ code }}">
       {% for j in jobs if etat(j) == code %}{% set c = counts[j.id] %}
@@ -49,7 +50,6 @@
       </div>
       {% endfor %}
     </div>
-    {% if code == 'draft' %}<a href="{{ url_for('recruiter.job_new') }}" class="colonne-ajout"><i data-lucide="plus"></i>{{ t('Nouvelle offre') }}</a>{% endif %}
   </div>
   {% endfor %}
 </div>

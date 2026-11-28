@@ -474,3 +474,15 @@
 .rapport-defi .jour{display:inline-block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--terra-600,#D86730);margin-bottom:.35rem}
 @media print{.imprimer-non,.menu,.entete,.site-entete,footer{display:none!important}.rapport-tete{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .test-perso.section .test-progres{top:76px}
+
+/* 12. Sans blocs : sections à plat, séparées par un simple trait ------------- */
+.ui .card.plat{background:transparent;box-shadow:none;border:0;border-radius:0;padding-left:0;padding-right:0}
+.ui .plat-trait{border-top:1px solid var(--line);padding-top:1.6rem}
+.ui .ligne-plate{border-bottom:1px solid var(--line)}
+/* Kanban : défilement horizontal sans barre visible (molette ou glisser le fond) */
+.defile-kanban{scrollbar-width:none;-ms-overflow-style:none;cursor:grab}
+.defile-kanban::-webkit-scrollbar{display:none}
+.defile-kanban.glisse{cursor:grabbing;user-select:none}
+.defile-kanban .kanban-card,.defile-kanban .carte-suivi{cursor:grab}
+.colonne-tete .plus{display:grid;place-items:center;width:24px;height:24px;border-radius:999px;color:var(--muted)}
+.colonne-tete .plus:hover{color:var(--terra-700);background:var(--bg-2)}

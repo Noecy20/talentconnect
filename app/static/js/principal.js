@@ -10,7 +10,32 @@
     document.querySelectorAll('.progress > span[data-w]').forEach(s => { s.style.width = s.dataset.w + '%'; });
   }
 
-  function init() { icones(); barres(); }
+  // Tableaux Kanban : pas de barre de défilement visible. On fait défiler les colonnes
+  // avec la molette (vers le bas = vers la droite) ou en faisant glisser le fond du tableau.
+  function kanbans() {
+    document.querySelectorAll('.defile-kanban:not([data-pret])').forEach(k => {
+      k.dataset.pret = '1';
+      k.addEventListener('wheel', e => {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) return;     // défilement horizontal natif
+        const liste = e.target.closest('.kanban-list');
+        if (liste && liste.scrollHeight > liste.clientHeight) return;          // la colonne défile elle-même
+        const max = k.scrollWidth - k.clientWidth;
+        if (max <= 0) return;
+        const avant = k.scrollLeft;
+        k.scrollLeft = Math.max(0, Math.min(max, avant + e.deltaY));
+        if (k.scrollLeft !== avant) e.preventDefault();
+      }, { passive: false });
+      let x0 = null, g0 = 0;
+      k.addEventListener('pointerdown', e => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('a,button,input,select,textarea,.kanban-card,.carte-suivi')) return;
+        x0 = e.clientX; g0 = k.scrollLeft; k.classList.add('glisse');
+      });
+      window.addEventListener('pointermove', e => { if (x0 !== null) k.scrollLeft = g0 - (e.clientX - x0); });
+      window.addEventListener('pointerup', () => { x0 = null; k.classList.remove('glisse'); });
+    });
+  }
+
+  function init() { icones(); barres(); kanbans(); }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSwap', init);
   document.addEventListener('htmx:afterSettle', icones);

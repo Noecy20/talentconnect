@@ -17,7 +17,7 @@
 
 <div class="grid xl:grid-cols-[1fr_380px] gap-6 items-start">
   <div class="space-y-6">
-    <form method="post" enctype="multipart/form-data" class="card card-pad space-y-4" x-data="{mode:'text'}">
+    <form method="post" enctype="multipart/form-data" class="space-y-4" x-data="{mode:'text'}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add">
       <h3 class="font-display font-semibold text-lg">{{ t('Ajouter des connaissances') }}</h3>
       <div class="flex flex-wrap gap-2">
@@ -31,16 +31,16 @@
       <button class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i>{{ t('Ajouter') }}</button>
     </form>
 
-    <div class="card">
-      <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--line)"><h3 class="font-display font-semibold">{{ t('Base de connaissances') }}</h3><span class="chip">{{ docs|length + auto_docs|length }} {{ t('éléments') }}</span></div>
+    <div class="plat-trait">
+      <div class="pb-3 border-b flex items-center justify-between" style="border-color:var(--line)"><h3 class="font-display font-semibold">{{ t('Base de connaissances') }}</h3><span class="chip">{{ docs|length + auto_docs|length }} {{ t('éléments') }}</span></div>
       {% for title, text in auto_docs %}
-      <div class="px-5 py-3 border-b flex gap-3 items-start" style="border-color:var(--line)">
+      <div class="py-3 border-b flex gap-3 items-start" style="border-color:var(--line)">
         <span class="chip chip-blue !text-[10px] mt-0.5">{{ t('auto') }}</span>
         <div class="flex-1 min-w-0"><div class="text-sm font-semibold">{{ t(title) }}</div><div class="text-xs muted line-clamp-2">{{ text }}</div></div>
       </div>
       {% endfor %}
       {% for d in docs %}
-      <div class="px-5 py-3 border-b last:border-0 flex gap-3 items-start" style="border-color:var(--line)">
+      <div class="py-3 border-b last:border-0 flex gap-3 items-start" style="border-color:var(--line)">
         <span class="chip chip-terra !text-[10px] mt-0.5">{{ d.source }}</span>
         <div class="flex-1 min-w-0"><div class="text-sm font-semibold">{{ d.title }}</div><div class="text-xs muted line-clamp-2">{{ d.content }}</div></div>
         <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="doc_id" value="{{ d.id }}"><button class="btn btn-ghost btn-sm btn-icon"><i data-lucide="trash-2" class="w-4 h-4"></i></button></form>
@@ -48,8 +48,8 @@
       {% endfor %}
     </div>
   </div>
-  <aside class="space-y-6 xl:sticky xl:top-24">
-    <form method="post" class="card card-pad space-y-4">
+  <aside class="space-y-8 xl:sticky xl:top-24 xl:pl-6 xl:border-l" style="border-color:var(--line)">
+    <form method="post" class="space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="settings">
       <h3 class="font-display font-semibold">{{ t('Personnalité') }}</h3>
       <div><label class="label">{{ t('Nom') }}</label><input name="name" value="{{ a.name }}" class="input"></div>
@@ -59,7 +59,7 @@
       <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="public" class="check" {% if a.public %}checked{% endif %}>{{ t('Interrogeable par les autres utilisateurs') }}</label>
       <button class="btn btn-dark w-full">{{ t('Enregistrer') }}</button>
     </form>
-    <div class="card card-pad">
+    <div class="plat-trait">
       <h3 class="font-display font-semibold mb-3">{{ t('Dernières questions reçues') }}</h3>
       {% for h in history %}<div class="text-sm py-2 border-b last:border-0" style="border-color:var(--line)"><div class="font-medium">{{ h.question }}</div><div class="text-xs muted">{{ h.asker.full_name if h.asker }} · {{ h.created_at|ago }}</div></div>
       {% else %}<p class="text-sm muted">{{ t('Aucune question pour le moment.') }}</p>{% endfor %}
