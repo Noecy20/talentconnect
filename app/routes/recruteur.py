@@ -126,6 +126,11 @@ def _fill_job(job, f):
     job.status = f.get("status", "open")
     d = f.get("deadline")
     job.deadline = date.fromisoformat(d) if d else None
+    # Pondération du score : le recruteur répartit les points entre les 7 critères.
+    # Identique aux valeurs de la plateforme (ou total nul) -> on garde la pondération par défaut.
+    poids = {k: max(0, min(100, to_int(f.get(f"p_{k}"), 0))) for k in scores.CRITERES}
+    defaut = scores.ponderations()
+    job.ponderations = None if (not any(poids.values()) or poids == defaut or f.get("p_defaut")) else poids
 
 
 @bp.route("/offres/nouvelle", methods=["GET", "POST"])
@@ -146,7 +151,42 @@ def job_new():
         return redirect(url_for("recruiter.job_pipeline", job_id=job.id))
     return render_template("recruteur/formulaire_offre.html", job=job, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
                            fields=[x["field"] for x in orientation.FIELDS],
-                           skill_suggestions=orientation.skill_suggestions(g.lang))
+                           skill_suggestions=orientation.skill_suggestions(g.lang),
+                           poids=scores.ponderations(job), poids_defaut=scores.ponderations())
+
+
+@bp.route("/offres/importer", methods=["POST"])
+@access_required
+def job_import():
+    """Pré-remplit une nouvelle offre à partir d'une annonce publiée sur le site de l'entreprise."""
+    if not current_user.recruiter.is_verified:
+        return redirect(url_for("recruiter.verification"))
+    from ..services.import_offre import lire_offre
+    d = lire_offre(request.form.get("url", ""))
+    if d.get("error"):
+        flash({"blocked": t("Ce site interdit la lecture automatique de ses pages : copiez le texte de l'annonce."),
+               "url": t("Ce lien n'est pas valide."),
+               "fetch": t("Impossible d'ouvrir cette page. Vérifiez que l'annonce est publique."),
+               }.get(d["error"], t("Aucune annonce n'a été trouvée sur cette page.")), "danger")
+        return redirect(url_for("recruiter.job_new"))
+    co = company()
+    pays = d["country_code"].upper() if d["country_code"].upper() in dict(geographie.countries()) else co.country_code
+    job = Job(company_id=co.id, recruiter_id=current_user.id, title=d["title"], description=d["description"],
+              contract_type=d["contract_type"], education_level=d["education_level"] or "bac",
+              min_experience=d["min_experience"] or 0, skills=d["skills"], soft_skills=d["soft_skills"],
+              languages=d["languages"], country_code=pays, city=d["city"] or co.city,
+              salary_min=d["salary_min"], salary_max=d["salary_max"], currency=geographie.currency_for(pays),
+              status="open")
+    try:
+        job.deadline = date.fromisoformat(d["deadline"]) if d["deadline"] else None
+    except ValueError:
+        job.deadline = None
+    flash(t("Annonce importée depuis {source}. Relisez les champs, complétez-les puis publiez.", source=d["source"] or t("votre site")), "success")
+    return render_template("recruteur/formulaire_offre.html", job=job, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
+                           fields=[x["field"] for x in orientation.FIELDS],
+                           skill_suggestions=orientation.skill_suggestions(g.lang),
+                           poids=scores.ponderations(), poids_defaut=scores.ponderations(),
+                           import_url=d["url"], action=url_for("recruiter.job_new"))
 
 
 @bp.route("/offres/<int:job_id>/modifier", methods=["GET", "POST"])
@@ -161,7 +201,8 @@ def job_edit(job_id):
         return redirect(url_for("recruiter.job_pipeline", job_id=job.id))
     return render_template("recruteur/formulaire_offre.html", job=job, contracts=CONTRACT_TYPES, levels=EDUCATION_LEVELS,
                            fields=[x["field"] for x in orientation.FIELDS],
-                           skill_suggestions=orientation.skill_suggestions(g.lang))
+                           skill_suggestions=orientation.skill_suggestions(g.lang),
+                           poids=scores.ponderations(job), poids_defaut=scores.ponderations())
 
 
 @bp.route("/offres/<int:job_id>/statut", methods=["POST"])
@@ -241,7 +282,8 @@ def job_triage(job_id):
         a.ai_group, a.ai_reason = scores.triage(a)
     db.session.commit()
     tpls = {k: emails.get_template(k, job.company_id) for k in ("interview", "second_chance", "rejected")}
-    return render_template("recruteur/tri.html", job=job, pending=pending, tpls=tpls,
+    modeles = [{"nom": n, "objet": o, "corps": c} for n, o, c in emails.all_templates(job.company_id)]
+    return render_template("recruteur/tri.html", job=job, pending=pending, tpls=tpls, modeles=modeles,
                            hi=scores.Setting.get("triage_interview"), mid=scores.Setting.get("triage_second_chance"))
 
 
@@ -261,7 +303,9 @@ def application(app_id):
     a = own_app(app_id)
     from ..modeles import Message
     msgs = Message.query.filter_by(application_id=a.id).order_by(Message.created_at).all()
-    return render_template("recruteur/candidat.html", a=a, job=a.job, msgs=msgs, **candidate_context(a.candidate, a.job))
+    modeles = [{"nom": n, "objet": o, "corps": c} for n, o, c in emails.all_templates(a.job.company_id)]
+    return render_template("recruteur/candidat.html", a=a, job=a.job, msgs=msgs, modeles=modeles,
+                           **candidate_context(a.candidate, a.job))
 
 
 @bp.route("/talents/<int:user_id>")
@@ -385,21 +429,59 @@ def pool_remove(pid):
 @bp.route("/modeles", methods=["GET", "POST"])
 @access_required
 def templates():
+    """Modèles de message : les 4 réponses automatiques + les modèles créés par le recruteur."""
     co = company()
     kinds = ["ack", "interview", "second_chance", "rejected"]
     if request.method == "POST":
-        for k in kinds:
-            tpl = MessageTemplate.query.filter_by(company_id=co.id, kind=k).first()
-            if not tpl:
-                tpl = MessageTemplate(company_id=co.id, kind=k)
-                db.session.add(tpl)
-            tpl.subject = request.form.get(f"subject_{k}", "")
-            tpl.body = request.form.get(f"body_{k}", "")
-        db.session.commit()
-        flash(t("Modèles enregistrés."), "success")
+        action = request.form.get("action", "systeme")
+        if action == "ajouter":
+            nom, objet, corps = (request.form.get(x, "").strip() for x in ("name", "subject", "body"))
+            if not nom or not corps:
+                flash(t("Donnez un nom et un texte au modèle."), "danger")
+            else:
+                db.session.add(MessageTemplate(company_id=co.id, kind="custom", name=nom[:120], subject=objet[:255], body=corps))
+                db.session.commit()
+                flash(t("Nouveau modèle ajouté."), "success")
+        elif action in ("modifier", "supprimer"):
+            tpl = MessageTemplate.query.filter_by(id=to_int(request.form.get("id")), company_id=co.id, kind="custom").first_or_404()
+            if action == "supprimer":
+                db.session.delete(tpl)
+                flash(t("Modèle supprimé."), "info")
+            else:
+                tpl.name = (request.form.get("name", "").strip() or tpl.name)[:120]
+                tpl.subject = request.form.get("subject", "").strip()[:255]
+                tpl.body = request.form.get("body", "").strip()
+                flash(t("Modèle enregistré."), "success")
+            db.session.commit()
+        else:
+            for k in kinds:
+                tpl = MessageTemplate.query.filter_by(company_id=co.id, kind=k).first()
+                if not tpl:
+                    tpl = MessageTemplate(company_id=co.id, kind=k)
+                    db.session.add(tpl)
+                tpl.subject = request.form.get(f"subject_{k}", "")
+                tpl.body = request.form.get(f"body_{k}", "")
+            db.session.commit()
+            flash(t("Modèles enregistrés."), "success")
         return redirect(url_for("recruiter.templates"))
     tpls = {k: emails.get_template(k, co.id) for k in kinds}
-    return render_template("recruteur/modeles_messages.html", tpls=tpls)
+    return render_template("recruteur/modeles_messages.html", tpls=tpls, perso=emails.custom_templates(co.id))
+
+
+@bp.route("/candidatures/<int:app_id>/message", methods=["POST"])
+@access_required
+def send_message(app_id):
+    """Message libre (ou tiré d'un modèle) envoyé au candidat, par e-mail et dans l'app."""
+    a = own_app(app_id)
+    objet, corps = request.form.get("subject", "").strip(), request.form.get("body", "").strip()
+    if not corps:
+        flash(t("Le message est vide."), "danger")
+        return redirect(url_for("recruiter.application", app_id=a.id))
+    ctx = recrutement._ctx(a, current_user, note=request.form.get("note", ""))
+    emails.send(a.candidate, emails.render_text(objet or t("Message de {company}", company=a.job.company.name), **ctx),
+                emails.render_text(corps, **ctx), kind="custom", sender=current_user, application=a)
+    flash(t("Message envoyé à {name}.", name=a.candidate.full_name), "success")
+    return redirect(url_for("recruiter.application", app_id=a.id))
 
 
 # --------------------------------------------------------------------------- preuve d'appartenance à l'entreprise

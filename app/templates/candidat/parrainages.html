@@ -16,6 +16,7 @@
       <div><div class="text-[30px] font-bold tracking-tight leading-none">{{ reqs|length }}</div><div class="text-[13px] mt-1.5" style="color:var(--ink-2)">{{ t('invitation(s) envoyée(s)') }}</div></div>
     </div>
     <button type="button" class="btn btn-dark mt-8" @click="fenetre=true"><i data-lucide="send"></i>{{ t('Demander un parrainage') }}</button>
+    <a href="{{ url_for('main.sponsors_directory') }}" class="btn btn-ghost mt-8 ml-2"><i data-lucide="users-round"></i>{{ t('Trouver un parrain dans l\'annuaire') }}</a>
   </div>
   <img src="{{ url_for('static', filename='images/illustrations/profil.svg') }}" alt="" class="hidden lg:block w-full">
 </section>
@@ -42,7 +43,7 @@
       <div class="flex items-start gap-4">
         {{ avatar(s.sponsor, 48) }}
         <div class="flex-1 min-w-0">
-          <div class="flex flex-wrap items-center gap-2"><span class="font-bold">{{ s.sponsor.full_name }}</span>{{ level(sp.level if sp else None) }}
+          <div class="flex flex-wrap items-center gap-2">{% if sp and sp.status == 'approved' %}<a href="{{ url_for('main.sponsor_profile', sid=sp.id) }}" class="font-bold hover:text-terra-600">{{ s.sponsor.full_name }}</a>{% else %}<span class="font-bold">{{ s.sponsor.full_name }}</span>{% endif %}{{ level(sp.level if sp else None) }}
             {% if s.status != 'active' %}<span class="chip">{{ t('En attente de validation') }}</span>{% endif %}</div>
           <div class="text-[13.5px] muted mt-0.5">{{ sp.position if sp }}{% if s.organization %} · {{ s.organization }}{% endif %}{% if s.period %} · {{ s.period }}{% endif %}</div>
         </div>

@@ -1,0 +1,59 @@
+{% extends "espace.html" %}
+{% block title %}Power BI{% endblock %}
+{% block page_title %}{{ t('Tableau de bord Power BI') }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <p class="muted text-[14.5px] max-w-2xl">{{ t('Les données du tableau de bord, prêtes pour Power BI. Avec les liens directs, Power BI lit le site lui-même : il suffit de cliquer sur « Actualiser » pour avoir les derniers chiffres.') }}</p>
+  <div class="flex gap-2">
+    <a href="{{ url_for('admin.powerbi_zip') }}" class="btn btn-primary"><i data-lucide="download"></i>{{ t('Tout télécharger (ZIP)') }}</a>
+    <form method="post" onsubmit="return confirm({{ t('Créer un nouveau lien ? L\'ancien cessera de fonctionner.')|js }})">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-ghost" title="{{ t('Si un lien a été partagé par erreur') }}"><i data-lucide="refresh-cw" class="w-4 h-4"></i>{{ t('Nouveau lien secret') }}</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid xl:grid-cols-2 gap-6 mt-7 items-start">
+  {% for titre, icone, texte, fichiers in pages %}
+  <section class="card card-pad">
+    <div class="flex items-center gap-3">
+      <span class="w-10 h-10 rounded-2xl grid place-items-center bg-grad text-white"><i data-lucide="{{ icone }}" class="w-5 h-5"></i></span>
+      <h2 class="font-display font-semibold text-lg">{{ titre }}</h2>
+    </div>
+    <p class="text-sm muted mt-2">{{ texte }}</p>
+    <div class="mt-4 space-y-2" x-data="{copie: ''}">
+      {% for f in fichiers %}
+      <div class="flex items-center gap-2 text-sm py-1.5" style="border-bottom:1px solid var(--line)">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-terra-500 shrink-0"></i>
+        <span class="font-medium flex-1 truncate">{{ f }}</span>
+        <button type="button" class="text-[12.5px] font-semibold text-terra-600" @click="navigator.clipboard.writeText({{ liens[f]|tojson|forceescape }}); copie = '{{ f }}'; setTimeout(() => copie = '', 1500)">
+          <span x-show="copie !== '{{ f }}'">{{ t('Copier le lien') }}</span><span x-show="copie === '{{ f }}'" x-cloak>{{ t('Copié ✓') }}</span></button>
+        <a href="{{ liens[f] }}" class="muted hover:text-terra-600" title="{{ t('Télécharger') }}"><i data-lucide="download" class="w-4 h-4"></i></a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+<section class="card card-pad mt-6">
+  <h2 class="font-display font-semibold">{{ t('Relier Power BI au site (actualisation en un clic)') }}</h2>
+  <ol class="text-sm mt-3 space-y-1.5 list-decimal pl-5">
+    <li>{{ t('Dans Power BI Desktop : Accueil > Obtenir des données > Web.') }}</li>
+    <li>{{ t('Collez le lien copié ci-dessus (un fichier à la fois), puis validez : Power BI reconnaît un fichier CSV.') }}</li>
+    <li>{{ t('Choisissez le délimiteur « Point-virgule » et l\'origine « 65001 : Unicode (UTF-8) », puis Charger.') }}</li>
+    <li>{{ t('Par la suite, Accueil > Actualiser récupère les données du jour.') }}</li>
+  </ol>
+  <p class="text-[13px] muted mt-3"><i data-lucide="lock" class="w-3.5 h-3.5 inline"></i> {{ t('Les fichiers ne contiennent ni nom, ni e-mail, ni téléphone. Le lien est secret : ne le publiez pas. Créez-en un nouveau s\'il a été partagé par erreur.') }}</p>
+</section>
+
+<section class="card card-pad mt-6">
+  <h2 class="font-display font-semibold">{{ t('Indicateurs de la page « L\'emploi dans le monde »') }}</h2>
+  <div class="scroll-x mt-3"><table class="table">
+    <thead><tr><th>{{ t('Colonne') }}</th><th>{{ t('Indicateur') }}</th><th>{{ t('Thème') }}</th><th>{{ t('Définition') }}</th></tr></thead>
+    <tbody>{% for code, d in definitions.items() %}<tr>
+      <td class="font-mono text-xs">{{ d[0] }}</td><td class="text-sm font-semibold">{{ d[1] }}</td><td class="text-sm">{{ d[2] }}</td><td class="text-sm muted">{{ d[3] }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  <p class="text-xs muted mt-3">{{ t('Source : Banque mondiale, World Development Indicators (estimations de l\'OIT, ILOSTAT).') }}</p>
+</section>
+{% endblock %}

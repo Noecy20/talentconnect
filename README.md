@@ -246,7 +246,8 @@ Prérequis : Git, à installer depuis https://git-scm.com.
 ```
 app/
   __init__.py        création de l'application (create_app), contexte des gabarits, filtres
-  modeles.py         tous les modèles SQLAlchemy (tables)
+  modeles.py         tous les modèles SQLAlchemy (tables aux noms français : utilisateurs, offres,
+                     candidatures, profils_parrains, parrainages, paiements, vivier…)
   interface.py       menu de chaque rôle, « Création rapide », statistiques du menu profil
   outils.py          décorateurs d'accès, conversion des formulaires, fichiers envoyés
   langues.py         traductions de l'interface
@@ -255,7 +256,9 @@ app/
   routes/            un fichier par espace : accueil, authentification, candidat, recruteur,
                      parrain, admin, abonnement, assistant, messagerie, suivi, api
   ia/                scores, modele_rappel (+ modele_rappel.joblib), orientation, llm, rag
-  services/          recrutement, emails, suivi (candidatures), offres_externes (API d'offres)
+  services/          recrutement, emails, suivi (candidatures), offres_externes (API d'offres),
+                     import_offre (offre lue sur le site d'une entreprise), refus_parrain
+                     (une seule tentative au test parrain), powerbi (données du tableau de bord)
   generateur_cv/     CV Builder CVFlash d'origine + intégration
   templates/         base.html -> espace.html (connecté) / public.html (sans compte)
                      composants/ : en-tête, menu latéral, recherche, messages, macros (ui.html)
@@ -264,7 +267,9 @@ app/
   traductions/       en.json, es.json, pt.json
 migrations/          migrations Alembic (appliquées au démarrage)
 ml/                  entraînement des modèles, imports ESCO / O*NET, export Power BI
-tests/               test_parcours.py (toutes les pages), test_roles_performances.py
+powerbi/             fichiers CSV du tableau de bord + GUIDE_POWER_BI.md (pages, visuels, mesures DAX)
+tests/               test_parcours.py (toutes les pages), test_retours.py (dernières évolutions),
+                     test_roles_performances.py
 ```
 
 Pour modifier le design :

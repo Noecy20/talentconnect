@@ -230,9 +230,9 @@ kbd,.touche{font-family:inherit;font-size:.72rem;font-weight:600;padding:.2rem .
 
 
 /* 7. Kanban, messagerie, divers -------------------------------------------- */
-.kanban-col{background:var(--bg-2);border-radius:16px;min-width:270px;width:270px;padding:.75rem;display:flex;flex-direction:column;max-height:calc(100vh - 240px)}
+.kanban-col{background:transparent;min-width:270px;width:270px;padding:0 .2rem;display:flex;flex-direction:column;max-height:calc(100vh - 240px)}
 .kanban-list{flex:1;overflow-y:auto;min-height:80px;display:flex;flex-direction:column;gap:.6rem;padding:2px}
-.kanban-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8rem;cursor:grab;box-shadow:var(--shadow-sm);transition:box-shadow .15s}
+.kanban-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8rem;cursor:grab;box-shadow:none;transition:box-shadow .15s}
 .kanban-card:hover{box-shadow:var(--shadow)}
 .sortable-ghost{opacity:.4}
 

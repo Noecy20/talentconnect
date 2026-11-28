@@ -9,7 +9,7 @@ from ..services import emails
 
 bp = Blueprint("billing", __name__)
 
-METHODS = ["wave", "orange_money", "mtn_momo", "moov_money", "card", "bank", "paypal", "cash"]
+METHODS = ["wave", "orange_money", "mtn_momo", "moov_money", "card", "bank", "paypal"]
 
 
 @bp.route("/")
@@ -32,8 +32,12 @@ def pay(plan_id):
     if not ref:
         flash(t("Indiquez la référence de votre transaction."), "danger")
         return redirect(url_for("billing.pricing"))
+    method = request.form.get("method", "wave")
+    if method not in METHODS:  # les espèces ne sont plus acceptées pour les formules
+        flash(t("Choisissez un moyen de paiement proposé."), "danger")
+        return redirect(url_for("billing.pricing"))
     p = Payment(user_id=current_user.id, plan_id=plan.id, amount=plan.price, currency=plan.currency,
-                method=request.form.get("method", "wave"), reference=ref, note=request.form.get("note", ""))
+                method=method, reference=ref, note=request.form.get("note", ""))
     db.session.add(p)
     db.session.commit()
     for admin in User.query.filter_by(role="admin").all():

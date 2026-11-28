@@ -3,8 +3,51 @@
 {% block page_title %}{{ t('Modèles de messages') }}{% endblock %}
 {% block content %}
 <p class="muted mb-6 max-w-2xl">{{ t('Ces messages partent par e-mail (Brevo) et restent visibles dans l\'app. Variables disponibles :') }} <code class="chip">{candidate}</code> <code class="chip">{job}</code> <code class="chip">{company}</code> <code class="chip">{recruiter}</code> <code class="chip">{note}</code> <code class="chip">{feedback}</code></p>
+
+{# ---------------------------------------------------------------- mes modèles personnalisés #}
+<section class="mb-10" x-data="{ouvert: {{ 'true' if not perso else 'false' }}}">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+    <div>
+      <h2 class="font-display font-semibold text-lg">{{ t('Mes modèles') }}</h2>
+      <p class="text-sm muted">{{ t('Créez vos propres messages (relance, demande de documents, convocation à un test…) et réutilisez-les depuis la fiche candidat ou le tri IA.') }}</p>
+    </div>
+    <button type="button" @click="ouvert = !ouvert" class="btn btn-primary"><i data-lucide="plus"></i>{{ t('Nouveau modèle') }}</button>
+  </div>
+
+  <form method="post" x-show="ouvert" x-cloak x-transition class="card card-pad space-y-3 mb-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="ajouter">
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div><label class="label">{{ t('Nom du modèle') }}</label><input name="name" class="input" required maxlength="120" placeholder="{{ t('Ex : Demande de pièces complémentaires') }}"></div>
+      <div><label class="label">{{ t('Objet de l\'e-mail') }}</label><input name="subject" class="input" maxlength="255" placeholder="{{ t('Ex : Votre candidature — {job}') }}"></div>
+    </div>
+    <div><label class="label">{{ t('Message') }}</label><textarea name="body" class="textarea !min-h-[180px] text-sm" required placeholder="{{ t('Bonjour {candidate},') }}"></textarea></div>
+    <div class="flex gap-2"><button class="btn btn-primary">{{ t('Ajouter le modèle') }}</button><button type="button" @click="ouvert=false" class="btn btn-ghost">{{ t('Annuler') }}</button></div>
+  </form>
+
+  {% if perso %}
+  <div class="grid lg:grid-cols-2 gap-5">
+    {% for m in perso %}
+    <form method="post" class="card card-pad space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ m.id }}">
+      <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5 text-terra-500"></i>
+        <input name="name" value="{{ m.name }}" class="input !py-1.5 font-semibold" maxlength="120"></div>
+      <input name="subject" value="{{ m.subject }}" class="input" placeholder="{{ t('Objet de l\'e-mail') }}">
+      <textarea name="body" class="textarea !min-h-[160px] text-sm">{{ m.body }}</textarea>
+      <div class="flex gap-2">
+        <button name="action" value="modifier" class="btn btn-primary btn-sm">{{ t('Enregistrer') }}</button>
+        <button name="action" value="supprimer" class="btn btn-ghost btn-sm ml-auto" onclick="return confirm({{ t('Supprimer ce modèle ?')|js }})"><i data-lucide="trash-2" class="w-4 h-4"></i>{{ t('Supprimer') }}</button>
+      </div>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+{# ---------------------------------------------------------------- réponses automatiques #}
+<h2 class="font-display font-semibold text-lg">{{ t('Réponses automatiques') }}</h2>
+<p class="text-sm muted mb-4">{{ t('Envoyées par la plateforme à la réception d\'une candidature et lors de vos décisions.') }}</p>
 <form method="post" class="grid lg:grid-cols-2 gap-5">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="systeme">
   {% for k, label, icon in [('ack', t('Accusé de réception (automatique)'), 'mail-check'), ('interview', t('Invitation à un entretien'), 'calendar-check'), ('second_chance', t('Seconde chance'), 'sparkles'), ('rejected', t('Refus avec retour constructif'), 'message-square-heart')] %}
   <div class="card card-pad space-y-3">
     <div class="flex items-center gap-2"><i data-lucide="{{ icon }}" class="w-5 h-5 text-terra-500"></i><h3 class="font-display font-semibold">{{ label }}</h3></div>

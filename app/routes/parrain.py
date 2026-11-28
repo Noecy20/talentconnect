@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, make_response
 from flask_login import current_user, login_required
 
 from ..extensions import db
@@ -9,6 +9,7 @@ from ..outils import role_required, to_int
 from ..langues import t
 from ..ia import scores
 from ..services import emails
+from ..services import refus_parrain as refus
 
 bp = Blueprint("sponsor", __name__)
 
@@ -81,7 +82,19 @@ def dashboard():
 @role_required("sponsor")
 def eligibility():
     sp = current_user.sponsor
+    nav = refus.navigateur()
+    # Une seule tentative : un dossier refusé, ou une personne déjà refusée sous un autre compte
+    # (même e-mail, LinkedIn, téléphone, nom + organisation ou même navigateur), est bloqué.
+    bloque = sp.status == "rejected"
+    if not bloque and sp.status not in ("approved", "pending_review") and refus.deja_refuse(current_user, sp, nav):
+        bloque = True
+        sp.status, sp.level = "rejected", None
+        refus.memoriser(current_user, sp, nav)
+        db.session.commit()
     if request.method == "POST":
+        if bloque:
+            flash(t("Vous avez déjà passé le test d'éligibilité sans être retenu : une seule tentative est autorisée."), "danger")
+            return redirect(url_for("sponsor.eligibility"))
         f = request.form
         sp.kind = f.get("kind", "individual")
         sp.position = f.get("position", "").strip()
@@ -95,7 +108,16 @@ def eligibility():
         sp.team_size = to_int(f.get("team_size"), 0)
         sp.registration_number = f.get("registration_number", "").strip()
         sp.bio = f.get("bio", "").strip()
+        if refus.deja_refuse(current_user, sp, nav):
+            # L'e-mail professionnel ou le LinkedIn saisis appartiennent à une personne déjà refusée
+            sp.status, sp.level = "rejected", None
+            refus.memoriser(current_user, sp, nav)
+            db.session.commit()
+            flash(t("Ces informations correspondent à une demande déjà refusée : une seule tentative est autorisée."), "danger")
+            return redirect(url_for("sponsor.eligibility"))
         status = scores.decide_sponsor(sp, current_user)
+        if status == "rejected":
+            refus.memoriser(current_user, sp, nav)
         db.session.commit()
         if status == "approved":
             # Les recommandations en attente deviennent visibles
@@ -105,10 +127,12 @@ def eligibility():
         elif status == "pending_review":
             flash(t("Votre dossier est en cours de vérification par notre équipe."), "info")
         else:
-            flash(t("Votre profil ne remplit pas encore les critères pour devenir parrain."), "warning")
+            flash(t("Votre profil ne remplit pas les critères pour devenir parrain."), "warning")
         nxt = request.args.get("next")
         if nxt and nxt.startswith("/") and status != "rejected":
-            return redirect(nxt)
-        return redirect(url_for("sponsor.eligibility", done=1))
-    return render_template("parrain/eligibilite.html", sp=sp, seniorities=SENIORITIES, levels=EDUCATION_LEVELS,
-                           auto=Setting.get("sponsor_auto_approve"), minimum=Setting.get("sponsor_min_score"))
+            return refus.poser_cookie(redirect(nxt))
+        return refus.poser_cookie(redirect(url_for("sponsor.eligibility", done=1)))
+    page = render_template("parrain/eligibilite.html", sp=sp, seniorities=SENIORITIES, levels=EDUCATION_LEVELS,
+                           auto=Setting.get("sponsor_auto_approve"), minimum=Setting.get("sponsor_min_score"),
+                           bloque=bloque)
+    return refus.poser_cookie(make_response(page))

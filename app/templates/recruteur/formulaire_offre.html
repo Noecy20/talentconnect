@@ -3,7 +3,19 @@
 {% block title %}{{ t('Offre') }}{% endblock %}
 {% block page_title %}{{ t('Modifier l\'offre') if job.id else t('Nouvelle offre') }}{% endblock %}
 {% block content %}
-<form method="post" class="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
+{% if not job.id %}
+{# Import d'une annonce déjà publiée sur le site de l'entreprise #}
+<form method="post" action="{{ url_for('recruiter.job_import') }}" class="card card-pad mb-6 flex flex-wrap items-end gap-3" x-data="{envoi: false}" @submit="envoi = true">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="flex-1 min-w-[260px]">
+    <label class="label flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-terra-500"></i>{{ t('Importer une offre publiée sur votre site web') }}</label>
+    <input name="url" type="text" class="input" required value="{{ import_url or '' }}" placeholder="https://www.entreprise.com/carrieres/comptable-junior">
+    <p class="help">{{ t('Collez le lien de l\'annonce : le formulaire se remplit tout seul (intitulé, description, contrat, lieu, salaire, compétences). Vous relisez avant de publier.') }}</p>
+  </div>
+  <button class="btn btn-dark" :disabled="envoi"><i data-lucide="download" class="w-4 h-4" x-show="!envoi"></i><span x-show="!envoi">{{ t('Importer') }}</span><span x-show="envoi" x-cloak>{{ t('Lecture de la page…') }}</span></button>
+</form>
+{% endif %}
+<form method="post" {% if action %}action="{{ action }}"{% endif %} class="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="space-y-6">
     <section class="card card-pad space-y-5">
@@ -22,6 +34,30 @@
       <div><label class="label">{{ t('Compétences requises') }}</label>{{ tags('skills', job.skills, t('Ex : Excel, Sage, Fiscalité'), skill_suggestions) }}</div>
       <div><label class="label">{{ t('Soft skills') }}</label>{{ tags('soft_skills', job.soft_skills, t('Ex : Rigueur'), ["Communication","Leadership","Travail d'équipe","Rigueur","Autonomie","Adaptabilité","Organisation","Esprit d'analyse"]) }}</div>
       <div><label class="label">{{ t('Langues') }}</label>{{ tags('languages', job.languages, t('Ex : Anglais')) }}</div>
+    </section>
+    {# Pondération : le recruteur décide de l'importance de chaque critère pour CETTE offre #}
+    <section class="card card-pad space-y-4" x-data='{p: {{ poids|tojson }}, d: {{ poids_defaut|tojson }},
+        get total() { return Object.values(this.p).reduce((a, b) => a + (+b || 0), 0) },
+        pct(k) { return this.total ? Math.round(this.p[k] / this.total * 100) : 0 } }'>
+      <div class="flex flex-wrap items-center gap-2">
+        <i data-lucide="sliders-horizontal" class="w-5 h-5 text-terra-500"></i>
+        <h2 class="font-display font-semibold">{{ t('Pondération du score de compatibilité') }}</h2>
+        <button type="button" @click="p = Object.assign({}, d)" class="ml-auto text-[13px] font-semibold text-terra-600 inline-flex items-center gap-1"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>{{ t('Valeurs par défaut') }}</button>
+      </div>
+      <p class="text-sm muted -mt-2">{{ t('Donnez plus de points aux critères qui comptent le plus pour ce poste. Le score de chaque candidat est recalculé avec ces points.') }}</p>
+      <div class="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+        {% for k, label in [('skills', t('Compétences')), ('field', t('Filière')), ('experience', t('Expérience')), ('education', t('Études')), ('location', t('Localisation')), ('soft_skills', t('Soft skills')), ('languages', t('Langues'))] %}
+        <div>
+          <div class="flex justify-between text-sm mb-1"><span class="font-medium">{{ label }}</span>
+            <span><b class="text-terra-600" x-text="p.{{ k }}"></b> <span class="muted">{{ t('pts') }}</span> <span class="muted text-xs" x-text="'(' + pct('{{ k }}') + ' %)'"></span></span></div>
+          <input type="range" min="0" max="50" name="p_{{ k }}" x-model.number="p.{{ k }}" class="w-full">
+        </div>
+        {% endfor %}
+      </div>
+      <p class="text-[13px]" :class="total ? 'muted' : 'text-[#C0392B]'">
+        <span x-show="total">{{ t('Total :') }} <b x-text="total"></b> {{ t('points, ramenés à 100 %.') }}</span>
+        <span x-show="!total">{{ t('Attribuez au moins un point : sinon la pondération par défaut sera utilisée.') }}</span>
+      </p>
     </section>
   </div>
   <aside class="space-y-6 xl:sticky xl:top-24">

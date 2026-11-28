@@ -27,7 +27,7 @@ APPLICATION_STATUSES = ["received", "shortlisted", "second_chance", "interview",
 
 # --------------------------------------------------------------------------- Utilisateurs
 class User(UserMixin, db.Model):
-    __tablename__ = "users"
+    __tablename__ = "utilisateurs"
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -96,9 +96,9 @@ def load_user(uid):
 
 # --------------------------------------------------------------------------- Candidat
 class CandidateProfile(db.Model):
-    __tablename__ = "candidate_profiles"
+    __tablename__ = "profils_candidats"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), unique=True, nullable=False)
     headline = db.Column(db.String(200), default="")
     summary = db.Column(db.Text, default="")
     field = db.Column(db.String(120), default="", index=True)          # filière
@@ -126,7 +126,7 @@ class CandidateProfile(db.Model):
 
 # --------------------------------------------------------------------------- Entreprise / recruteur
 class Company(db.Model):
-    __tablename__ = "companies"
+    __tablename__ = "entreprises"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     sector = db.Column(db.String(120), default="")
@@ -145,10 +145,10 @@ class Company(db.Model):
 
 
 class RecruiterProfile(db.Model):
-    __tablename__ = "recruiter_profiles"
+    __tablename__ = "profils_recruteurs"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
-    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), unique=True, nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey("entreprises.id"))
     position = db.Column(db.String(160), default="")
     # Preuve d'appartenance à l'entreprise
     work_email = db.Column(db.String(255), default="")
@@ -171,9 +171,9 @@ class RecruiterProfile(db.Model):
 
 # --------------------------------------------------------------------------- Parrainage
 class SponsorProfile(db.Model):
-    __tablename__ = "sponsor_profiles"
+    __tablename__ = "profils_parrains"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), unique=True, nullable=False)
     kind = db.Column(db.String(20), default="individual")  # individual | company
     position = db.Column(db.String(160), default="")
     organization = db.Column(db.String(200), default="")
@@ -201,9 +201,9 @@ class SponsorProfile(db.Model):
 
 class SponsorshipRequest(db.Model):
     """Lien envoyé par un candidat à un manager / une entreprise."""
-    __tablename__ = "sponsorship_requests"
+    __tablename__ = "demandes_parrainage"
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    candidate_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False)
     token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(24))
     invitee_name = db.Column(db.String(200), default="")
     invitee_email = db.Column(db.String(255), default="")
@@ -217,11 +217,11 @@ class SponsorshipRequest(db.Model):
 
 class Sponsorship(db.Model):
     """Recommandation structurée d'un parrain validé pour un candidat."""
-    __tablename__ = "sponsorships"
+    __tablename__ = "parrainages"
     id = db.Column(db.Integer, primary_key=True)
-    sponsor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    request_id = db.Column(db.Integer, db.ForeignKey("sponsorship_requests.id"))
+    sponsor_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    request_id = db.Column(db.Integer, db.ForeignKey("demandes_parrainage.id"))
     relation = db.Column(db.String(200), default="")      # ex : "J'étais son manager direct"
     period = db.Column(db.String(120), default="")        # ex : "2021 – 2023"
     organization = db.Column(db.String(200), default="")
@@ -238,10 +238,10 @@ class Sponsorship(db.Model):
 
 # --------------------------------------------------------------------------- Offres & candidatures
 class Job(db.Model):
-    __tablename__ = "jobs"
+    __tablename__ = "offres"
     id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
-    recruiter_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    company_id = db.Column(db.Integer, db.ForeignKey("entreprises.id"), nullable=False)
+    recruiter_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"))
     title = db.Column(db.String(200), nullable=False, index=True)
     description = db.Column(db.Text, default="")
     field = db.Column(db.String(120), default="", index=True)
@@ -260,6 +260,9 @@ class Job(db.Model):
     status = db.Column(db.String(20), default="open")  # open|closed|draft
     deadline = db.Column(db.Date)
     views = db.Column(db.Integer, default=0)
+    # Points de chaque critère du score de compatibilité, choisis par le recruteur pour cette offre
+    # (vide = pondération par défaut de la plateforme)
+    ponderations = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
     recruiter = db.relationship("User")
@@ -267,10 +270,10 @@ class Job(db.Model):
 
 
 class Application(db.Model):
-    __tablename__ = "applications"
+    __tablename__ = "candidatures"
     id = db.Column(db.Integer, primary_key=True)
-    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=False, index=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("offres.id"), nullable=False, index=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
     cover_letter = db.Column(db.Text, default="")
     status = db.Column(db.String(20), default="received", index=True)
     match_score = db.Column(db.Integer, default=0)
@@ -290,11 +293,11 @@ class Application(db.Model):
 
 class TalentPool(db.Model):
     """Vivier « Seconde chance » : candidats à reproposer sur les prochaines offres."""
-    __tablename__ = "talent_pool"
+    __tablename__ = "vivier"
     id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False, index=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    source_job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
+    company_id = db.Column(db.Integer, db.ForeignKey("entreprises.id"), nullable=False, index=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False)
+    source_job_id = db.Column(db.Integer, db.ForeignKey("offres.id"))
     note = db.Column(db.String(255), default="")
     created_at = db.Column(db.DateTime, default=now)
 
@@ -306,10 +309,10 @@ class TalentPool(db.Model):
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    recipient_id = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"))
+    recipient_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), index=True)
     recipient_email = db.Column(db.String(255))
-    application_id = db.Column(db.Integer, db.ForeignKey("applications.id"))
+    application_id = db.Column(db.Integer, db.ForeignKey("candidatures.id"))
     kind = db.Column(db.String(30), default="custom")  # ack|interview|second_chance|rejection|sponsorship|custom|system
     subject = db.Column(db.String(255), default="")
     body = db.Column(db.Text, default="")
@@ -323,10 +326,11 @@ class Message(db.Model):
 
 
 class MessageTemplate(db.Model):
-    __tablename__ = "message_templates"
+    __tablename__ = "modeles_messages"
     id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"))  # None = modèle global
-    kind = db.Column(db.String(30), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey("entreprises.id"))  # None = modèle global
+    kind = db.Column(db.String(30), nullable=False)  # ack|interview|second_chance|rejected|custom
+    name = db.Column(db.String(120), default="")      # nom d'un modèle personnalisé (kind = custom)
     language = db.Column(db.String(8), default="fr")
     subject = db.Column(db.String(255), default="")
     body = db.Column(db.Text, default="")
@@ -334,7 +338,7 @@ class MessageTemplate(db.Model):
 
 # --------------------------------------------------------------------------- Paiements
 class Plan(db.Model):
-    __tablename__ = "plans"
+    __tablename__ = "formules"
     id = db.Column(db.Integer, primary_key=True)
     role = db.Column(db.String(20), nullable=False)  # candidate|recruiter
     name = db.Column(db.String(120), nullable=False)
@@ -348,17 +352,17 @@ class Plan(db.Model):
 
 
 class Payment(db.Model):
-    __tablename__ = "payments"
+    __tablename__ = "paiements"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    plan_id = db.Column(db.Integer, db.ForeignKey("plans.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey("formules.id"))
     amount = db.Column(db.Integer, nullable=False)
     currency = db.Column(db.String(3), default="XOF")
-    method = db.Column(db.String(30), default="mobile_money")  # wave|orange_money|mtn_momo|moov|card|bank|cash|manual
+    method = db.Column(db.String(30), default="mobile_money")  # wave|orange_money|mtn_momo|moov|card|bank|paypal
     reference = db.Column(db.String(120), default="")
     note = db.Column(db.Text, default="")
     status = db.Column(db.String(20), default="pending", index=True)  # pending|confirmed|rejected
-    validated_by = db.Column(db.Integer, db.ForeignKey("users.id"))
+    validated_by = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"))
     validated_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
@@ -371,7 +375,7 @@ class Assistant(db.Model):
     """Chatbot personnel : chaque utilisateur le nourrit avec ses propres informations."""
     __tablename__ = "assistants"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), unique=True, nullable=False)
     name = db.Column(db.String(120), default="Mon assistant")
     persona = db.Column(db.Text, default="")  # ton, consignes
     public = db.Column(db.Boolean, default=True)  # interrogeable par les recruteurs / candidats
@@ -383,7 +387,7 @@ class Assistant(db.Model):
 
 
 class KnowledgeDoc(db.Model):
-    __tablename__ = "knowledge_docs"
+    __tablename__ = "documents_assistant"
     id = db.Column(db.Integer, primary_key=True)
     assistant_id = db.Column(db.Integer, db.ForeignKey("assistants.id"), nullable=False, index=True)
     title = db.Column(db.String(200), default="")
@@ -393,10 +397,10 @@ class KnowledgeDoc(db.Model):
 
 
 class ChatMessage(db.Model):
-    __tablename__ = "chat_messages"
+    __tablename__ = "echanges_assistant"
     id = db.Column(db.Integer, primary_key=True)
     assistant_id = db.Column(db.Integer, db.ForeignKey("assistants.id"), nullable=False, index=True)
-    asker_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    asker_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"))
     question = db.Column(db.Text)
     answer = db.Column(db.Text)
     sources = db.Column(db.JSON)
@@ -407,7 +411,7 @@ class ChatMessage(db.Model):
 
 # --------------------------------------------------------------------------- Paramètres
 class Setting(db.Model):
-    __tablename__ = "settings"
+    __tablename__ = "parametres"
     key = db.Column(db.String(80), primary_key=True)
     value = db.Column(db.JSON)
 
@@ -461,9 +465,9 @@ FINAL_STAGES = {"accepted", "refused"}
 
 class MobilityProject(db.Model):
     """Projet de mobilité professionnelle / géographique (ex. Abidjan, Québec)."""
-    __tablename__ = "mobility_projects"
+    __tablename__ = "projets_mobilite"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     country_code = db.Column(db.String(2), default="CI")
     city = db.Column(db.String(120), default="")
@@ -476,9 +480,9 @@ class MobilityProject(db.Model):
 
 class CVVersion(db.Model):
     """Version personnalisée du CV (instantané du CV Builder)."""
-    __tablename__ = "cv_versions"
+    __tablename__ = "versions_cv"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
     name = db.Column(db.String(160), nullable=False)
     data = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=now)
@@ -486,12 +490,12 @@ class CVVersion(db.Model):
 
 class TrackedApplication(db.Model):
     """Une opportunité suivie par le candidat, sur TalentConnect ou ailleurs (LinkedIn, Indeed, site carrière…)."""
-    __tablename__ = "tracked_applications"
+    __tablename__ = "suivi_candidatures"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    project_id = db.Column(db.Integer, db.ForeignKey("mobility_projects.id"), index=True)
-    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
-    application_id = db.Column(db.Integer, db.ForeignKey("applications.id"), unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("projets_mobilite.id"), index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("offres.id"))
+    application_id = db.Column(db.Integer, db.ForeignKey("candidatures.id"), unique=True)
     title = db.Column(db.String(200), nullable=False)
     company = db.Column(db.String(200), default="")
     city = db.Column(db.String(120), default="")
@@ -510,7 +514,7 @@ class TrackedApplication(db.Model):
     contact_role = db.Column(db.String(160), default="")
     contact_email = db.Column(db.String(255), default="")
     contact_phone = db.Column(db.String(60), default="")
-    cv_version_id = db.Column(db.Integer, db.ForeignKey("cv_versions.id"))
+    cv_version_id = db.Column(db.Integer, db.ForeignKey("versions_cv.id"))
     cv_file = db.Column(db.String(255))
     cover_letter = db.Column(db.Text, default="")
     notes = db.Column(db.Text, default="")
@@ -542,9 +546,9 @@ class TrackedApplication(db.Model):
 
 class TrackerEvent(db.Model):
     """Historique : changement d'étape, échange avec le recruteur, relance, entretien…"""
-    __tablename__ = "tracker_events"
+    __tablename__ = "evenements_suivi"
     id = db.Column(db.Integer, primary_key=True)
-    tracker_id = db.Column(db.Integer, db.ForeignKey("tracked_applications.id"), nullable=False, index=True)
+    tracker_id = db.Column(db.Integer, db.ForeignKey("suivi_candidatures.id"), nullable=False, index=True)
     kind = db.Column(db.String(20), default="note")  # stage|note|email|call|meeting|interview|followup
     content = db.Column(db.Text, default="")
     at = db.Column(db.DateTime, default=now)
@@ -553,11 +557,26 @@ class TrackerEvent(db.Model):
 
 class StoredFile(db.Model):
     """Fichiers envoyés (justificatifs, CV) stockés dans la base : ils survivent aux redémarrages de l'hébergeur."""
-    __tablename__ = "stored_files"
+    __tablename__ = "fichiers"
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"), index=True)
     filename = db.Column(db.String(255), default="")
     mimetype = db.Column(db.String(120), default="application/octet-stream")
     size = db.Column(db.Integer, default=0)
     data = db.Column(db.LargeBinary, nullable=False)
+    created_at = db.Column(db.DateTime, default=now)
+
+
+class RefusParrain(db.Model):
+    """Empreintes d'une personne jugée non éligible comme parrain.
+
+    Une seule tentative est autorisée : on garde, sous forme hachée (aucune donnée lisible),
+    l'e-mail du compte, l'e-mail professionnel, le profil LinkedIn, le téléphone, le couple
+    nom + organisation et l'identifiant du navigateur. Une nouvelle demande qui reprend l'un
+    de ces éléments est bloquée, même depuis un autre compte."""
+    __tablename__ = "refus_parrains"
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20), nullable=False)          # email|linkedin|telephone|nom_organisation|navigateur
+    empreinte = db.Column(db.String(64), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("utilisateurs.id"))
     created_at = db.Column(db.DateTime, default=now)

@@ -3,7 +3,23 @@
 {% block title %}{{ t('Vivier seconde chance') }}{% endblock %}
 {% block page_title %}{{ t('Vivier seconde chance') }}{% endblock %}
 {% block content %}
-<p class="muted mb-6 max-w-2xl">{{ t('Les candidats placés en « seconde chance » sont conservés ici et reproposés automatiquement quand une nouvelle offre leur correspond.') }}</p>
+{# Le vivier = la réserve de talents propre à l'entreprise #}
+<div class="card card-pad mb-7" x-data="{ouvert: {{ 'false' if items else 'true' }}}">
+  <button type="button" @click="ouvert = !ouvert" class="w-full flex items-center gap-3 text-left">
+    <span class="w-10 h-10 rounded-2xl grid place-items-center bg-grad text-white shrink-0"><i data-lucide="users-round" class="w-5 h-5"></i></span>
+    <span class="flex-1"><span class="font-display font-semibold block">{{ t('Qu\'est-ce que le vivier de l\'entreprise ?') }}</span>
+      <span class="text-sm muted">{{ t('Votre réserve privée de bons candidats, à rappeler pour vos prochaines offres.') }}</span></span>
+    <i data-lucide="chevron-down" class="w-4 h-4 muted transition" :class="ouvert && 'rotate-180'"></i>
+  </button>
+  <div x-show="ouvert" x-cloak x-transition class="grid md:grid-cols-3 gap-5 mt-5 pt-5" style="border-top:1px solid var(--line)">
+    <div><div class="font-semibold text-[14px] flex items-center gap-2"><span class="chip chip-terra !px-2">1</span>{{ t('Un bon profil non retenu') }}</div>
+      <p class="text-sm muted mt-1.5">{{ t('Quand vous placez un candidat en « seconde chance » (tri IA ou fiche candidat), il n\'est pas perdu : il entre dans le vivier de votre entreprise.') }}</p></div>
+    <div><div class="font-semibold text-[14px] flex items-center gap-2"><span class="chip chip-terra !px-2">2</span>{{ t('Conservé pour votre entreprise') }}</div>
+      <p class="text-sm muted mt-1.5">{{ t('Le vivier est propre à votre entreprise : les autres recruteurs ne le voient pas. Le candidat est prévenu qu\'il reste dans vos contacts.') }}</p></div>
+    <div><div class="font-semibold text-[14px] flex items-center gap-2"><span class="chip chip-terra !px-2">3</span>{{ t('Reproposé automatiquement') }}</div>
+      <p class="text-sm muted mt-1.5">{{ t('À chaque nouvelle offre, la plateforme recalcule leur compatibilité et vous signale ceux qui correspondent : vous recrutez plus vite, sans repartir de zéro.') }}</p></div>
+  </div>
+</div>
 {% if items %}
 <div class="card"><div class="scroll-x"><table class="table">
   <thead><tr><th>{{ t('Talent') }}</th><th>{{ t('Offre d\'origine') }}</th><th>{{ t('Meilleure offre actuelle') }}</th><th>{{ t('Ajouté') }}</th><th></th></tr></thead>

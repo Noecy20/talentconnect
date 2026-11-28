@@ -40,10 +40,10 @@
             <div class="text-[12.5px] muted truncate mt-0.5">{{ c.sector or '—' }} · {{ c.city or country_name(c.country_code) }}</div>
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-          <div class="rounded-xl py-2" style="background:var(--bg)"><div class="font-bold text-[16px]">{{ ouvertes.get(c.id, 0) }}</div><div class="text-[11px] muted">{{ t('offres ouvertes') }}</div></div>
-          <div class="rounded-xl py-2" style="background:var(--sauge)"><div class="font-bold text-[16px]" style="color:#276749">{{ (rates[c.id] ~ '%') if rates[c.id] is not none else '—' }}</div><div class="text-[11px] muted">{{ t('réponses') }}</div></div>
-          <div class="rounded-xl py-2" style="background:var(--sable)"><div class="font-bold text-[16px]" style="color:#8A6116">{{ c.registration_number and 'RCCM' or '—' }}</div><div class="text-[11px] muted">{{ t('registre') }}</div></div>
+        <div class="stats-carte">
+          <div><b>{{ ouvertes.get(c.id, 0) }}</b><span>{{ t('offres ouvertes') }}</span></div>
+          <div><b style="color:#276749">{{ (rates[c.id] ~ '%') if rates[c.id] is not none else '—' }}</b><span>{{ t('réponses') }}</span></div>
+          <div><b style="color:#8A6116">{{ c.registration_number and 'RCCM' or '—' }}</b><span>{{ t('registre') }}</span></div>
         </div>
         {% if c.website %}<a href="{{ c.website if c.website.startswith('http') else 'https://' ~ c.website }}" target="_blank" rel="noopener" class="text-[12.5px] text-terra-600 font-semibold mt-3 inline-flex items-center gap-1 truncate max-w-full"><i data-lucide="external-link" class="!w-3.5 !h-3.5"></i>{{ c.website|replace('https://', '')|replace('http://', '') }}</a>{% endif %}
       </div>

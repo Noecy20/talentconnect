@@ -266,3 +266,102 @@ def personality_result():
         return jsonify({k: res[k] for k in ("genre", "reponses", "scores_pct", "type_dominant", "aile", "code",
                                             "profil_nuance", "fiable")})
     return render_template("personnalite/resultat.html", r=P.rapport(res), types=P.TYPES)
+
+
+# --------------------------------------------------------------------------- annuaire des parrains
+SENIORITES = ["employee", "manager", "senior_manager", "director", "executive"]
+
+
+def _stats_parrains(ids):
+    """Recommandations actives et candidats parrainés embauchés, par parrain."""
+    from ..modeles import Sponsorship
+    if not ids:
+        return {}, {}
+    recos = dict(db.session.query(Sponsorship.sponsor_id, func.count(Sponsorship.id))
+                 .filter(Sponsorship.sponsor_id.in_(ids), Sponsorship.status == "active")
+                 .group_by(Sponsorship.sponsor_id).all())
+    embauches = dict(db.session.query(Sponsorship.sponsor_id, func.count(func.distinct(Application.candidate_id)))
+                     .join(Application, Application.candidate_id == Sponsorship.candidate_id)
+                     .filter(Sponsorship.sponsor_id.in_(ids), Sponsorship.status == "active", Application.status == "hired")
+                     .group_by(Sponsorship.sponsor_id).all())
+    return recos, embauches
+
+
+@bp.route("/parrains")
+@login_required
+def sponsors_directory():
+    """Annuaire des parrains certifiés, avec recherche et filtres."""
+    f = {k: (request.args.get(k) or "").strip() for k in ("q", "niveau", "seniorite", "type", "pays", "ville", "exp", "tri")}
+    q = SponsorProfile.query.join(User, User.id == SponsorProfile.user_id).filter(SponsorProfile.status == "approved")
+    if f["q"]:
+        like = f"%{f['q']}%"
+        q = q.filter(db.or_(User.first_name.ilike(like), User.last_name.ilike(like),
+                            (User.first_name + " " + User.last_name).ilike(like),
+                            SponsorProfile.organization.ilike(like), SponsorProfile.position.ilike(like),
+                            SponsorProfile.bio.ilike(like)))
+    if f["niveau"] in ("gold", "silver", "bronze"):
+        q = q.filter(SponsorProfile.level == f["niveau"])
+    if f["seniorite"] in SENIORITES:
+        q = q.filter(SponsorProfile.seniority == f["seniorite"], SponsorProfile.kind == "individual")
+    if f["type"] in ("individual", "company"):
+        q = q.filter(SponsorProfile.kind == f["type"])
+    if f["pays"]:
+        q = q.filter(User.country_code == f["pays"].upper())
+    if f["ville"]:
+        q = q.filter(User.city.ilike(f"%{f['ville']}%"))
+    if f["exp"].isdigit():
+        q = q.filter(SponsorProfile.years_experience >= int(f["exp"]))
+    ordre = {"experience": SponsorProfile.years_experience.desc(), "recents": SponsorProfile.created_at.desc(),
+             "nom": User.last_name.asc()}.get(f["tri"], SponsorProfile.reputation.desc())
+    parrains = q.order_by(ordre, SponsorProfile.id.desc()).limit(200).all()
+    recos, embauches = _stats_parrains([p.user_id for p in parrains])
+    if f["tri"] == "recommandations":
+        parrains.sort(key=lambda p: -recos.get(p.user_id, 0))
+    pays = (db.session.query(User.country_code).join(SponsorProfile, SponsorProfile.user_id == User.id)
+            .filter(SponsorProfile.status == "approved").distinct().all())
+    return render_template("parrain/annuaire.html", parrains=parrains, f=f, recos=recos, embauches=embauches,
+                           seniorites=SENIORITES, pays=sorted({p[0] for p in pays if p[0]}),
+                           filtres_actifs=sum(1 for k, v in f.items() if v and k != "tri"))
+
+
+@bp.route("/parrains/<int:sid>")
+@login_required
+def sponsor_profile(sid):
+    """Profil public d'un parrain : parcours, niveau, réputation et recommandations."""
+    from ..modeles import Sponsorship
+    sp = db.get_or_404(SponsorProfile, sid)
+    if sp.status != "approved" and current_user.role != "admin" and current_user.id != sp.user_id:
+        abort(404)
+    recos = (Sponsorship.query.filter_by(sponsor_id=sp.user_id, status="active")
+             .order_by(Sponsorship.created_at.desc()).all())
+    n_recos, embauches = _stats_parrains([sp.user_id])
+    deja = None
+    if current_user.role == "candidate":
+        deja = Sponsorship.query.filter_by(sponsor_id=sp.user_id, candidate_id=current_user.id).first()
+    return render_template("parrain/profil.html", sp=sp, recos=recos, n_recos=n_recos.get(sp.user_id, 0),
+                           embauches=embauches.get(sp.user_id, 0), deja=deja)
+
+
+# --------------------------------------------------------------------------- Power BI (lien secret)
+@bp.route("/powerbi/<jeton>/<fichier>")
+def powerbi_csv(jeton, fichier):
+    """Fichier CSV lu directement par Power BI (Obtenir des données > Web) : pas de connexion,
+    mais un lien secret que seul l'administrateur connaît et peut renouveler."""
+    import hmac
+    from flask import Response
+    from ..modeles import Setting
+    from ..services import powerbi as pbi
+    attendu = Setting.get("powerbi_jeton") or ""
+    if not attendu or not hmac.compare_digest(jeton, attendu) or not fichier.endswith(".csv"):
+        abort(404)
+    try:
+        sorties = pbi.fichiers_monde() if fichier.startswith("monde_") else pbi.fichiers_activite()
+    except Exception:
+        current_app.logger.exception("Power BI : données indisponibles")
+        return Response("Données momentanément indisponibles, réessayez dans quelques minutes.", status=503,
+                        mimetype="text/plain")
+    sorties.update(pbi.fichiers_modeles())
+    if fichier not in sorties:
+        abort(404)
+    return Response(pbi.en_csv(*sorties[fichier]), mimetype="text/csv",
+                    headers={"Content-Disposition": f"inline; filename={fichier}", "Cache-Control": "no-store"})

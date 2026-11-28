@@ -43,7 +43,7 @@
       <div class="card card-pad mb-3">
         <div class="flex items-start gap-3">
           {{ avatar(s.sponsor, 42) }}
-          <div class="flex-1"><div class="flex flex-wrap items-center gap-2"><b>{{ s.sponsor.full_name }}</b>{{ level(sp.level) }}<span class="chip !py-0.5">{{ t('Réputation') }} {{ sp.reputation|round|int }}</span></div>
+          <div class="flex-1"><div class="flex flex-wrap items-center gap-2"><a href="{{ url_for('main.sponsor_profile', sid=sp.id) }}" class="font-bold hover:text-terra-600">{{ s.sponsor.full_name }}</a>{{ level(sp.level) }}<span class="chip !py-0.5">{{ t('Réputation') }} {{ sp.reputation|round|int }}</span></div>
             <div class="text-sm muted">{{ sp.position }} · {{ sp.organization }}</div>
             <div class="text-sm mt-1">{{ s.relation }} · {{ s.period }}</div></div>
           <form method="post" action="{{ url_for('recruiter.flag_sponsorship', sid=s.id) }}" onsubmit="return confirm({{ t('Signaler ce parrainage comme douteux ?')|js }})"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm btn-icon" title="{{ t('Signaler') }}"><i data-lucide="flag" class="w-4 h-4"></i></button></form>
@@ -87,6 +87,20 @@
         <button class="btn btn-primary w-full">{{ t('Valider et notifier') }}</button>
       </form>
     </div>
+    {# Message libre ou tiré d'un modèle (réponses automatiques + modèles de l'entreprise) #}
+    <form method="post" action="{{ url_for('recruiter.send_message', app_id=a.id) }}" class="card card-pad space-y-3"
+          x-data='{m: {{ modeles|tojson }}, i: "", objet: "", corps: "", choisir() { if (this.i !== "") { this.objet = this.m[this.i].objet; this.corps = this.m[this.i].corps } } }'>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3 class="font-display font-semibold">{{ t('Envoyer un message') }}</h3>
+      <select x-model="i" @change="choisir()" class="select text-sm">
+        <option value="">{{ t('Partir d\'un modèle…') }}</option>
+        <template x-for="(x, n) in m" :key="n"><option :value="n" x-text="x.nom"></option></template>
+      </select>
+      <input name="subject" x-model="objet" class="input text-sm" placeholder="{{ t('Objet') }}">
+      <textarea name="body" x-model="corps" class="textarea text-sm !min-h-[140px]" required placeholder="{{ t('Votre message…') }}"></textarea>
+      <p class="help">{{ t('Les variables {candidate}, {job}, {company} sont remplacées automatiquement.') }} <a href="{{ url_for('recruiter.templates') }}" class="text-terra-600 font-semibold">{{ t('Gérer mes modèles') }}</a></p>
+      <button class="btn btn-dark w-full"><i data-lucide="send" class="w-4 h-4"></i>{{ t('Envoyer') }}</button>
+    </form>
     {% elif my_jobs %}
     <form method="post" action="{{ url_for('recruiter.invite', user_id=cand.id) }}" class="card card-pad space-y-3">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

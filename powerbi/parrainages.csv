@@ -1,7 +1,7 @@
 ﻿id_parrainage;id_parrain;id_candidat;relation;statut;date
-1;10;11;J'étais son manager direct;active;2026-11-14
-2;8;11;Elle a réalisé une mission d'audit data pour ma direction;active;2026-10-28
-3;8;14;Analyste dans mon équipe;active;2026-11-06
-4;9;16;Ingénieur dans mon équipe backend;active;2026-10-30
-5;9;21;Product owner sur notre app mobile;active;2026-11-14
-6;10;12;Développeur sur nos outils internes;active;2026-11-07
+1;10;11;J'étais son manager direct;active;2026-11-24
+2;8;11;Elle a réalisé une mission d'audit data pour ma direction;active;2026-11-07
+3;8;14;Analyste dans mon équipe;active;2026-11-16
+4;9;16;Ingénieur dans mon équipe backend;active;2026-11-09
+5;9;21;Product owner sur notre app mobile;active;2026-11-24
+6;10;12;Développeur sur nos outils internes;active;2026-11-17

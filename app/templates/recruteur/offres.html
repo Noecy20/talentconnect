@@ -37,10 +37,10 @@
           </a>
           <a href="{{ url_for('recruiter.job_edit', job_id=j.id) }}" class="muted hover:text-terra-600" title="{{ t('Modifier') }}"><i data-lucide="pencil" class="!w-4 !h-4"></i></a>
         </div>
-        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-          <div class="rounded-xl py-2" style="background:var(--bg)"><div class="font-bold text-[17px]">{{ c.total }}</div><div class="text-[11px] muted">{{ t('reçues') }}</div></div>
-          <div class="rounded-xl py-2" style="background:var(--peche)"><div class="font-bold text-[17px] text-terra-700">{{ c.new }}</div><div class="text-[11px] muted">{{ t('à traiter') }}</div></div>
-          <div class="rounded-xl py-2" style="background:var(--sauge)"><div class="font-bold text-[17px]" style="color:#276749">{{ c.interview }}</div><div class="text-[11px] muted">{{ t('entretiens') }}</div></div>
+        <div class="stats-carte">
+          <div><b>{{ c.total }}</b><span>{{ t('reçues') }}</span></div>
+          <div><b class="text-terra-700">{{ c.new }}</b><span>{{ t('à traiter') }}</span></div>
+          <div><b style="color:#276749">{{ c.interview }}</b><span>{{ t('entretiens') }}</span></div>
         </div>
         <div class="flex items-center gap-3 mt-4 text-[13px] font-semibold">
           <a href="{{ url_for('recruiter.job_pipeline', job_id=j.id) }}" class="text-terra-600">{{ t('Voir les candidats') }}</a>

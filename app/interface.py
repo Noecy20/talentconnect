@@ -22,6 +22,7 @@ MENUS = {
             ("tracker.board", "kanban-square", "Mon suivi", True),
             ("candidate.applications", "send", "Mes candidatures", True),
             ("candidate.sponsorships", "handshake", "Mes parrainages", True),
+            ("main.sponsors_directory", "users-round", "Annuaire des parrains", False),
             ("main.market", "map", "Métiers qui recrutent", True),
         ]),
         ("Évoluer", [
@@ -41,6 +42,7 @@ MENUS = {
             ("recruiter.talents", "search", "Trouver des talents", True),
             ("recruiter.pool", "sparkles", "Vivier seconde chance", True),
             ("recruiter.templates", "mail", "Modèles de messages", True),
+            ("main.sponsors_directory", "users-round", "Annuaire des parrains", False),
             ("main.market", "map", "Marché de l'emploi", True),
             ("assistant.mine", "bot", "Assistant entreprise", True),
         ]),
@@ -49,6 +51,7 @@ MENUS = {
         ("Espace parrain", [
             ("sponsor.dashboard", "layout-dashboard", "Tableau de bord", False),
             ("sponsor.eligibility", "shield-check", "Mon éligibilité", False),
+            ("main.sponsors_directory", "users-round", "Annuaire des parrains", False),
             ("assistant.mine", "bot", "Mon assistant IA", False),
         ]),
     ],
@@ -59,9 +62,11 @@ MENUS = {
             ("admin.payments", "wallet", "Paiements", False),
             ("admin.plans", "tags", "Formules & prix", False),
             ("admin.sponsors", "shield-check", "Parrains", False),
+            ("main.sponsors_directory", "users-round", "Annuaire des parrains", False),
             ("admin.recruiters", "badge-check", "Recruteurs à vérifier", False),
             ("admin.companies", "building-2", "Entreprises", False),
             ("admin.settings", "sliders-horizontal", "Réglages des modèles", False),
+            ("admin.powerbi", "bar-chart-3", "Power BI", False),
             ("main.market", "map", "Marché de l'emploi", False),
         ]),
     ],
@@ -77,6 +82,7 @@ CREATIONS = {
         ("candidate.cv_builder", "file-plus", "Créer ou modifier mon CV"),
         ("tracker.projects", "plane", "Nouveau projet de mobilité"),
         ("candidate.sponsorships", "handshake", "Demander un parrainage"),
+        ("main.sponsors_directory", "users-round", "Trouver un parrain"),
     ],
     "recruiter": [
         ("recruiter.job_new", "briefcase", "Publier une offre"),
@@ -110,6 +116,8 @@ def _est_actif(cible, courant):
         return False
     if page_cible in ("board", "inbox"):       # tout le suivi, toute la messagerie
         return True
+    if page_cible == "sponsors_directory":      # l'annuaire reste actif sur le profil d'un parrain
+        return page == "sponsor_profile"
     return page.startswith(page_cible.rstrip("s"))
 
 

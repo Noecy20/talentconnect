@@ -4,6 +4,15 @@
 {% block page_title %}{{ t('Test d\'éligibilité parrain') }}{% endblock %}
 {% block content %}
 <div class="grid xl:grid-cols-[1fr_380px] gap-6 items-start">
+  {% if bloque %}
+  {# Une seule tentative : la personne a déjà été jugée non éligible (sur ce compte ou un autre) #}
+  <div class="card card-pad text-center py-12">
+    <span class="w-14 h-14 rounded-2xl grid place-items-center mx-auto" style="background:rgba(192,57,43,.1);color:#C0392B"><i data-lucide="shield-x" class="w-7 h-7"></i></span>
+    <h2 class="font-display text-xl font-semibold mt-5">{{ t('Demande de parrainage refusée') }}</h2>
+    <p class="muted text-[14.5px] mt-2 max-w-lg mx-auto">{{ t('Votre profil a déjà été évalué et ne remplit pas les critères pour devenir parrain. Le test d\'éligibilité ne peut être passé qu\'une seule fois, même avec un autre compte ou un autre e-mail.') }}</p>
+    <p class="text-sm muted mt-4 max-w-lg mx-auto">{{ t('Vous pensez qu\'il s\'agit d\'une erreur ? Écrivez à l\'équipe TalentConnect depuis la messagerie : un administrateur peut réexaminer votre dossier.') }}</p>
+  </div>
+  {% else %}
   <form method="post" class="card card-pad space-y-5" x-data="{kind: '{{ sp.kind }}'}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div>
@@ -32,8 +41,10 @@
       <div class="sm:col-span-2"><label class="label">{{ t('Profil LinkedIn') }}</label><input name="linkedin" value="{{ sp.linkedin }}" class="input" placeholder="https://linkedin.com/in/..."></div>
       <div class="sm:col-span-2"><label class="label">{{ t('Présentation') }}</label><textarea name="bio" class="textarea" placeholder="{{ t('Votre parcours en quelques lignes.') }}">{{ sp.bio }}</textarea></div>
     </div>
+    <p class="text-[13px] muted flex gap-2"><i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>{{ t('Attention : le test ne peut être passé qu\'une seule fois. Si votre profil n\'est pas retenu, aucune nouvelle demande ne sera acceptée, même avec un autre compte.') }}</p>
     <button class="btn btn-primary btn-lg">{{ t('Calculer mon éligibilité') }}</button>
   </form>
+  {% endif %}
 
   <aside class="space-y-6 xl:sticky xl:top-24">
     <div class="card card-pad text-center">
@@ -62,7 +73,7 @@
       <ul class="space-y-2 muted">
         <li>• <b class="text-[var(--ink)]">{{ auto }}+</b> : {{ t('validation automatique') }}</li>
         <li>• <b class="text-[var(--ink)]">{{ minimum }}–{{ auto - 1 }}</b> : {{ t('revue par l\'équipe TalentConnect') }}</li>
-        <li>• <b class="text-[var(--ink)]">&lt; {{ minimum }}</b> : {{ t('non éligible pour le moment') }}</li>
+        <li>• <b class="text-[var(--ink)]">&lt; {{ minimum }}</b> : {{ t('non éligible (une seule tentative)') }}</li>
         <li>• {{ t('Niveaux : Or 85+, Argent 70+, Bronze') }}</li>
       </ul>
     </div>

@@ -39,11 +39,11 @@
   <form method="post" class="card card-pad space-y-3 xl:sticky xl:top-24">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h3 class="font-display font-semibold">{{ t('Enregistrer un paiement manuel') }}</h3>
-    <p class="text-xs muted">{{ t('Espèces, virement… l\'accès est activé immédiatement.') }}</p>
+    <p class="text-xs muted">{{ t('Virement, mobile money… l\'accès est activé immédiatement.') }}</p>
     <input name="email" type="email" class="input" placeholder="{{ t('E-mail de l\'utilisateur') }}" required>
     <select name="plan_id" class="select">{% for pl in plans %}<option value="{{ pl.id }}">{{ pl.name }} · {{ money(pl.price, pl.currency) }}</option>{% endfor %}</select>
     <input name="amount" type="number" class="input" placeholder="{{ t('Montant (vide = prix de la formule)') }}">
-    <select name="method" class="select">{% for m in ['cash','bank','wave','orange_money','mtn_momo','moov_money','card'] %}<option value="{{ m }}">{{ m|replace('_',' ')|title }}</option>{% endfor %}</select>
+    <select name="method" class="select">{% for m in ['bank','wave','orange_money','mtn_momo','moov_money','card'] %}<option value="{{ m }}">{{ m|replace('_',' ')|title }}</option>{% endfor %}</select>
     <input name="reference" class="input" placeholder="{{ t('Référence') }}">
     <button class="btn btn-primary w-full">{{ t('Enregistrer et activer') }}</button>
   </form>

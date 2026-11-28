@@ -245,8 +245,8 @@
 .ui .bg-grad,.ui .card.bg-grad{background:var(--sombre);color:#fff}
 
 /* 7. Kanban, messagerie, divers -------------------------------------------- */
-.ui .kanban-col{background:var(--bg-2);border-radius:20px;padding:1rem;min-width:290px;width:290px}
-.ui .kanban-card{border:0;border-radius:16px;padding:1rem;box-shadow:var(--ombre)}
+.ui .kanban-col{background:transparent;border-radius:0;padding:0 .2rem;min-width:290px;width:290px}
+.ui .kanban-card{border:1px solid var(--line);border-radius:14px;padding:1rem;box-shadow:none}
 .ui .bubble-bot{border:0;box-shadow:var(--ombre)}
 .ui .likert label{border-radius:12px;border-color:var(--line-2)}
 
@@ -346,14 +346,19 @@
 .bascule{display:inline-flex;padding:4px;border-radius:14px;background:var(--surface);box-shadow:var(--ombre)}
 .bascule a{display:inline-flex;align-items:center;gap:.4rem;height:36px;padding:0 .9rem;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--muted)}
 .bascule a.actif{background:var(--sombre);color:#fff}
-.colonne{flex:none;width:280px;display:flex;flex-direction:column;border-radius:20px;background:var(--bg-2);padding:.9rem;max-height:calc(100vh - 220px)}
-.colonne-tete{display:flex;align-items:center;gap:.55rem;padding:.15rem .3rem .85rem}
-.colonne-tete .compte{margin-left:auto;font-size:12px;font-weight:700;min-width:24px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--surface);color:var(--muted)}
+.colonne{flex:none;width:280px;display:flex;flex-direction:column;background:transparent;padding:0 .2rem;max-height:calc(100vh - 220px)}
+.colonne-tete{display:flex;align-items:center;gap:.55rem;padding:.15rem .3rem .7rem;margin-bottom:.8rem;border-bottom:1px solid var(--line)}
+.colonne-tete .compte{margin-left:auto;font-size:12.5px;font-weight:700;min-width:24px;height:22px;padding:0 4px;display:grid;place-items:center;background:transparent;color:var(--muted)}
 .colonne .kanban-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem;min-height:70px;padding:2px}
-.carte-suivi{background:var(--surface);border-radius:16px;padding:1rem;box-shadow:var(--ombre);cursor:grab}
+.carte-suivi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1rem;box-shadow:none;cursor:grab}
 .carte-suivi:hover{box-shadow:var(--ombre-haute)}
 .colonne-ajout{display:flex;align-items:center;gap:.4rem;margin-top:.7rem;padding:.55rem .5rem;border-radius:12px;font-size:13px;font-weight:600;color:var(--muted)}
-.colonne-ajout:hover{background:var(--surface);color:var(--terra-700)}
+.colonne-ajout:hover{color:var(--terra-700)}
+/* Chiffres d'une carte Kanban : simples, sans blocs de couleur */
+.stats-carte{display:grid;grid-template-columns:repeat(3,1fr);margin-top:.9rem;padding-top:.75rem;border-top:1px solid var(--line);text-align:center}
+.stats-carte>div+div{border-left:1px solid var(--line)}
+.stats-carte b{display:block;font-size:16px;font-weight:700}
+.stats-carte span{font-size:11px;color:var(--muted)}
 .fenetre-fond{position:fixed;inset:0;z-index:90;background:rgba(31,20,13,.45);display:flex;align-items:flex-start;justify-content:center;padding:10vh 1rem 1rem}
 .fenetre{width:100%;max-width:620px;background:var(--surface);border-radius:24px;padding:1.6rem;box-shadow:var(--ombre-haute)}
 .choix{text-align:left;padding:1.4rem;border-radius:18px;border:1px solid var(--line-2);transition:border-color .15s,background .15s}

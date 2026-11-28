@@ -7,10 +7,11 @@ from sqlalchemy import func, or_
 
 from ..extensions import db
 from ..modeles import (User, Payment, Plan, SponsorProfile, Sponsorship, Company, Job, Application, Setting, Message, ROLES)
+from .abonnement import METHODS
 from ..outils import role_required, to_int, split_list
 from ..langues import t
 from ..ia import scores
-from ..services import emails
+from ..services import emails, refus_parrain
 
 bp = Blueprint("admin", __name__)
 
@@ -114,14 +115,15 @@ def user_access(uid):
 @bp.route("/paiements", methods=["GET", "POST"])
 def payments():
     if request.method == "POST":
-        # Enregistrement manuel d'un paiement (espèces, virement…)
+        # Enregistrement manuel d'un paiement (virement, mobile money…)
         u = User.query.filter_by(email=request.form.get("email", "").lower().strip()).first()
         plan = db.session.get(Plan, to_int(request.form.get("plan_id")))
         if not u or not plan:
             flash(t("Utilisateur ou formule introuvable."), "danger")
         else:
             p = Payment(user_id=u.id, plan_id=plan.id, amount=to_int(request.form.get("amount"), plan.price),
-                        currency=plan.currency, method=request.form.get("method", "cash"),
+                        currency=plan.currency,
+                        method=request.form.get("method") if request.form.get("method") in METHODS else "bank",
                         reference=request.form.get("reference", ""), status="pending")
             db.session.add(p)
             db.session.commit()
@@ -208,10 +210,18 @@ def payment_instructions():
 @bp.route("/parrains")
 def sponsors():
     status = request.args.get("status", "pending_review")
-    q = SponsorProfile.query
+    recherche, niveau = (request.args.get("q") or "").strip(), request.args.get("niveau", "")
+    q = SponsorProfile.query.join(User, User.id == SponsorProfile.user_id)
     if status != "all":
-        q = q.filter_by(status=status)
+        q = q.filter(SponsorProfile.status == status)
+    if recherche:
+        like = f"%{recherche}%"
+        q = q.filter(or_(User.first_name.ilike(like), User.last_name.ilike(like), User.email.ilike(like),
+                         SponsorProfile.organization.ilike(like), SponsorProfile.position.ilike(like)))
+    if niveau in ("gold", "silver", "bronze"):
+        q = q.filter(SponsorProfile.level == niveau)
     return render_template("admin/parrains.html", sps=q.order_by(SponsorProfile.created_at.desc()).all(), status=status,
+                           recherche=recherche, niveau=niveau,
                            flagged=Sponsorship.query.filter_by(status="flagged").all())
 
 
@@ -225,8 +235,10 @@ def sponsor_action(sid, action):
         emails.send(sp.user, t("Vous êtes parrain certifié TalentConnect"),
                     t("Bonjour {name},\n\nVotre dossier a été validé. Vos recommandations sont désormais visibles des recruteurs. Merci de votre engagement !", name=sp.user.first_name),
                     kind="system", sender=current_user)
+        refus_parrain.oublier(sp.user)
     elif action == "reject":
-        sp.status = "rejected"
+        sp.status, sp.level = "rejected", None
+        refus_parrain.memoriser(sp.user, sp)   # pas de seconde tentative, même sous un autre compte
     sp.reviewed_at = datetime.utcnow()
     db.session.commit()
     flash(t("Dossier mis à jour."), "success")
@@ -327,3 +339,55 @@ def recruiter_proof(rid):
         abort(404)
     from ..outils import send_stored
     return send_stored(rp.proof_file, "proofs")
+
+
+# --------------------------------------------------------------------------- Power BI
+@bp.route("/powerbi", methods=["GET", "POST"])
+def powerbi():
+    """Données du tableau de bord Power BI : liens directs (actualisation automatique) et archive ZIP."""
+    import secrets
+    from ..services import powerbi as pbi
+    if request.method == "POST":
+        Setting.set("powerbi_jeton", secrets.token_urlsafe(24))   # l'ancien lien cesse de fonctionner
+        db.session.commit()
+        flash(t("Nouveau lien secret créé. Mettez à jour la source dans Power BI."), "success")
+        return redirect(url_for("admin.powerbi"))
+    jeton = Setting.get("powerbi_jeton")
+    if not jeton:
+        jeton = secrets.token_urlsafe(24)
+        Setting.set("powerbi_jeton", jeton)
+        db.session.commit()
+    pages = [
+        (t("Page « L'emploi dans le monde »"), "globe-2",
+         t("Indicateurs de l'OIT publiés par la Banque mondiale, pour tous les pays depuis 2010 (mis à jour une fois par jour)."),
+         ["monde_derniere_valeur.csv", "monde_indicateurs.csv", "monde_pays.csv", "monde_definitions.csv"]),
+        (t("Page « Activité de TalentConnect »"), "activity",
+         t("Ce qui se passe sur la plateforme, jour par jour. Données anonymes, recalculées à chaque actualisation."),
+         ["activite_quotidienne.csv", "activite_evenements.csv", "activite_chiffres_cles.csv", "utilisateurs.csv",
+          "offres.csv", "candidatures.csv", "paiements.csv", "parrainages.csv", "candidats.csv",
+          "suivi_candidatures.csv", "competences_demandees.csv"]),
+        (t("Page « Recrutement et intelligence artificielle »"), "brain-circuit",
+         t("Études de terrain utilisées pour entraîner le modèle et contrôle d'équité de ses prédictions."),
+         ["etudes_entrainement.csv", "equite_modeles.csv"]),
+    ]
+    liens = {f: url_for("main.powerbi_csv", jeton=jeton, fichier=f, _external=True) for _, _, _, fs in pages for f in fs}
+    return render_template("admin/powerbi.html", pages=pages, liens=liens, definitions=pbi.INDICATEURS)
+
+
+@bp.route("/powerbi/donnees.zip")
+def powerbi_zip():
+    """Tous les fichiers CSV dans une archive, pour un import manuel dans Power BI."""
+    import io
+    import zipfile
+    from flask import send_file
+    from ..services import powerbi as pbi
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for nom, contenu in pbi.tous_les_fichiers().items():
+            if nom.endswith(".txt"):
+                z.writestr(nom, contenu)
+            else:
+                z.writestr(nom, pbi.en_csv(*contenu))
+    buf.seek(0)
+    return send_file(buf, mimetype="application/zip", as_attachment=True,
+                     download_name=f"talentconnect_powerbi_{datetime.utcnow():%Y-%m-%d}.zip")

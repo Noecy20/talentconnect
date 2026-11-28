@@ -29,7 +29,7 @@
 <div class="flex gap-4 overflow-x-auto pb-4" x-data>
   {% for s, label, color in [('received', t('Reçues'), 'var(--muted)'), ('shortlisted', t('Présélection'), '#2B6CB0'), ('interview', t('Entretien'), 'var(--terra)'), ('offer', t('Offre'), '#2F855A'), ('hired', t('Embauché'), '#2F855A'), ('second_chance', t('Seconde chance'), 'var(--gold)'), ('rejected', t('Non retenus'), '#C0392B')] %}
   <div class="kanban-col">
-    <div class="flex items-center gap-2 px-1 pb-3">
+    <div class="flex items-center gap-2 px-1" style="padding-bottom:.65rem;margin-bottom:.75rem;border-bottom:1px solid var(--line)">
       <span class="w-2.5 h-2.5 rounded-full" style="background:{{ color }}"></span>
       <span class="font-display font-semibold text-sm">{{ label }}</span>
       <span class="ml-auto chip !py-0 !px-2" data-count-col="{{ s }}">{{ cols[s]|length }}</span>

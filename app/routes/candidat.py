@@ -254,6 +254,34 @@ def sponsorships():
                            strength=round(scores.sponsorship_strength(u) * 100), new_id=request.args.get("new", type=int))
 
 
+@bp.route("/parrainages/solliciter/<int:sid>", methods=["POST"])
+@access_required
+def ask_sponsor(sid):
+    """Demande de parrainage envoyée à un parrain trouvé dans l'annuaire (message dans l'app + e-mail)."""
+    from ..modeles import SponsorProfile
+    sp = db.get_or_404(SponsorProfile, sid)
+    if sp.status != "approved":
+        abort(404)
+    u = current_user
+    if SponsorshipRequest.query.filter_by(candidate_id=u.id, invitee_email=sp.user.email).filter(
+            SponsorshipRequest.status.in_(["sent", "opened"])).first():
+        flash(t("Vous avez déjà sollicité ce parrain : il a reçu votre demande."), "info")
+        return redirect(url_for("main.sponsor_profile", sid=sp.id))
+    r = SponsorshipRequest(candidate_id=u.id, invitee_name=sp.user.full_name, invitee_email=sp.user.email,
+                           relation=t("Contact via l'annuaire des parrains"),
+                           message=request.form.get("message", "").strip())
+    db.session.add(r)
+    db.session.commit()
+    link = url_for("sponsor.invitation", token=r.token, _external=True)
+    emails.send(sp.user, t("{candidate} vous demande un parrainage", candidate=u.full_name),
+                t("Bonjour {name},\n\n{candidate} a trouvé votre profil dans l'annuaire des parrains de TalentConnect et sollicite votre recommandation.\n\n« {message} »\n\nConsultez son profil et répondez ici :\n{link}",
+                  name=sp.user.first_name, candidate=u.full_name,
+                  message=r.message or t("J'aimerais beaucoup que vous me recommandiez."), link=link),
+                kind="sponsorship", sender=u)
+    flash(t("Demande envoyée à {name}. Vous serez prévenu(e) dès sa réponse.", name=sp.user.full_name), "success")
+    return redirect(url_for("main.sponsor_profile", sid=sp.id))
+
+
 # --------------------------------------------------------------------------- orientation
 @bp.route("/orientation", methods=["GET", "POST"], endpoint="orientation")
 @access_required

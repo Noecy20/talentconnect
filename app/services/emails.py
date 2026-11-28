@@ -151,6 +151,22 @@ def get_template(kind, company_id=None):
     return DEFAULT_TEMPLATES[kind]
 
 
+TEMPLATE_NAMES = {"ack": "Accusé de réception", "interview": "Invitation à un entretien",
+                  "second_chance": "Seconde chance", "rejected": "Refus avec retour constructif"}
+
+
+def custom_templates(company_id):
+    """Modèles créés par l'entreprise (en plus des 4 réponses automatiques)."""
+    return MessageTemplate.query.filter_by(company_id=company_id, kind="custom").order_by(MessageTemplate.name).all()
+
+
+def all_templates(company_id):
+    """Tous les modèles utilisables pour écrire à un candidat : (nom, objet, texte)."""
+    from ..langues import t
+    out = [(t(TEMPLATE_NAMES[k]),) + tuple(get_template(k, company_id)) for k in ("interview", "second_chance", "rejected")]
+    return out + [(m.name, m.subject, m.body) for m in custom_templates(company_id)]
+
+
 def render_text(text, **ctx):
     class _Safe(dict):
         def __missing__(self, k):

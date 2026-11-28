@@ -1,0 +1,94 @@
+{% extends "espace.html" %}
+{% from "composants/ui.html" import avatar, level, ring with context %}
+{% block title %}{{ sp.user.full_name }}{% endblock %}
+{% block page_title %}{{ t('Profil du parrain') }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('main.sponsors_directory') if current_user.role != 'admin' else url_for('admin.sponsors', status='all') }}" class="text-sm font-semibold muted hover:text-terra-600 inline-flex items-center gap-1 mb-5"><i data-lucide="arrow-left" class="w-4 h-4"></i>{{ t('Retour à la liste') }}</a>
+
+<div class="grid xl:grid-cols-[1fr_360px] gap-6 items-start">
+  <div class="space-y-6">
+    <section class="card card-pad">
+      <div class="flex flex-wrap items-center gap-4">
+        {{ avatar(sp.user, 72) }}
+        <div class="flex-1 min-w-0">
+          <h1 class="font-display text-2xl font-semibold">{{ sp.user.full_name }}</h1>
+          <p class="muted">{{ sp.position }}{% if sp.organization %} · {{ sp.organization }}{% endif %}</p>
+          <div class="flex flex-wrap items-center gap-1.5 mt-2">
+            {% if sp.status == 'approved' %}<span class="chip chip-green"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>{{ t('Parrain certifié') }}</span>{% else %}<span class="chip">{{ sp.status }}</span>{% endif %}
+            {{ level(sp.level) }}
+            <span class="chip">{{ t('Entreprise') if sp.kind == 'company' else seniority_label(sp.seniority) }}</span>
+            {% if sp.user.city or sp.user.country_code %}<span class="chip"><i data-lucide="map-pin" class="w-3 h-3"></i>{{ sp.user.city }}{% if sp.user.city and sp.user.country_code %}, {% endif %}{{ country_name(sp.user.country_code) }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if sp.bio %}<p class="mt-6 text-[14.5px] leading-relaxed whitespace-pre-line">{{ sp.bio }}</p>{% endif %}
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-5" style="border-top:1px solid var(--line)">
+        <div><div class="text-xs muted">{{ t('Expérience') }}</div><div class="font-semibold">{{ sp.years_experience }} {{ t('ans') }}</div></div>
+        <div><div class="text-xs muted">{{ t('Niveau d\'études') }}</div><div class="font-semibold">{{ edu_label(sp.education_level) }}</div></div>
+        <div><div class="text-xs muted">{{ t('Nombre d\'employés') if sp.kind == 'company' else t('Personnes encadrées') }}</div><div class="font-semibold">{{ sp.team_size or '—' }}</div></div>
+        <div><div class="text-xs muted">{{ t('Parrain depuis') }}</div><div class="font-semibold">{{ (sp.reviewed_at or sp.created_at)|datefr('short') }}</div></div>
+      </div>
+      <div class="flex flex-wrap gap-4 mt-5 text-sm">
+        {% if sp.linkedin %}<a href="{{ sp.linkedin if sp.linkedin.startswith('http') else 'https://' ~ sp.linkedin }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-semibold text-terra-600"><i data-lucide="linkedin" class="w-4 h-4"></i>LinkedIn</a>{% endif %}
+        {% if sp.organization_website %}<a href="{{ sp.organization_website if sp.organization_website.startswith('http') else 'https://' ~ sp.organization_website }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-semibold text-terra-600"><i data-lucide="globe" class="w-4 h-4"></i>{{ sp.organization_website|replace('https://', '')|replace('http://', '') }}</a>{% endif %}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="font-display font-semibold">{{ t('Recommandations publiées') }} <span class="muted font-normal">({{ recos|length }})</span></h2>
+      {% for s in recos %}
+      <div class="py-4 {% if not loop.first %}border-t{% endif %}" style="border-color:var(--line)">
+        <div class="flex items-center gap-3">
+          {% if current_user.role in ('recruiter', 'admin') %}
+            {{ avatar(s.candidate, 36) }}
+            <div class="flex-1 min-w-0">
+              {% if current_user.role == 'recruiter' %}<a href="{{ url_for('recruiter.candidate_view', user_id=s.candidate_id) }}" class="font-semibold hover:text-terra-600">{{ s.candidate.full_name }}</a>{% else %}<span class="font-semibold">{{ s.candidate.full_name }}</span>{% endif %}
+              <div class="text-xs muted truncate">{{ s.candidate.candidate.headline if s.candidate.candidate }}</div>
+            </div>
+          {% else %}
+            <span class="avatar" style="width:36px;height:36px;font-size:13px">{{ s.candidate.initials }}</span>
+            <div class="flex-1 min-w-0"><div class="font-semibold">{{ s.candidate.first_name }} {{ (s.candidate.last_name or '')[:1] }}.</div>
+              <div class="text-xs muted truncate">{{ s.candidate.candidate.headline if s.candidate.candidate }}</div></div>
+          {% endif %}
+          <span class="text-xs muted">{{ s.created_at|ago }}</span>
+        </div>
+        {% if s.relation %}<p class="text-xs muted mt-2"><i data-lucide="link-2" class="w-3.5 h-3.5 inline"></i> {{ s.relation }}{% if s.period %} · {{ s.period }}{% endif %}</p>{% endif %}
+        {% if s.recommendation %}<p class="text-sm mt-2 italic">« {{ s.recommendation|truncate(280) }} »</p>{% endif %}
+      </div>
+      {% else %}
+      <p class="muted text-sm mt-3">{{ t('Aucune recommandation publiée pour l\'instant.') }}</p>
+      {% endfor %}
+    </section>
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-24">
+    <div class="card card-pad">
+      <div class="flex justify-around text-center">
+        <div>{{ ring(sp.reputation|round|int, 92) }}<div class="text-xs mt-1 font-semibold">{{ t('Réputation') }}</div></div>
+        <div>{{ ring(sp.eligibility_score or 0, 92, '', '#D9A441') }}<div class="text-xs mt-1 font-semibold">{{ t('Éligibilité') }}</div></div>
+      </div>
+      <div class="stats-carte !mt-5">
+        <div><b class="text-terra-700">{{ n_recos }}</b><span>{{ t('recommandations') }}</span></div>
+        <div><b style="color:#276749">{{ embauches }}</b><span>{{ t('embauchés') }}</span></div>
+        <div><b>{{ level(sp.level) if sp.level else '—' }}</b><span>{{ t('niveau') }}</span></div>
+      </div>
+    </div>
+
+    {% if current_user.role == 'candidate' and sp.user_id != current_user.id %}
+      {% if deja %}
+      <div class="card card-pad text-sm"><i data-lucide="heart-handshake" class="w-5 h-5 text-terra-500 inline"></i> {{ t('{name} vous a déjà recommandé(e).', name=sp.user.first_name) }}</div>
+      {% else %}
+      <form method="post" action="{{ url_for('candidate.ask_sponsor', sid=sp.id) }}" class="card card-pad space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h3 class="font-display font-semibold">{{ t('Solliciter son parrainage') }}</h3>
+        <textarea name="message" class="textarea text-sm !min-h-[110px]" placeholder="{{ t('Présentez-vous en quelques lignes et dites pourquoi vous sollicitez ce parrain.') }}"></textarea>
+        <button class="btn btn-primary w-full"><i data-lucide="send" class="w-4 h-4"></i>{{ t('Envoyer la demande') }}</button>
+      </form>
+      {% endif %}
+    {% endif %}
+    {% if sp.user_id != current_user.id and current_user.role in ('recruiter', 'admin') %}
+    <a href="{{ url_for('messages.thread', uid=sp.user_id) }}" class="btn btn-dark w-full"><i data-lucide="message-circle" class="w-4 h-4"></i>{{ t('Écrire à {name}', name=sp.user.first_name or sp.user.full_name) }}</a>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

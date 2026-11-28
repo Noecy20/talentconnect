@@ -152,10 +152,22 @@ def _force(candidate_user):
 
 
 # --------------------------------------------------------------------------- compatibilité candidat / offre
+CRITERES = ("skills", "field", "experience", "education", "location", "soft_skills", "languages")
+
+
+def ponderations(job=None):
+    """Points de chaque critère : ceux choisis par le recruteur pour l'offre, sinon ceux de la plateforme."""
+    base = Setting.get("match_weights")
+    perso = getattr(job, "ponderations", None) if job is not None else None
+    if isinstance(perso, dict) and sum(int(perso.get(k) or 0) for k in CRITERES) > 0:
+        return {k: max(0, int(perso.get(k) or 0)) for k in CRITERES}
+    return {k: int(base.get(k, 0)) for k in CRITERES}
+
+
 def match(candidate_user, job):
     """Score 0..100 + détail par critère + points forts / manques."""
     cp = candidate_user.candidate
-    w = Setting.get("match_weights")
+    w = ponderations(job)
     if cp is None:
         return 0, {}
     passport = skill_passport(candidate_user)

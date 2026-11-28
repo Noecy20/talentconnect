@@ -3,15 +3,22 @@
 {% block title %}{{ t('Parrains') }}{% endblock %}
 {% block page_title %}{{ t('Parrains') }}{% endblock %}
 {% block content %}
-<div class="flex flex-wrap gap-2 mb-5">
+<div class="flex flex-wrap items-center gap-2 mb-5">
   {% for s, l in [('pending_review', t('En revue')), ('approved', t('Certifiés')), ('rejected', t('Refusés')), ('draft', t('Non évalués')), ('all', t('Tous'))] %}
-  <a href="{{ url_for('admin.sponsors', status=s) }}" class="btn btn-sm {% if status==s %}btn-primary{% else %}btn-ghost{% endif %}">{{ l }}</a>{% endfor %}
+  <a href="{{ url_for('admin.sponsors', status=s, q=recherche or None, niveau=niveau or None) }}" class="btn btn-sm {% if status==s %}btn-primary{% else %}btn-ghost{% endif %}">{{ l }}</a>{% endfor %}
+  <form method="get" class="flex flex-wrap gap-2 ml-auto">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input name="q" value="{{ recherche }}" class="input !py-2 w-56" placeholder="{{ t('Nom, e-mail, organisation…') }}">
+    <select name="niveau" class="select !py-2 w-36"><option value="">{{ t('Tous niveaux') }}</option>
+      {% for k, l in [('gold', t('Or')), ('silver', t('Argent')), ('bronze', t('Bronze'))] %}<option value="{{ k }}" {% if niveau == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <button class="btn btn-sm btn-dark"><i data-lucide="search" class="w-4 h-4"></i>{{ t('Rechercher') }}</button>
+  </form>
 </div>
 <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
 {% for sp in sps %}
   <div class="card card-pad">
     <div class="flex items-center gap-3">{{ avatar(sp.user, 44) }}
-      <div class="flex-1 min-w-0"><div class="font-semibold truncate">{{ sp.user.full_name }}</div><div class="text-xs muted truncate">{{ sp.position }} · {{ sp.organization }}</div></div>
+      <div class="flex-1 min-w-0"><a href="{{ url_for('main.sponsor_profile', sid=sp.id) }}" class="font-semibold truncate block hover:text-terra-600">{{ sp.user.full_name }}</a><div class="text-xs muted truncate">{{ sp.position }} · {{ sp.organization }}</div></div>
       {{ ring(sp.eligibility_score or 0, 56) }}</div>
     <div class="flex flex-wrap gap-1.5 mt-3">
       <span class="chip">{{ t('Entreprise') if sp.kind=='company' else seniority_label(sp.seniority) }}</span>

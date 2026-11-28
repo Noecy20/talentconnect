@@ -49,10 +49,14 @@
       </div>
       <details class="mt-4">
         <summary class="text-xs font-semibold cursor-pointer muted">{{ t('Personnaliser le message') }}</summary>
-        <div class="mt-2 space-y-2">
+        <div class="mt-2 space-y-2" x-data='{m: {{ modeles|tojson }} }'>
+          {% if modeles %}<select class="select text-sm" @change="if ($event.target.value !== '') { const x = m[$event.target.value]; $refs.o{{ g }}.value = x.objet; $refs.c{{ g }}.value = x.corps }">
+            <option value="">{{ t('Partir d\'un modèle…') }}</option>
+            <template x-for="(x, n) in m" :key="n"><option :value="n" x-text="x.nom"></option></template>
+          </select>{% endif %}
           {% if g == 'interview' %}<input name="note_interview" class="input text-sm" placeholder="{{ t('Ex : entretien le 5 nov. à 10h, Plateau') }}">{% endif %}
-          <input name="subject_{{ g }}" class="input text-sm" value="{{ tpls[g][0] }}">
-          <textarea name="body_{{ g }}" class="textarea text-xs !min-h-[160px]">{{ tpls[g][1] }}</textarea>
+          <input name="subject_{{ g }}" x-ref="o{{ g }}" class="input text-sm" value="{{ tpls[g][0] }}">
+          <textarea name="body_{{ g }}" x-ref="c{{ g }}" class="textarea text-xs !min-h-[160px]">{{ tpls[g][1] }}</textarea>
           <p class="help">{{ t('Variables : {candidate} {job} {company} {recruiter} {note} {feedback}') }}</p>
         </div>
       </details>

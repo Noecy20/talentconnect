@@ -1,17 +1,17 @@
-﻿id_offre;id_entreprise;secteur_entreprise;intitule;filiere;type_contrat;niveau_etudes_requis;experience_min;code_pays;pays;ville;teletravail;salaire_min;salaire_max;devise;statut;date_publication;vues;nb_candidatures
-1;1;Télécoms;Data Analyst;Data / Intelligence artificielle;cdi;bac5;2.0;CI;Côte d’Ivoire;Abidjan;0;600000;900000;XOF;open;2026-10-31;0;4
-2;1;Télécoms;Développeur Full Stack;Informatique / Développement;cdi;bac3;3.0;CI;Côte d’Ivoire;Abidjan;0;700000;1100000;XOF;open;2026-11-14;0;2
-3;1;Télécoms;Stagiaire Marketing digital;Commerce / Marketing;internship;bac3;0.0;CI;Côte d’Ivoire;Abidjan;0;150000;200000;XOF;open;2026-11-06;2;5
-4;2;Banque;Analyste financier;Finance / Comptabilité;cdi;bac5;3.0;CI;Côte d’Ivoire;Abidjan;0;900000;1400000;XOF;open;2026-10-30;0;3
-5;2;Banque;Conseiller clientèle;Banque / Assurance;cdd;bac2;1.0;CI;Côte d’Ivoire;Abidjan;0;350000;450000;XOF;open;2026-11-16;0;2
-6;2;Banque;Comptable junior;Finance / Comptabilité;cdi;bac3;1.0;CI;Côte d’Ivoire;Bouaké;0;400000;550000;XOF;open;2026-11-01;0;2
-7;3;Fintech;Product Manager;Management / Entrepreneuriat;cdi;bac5;4.0;SN;Sénégal;Dakar;0;1200000;1800000;XOF;open;2026-11-11;0;1
-8;3;Fintech;Ingénieur Backend;Informatique / Développement;cdi;bac5;3.0;SN;Sénégal;Dakar;1;1000000;1500000;XOF;open;2026-11-16;0;2
-9;3;Fintech;Agent support client;Administration / Secrétariat;cdd;bac;0.0;SN;Sénégal;Dakar;0;200000;280000;XOF;open;2026-11-15;0;1
-10;4;E-commerce;Responsable logistique e-commerce;Logistique / Transport;cdi;bac4;4.0;CI;Côte d’Ivoire;Abidjan;0;800000;1100000;XOF;open;2026-11-04;0;1
-11;4;E-commerce;Community Manager;Journalisme / Communication;cdi;bac3;2.0;CI;Côte d’Ivoire;Abidjan;0;350000;500000;XOF;open;2026-11-04;0;2
-12;5;Design & communication;UX/UI Designer;Design graphique / UX;cdi;bac5;2.0;FR;France;Paris;1;3000;3800;EUR;open;2026-11-15;0;2
-13;5;Design & communication;Graphiste junior;Design graphique / UX;alternance;bac3;0.0;FR;France;Lyon;0;1200;1500;EUR;open;2026-11-10;0;3
-14;6;Logistique;Déclarant en douane;Logistique / Transport;cdi;bac2;2.0;CI;Côte d’Ivoire;San-Pédro;0;400000;600000;XOF;open;2026-11-15;0;2
-15;6;Logistique;Chef de quai;Logistique / Transport;cdd;bac;3.0;CI;Côte d’Ivoire;Abidjan;0;350000;450000;XOF;open;2026-10-31;0;2
-16;1;Télécoms;Technicien réseaux télécoms;Réseaux / Cybersécurité;cdi;bac2;2.0;CI;Côte d’Ivoire;Yamoussoukro;0;400000;600000;XOF;open;2026-11-04;0;2
+﻿id_offre;id_entreprise;secteur_entreprise;intitule;filiere;type_contrat;niveau_etudes_requis;experience_min;code_pays;pays;ville;teletravail;salaire_min;salaire_max;devise;statut;date_publication;vues;nb_candidatures;ponderation_personnalisee
+1;1;Télécoms;Data Analyst;Data / Intelligence artificielle;cdi;bac5;2.0;CI;Côte d’Ivoire;Abidjan;0;600000;900000;XOF;open;2026-11-10;0;4;0
+2;1;Télécoms;Développeur Full Stack;Informatique / Développement;cdi;bac3;3.0;CI;Côte d’Ivoire;Abidjan;0;700000;1100000;XOF;open;2026-11-24;0;2;0
+3;1;Télécoms;Stagiaire Marketing digital;Commerce / Marketing;internship;bac3;0.0;CI;Côte d’Ivoire;Abidjan;0;150000;200000;XOF;open;2026-11-16;0;5;0
+4;2;Banque;Analyste financier;Finance / Comptabilité;cdi;bac5;3.0;CI;Côte d’Ivoire;Abidjan;0;900000;1400000;XOF;open;2026-11-09;0;3;0
+5;2;Banque;Conseiller clientèle;Banque / Assurance;cdd;bac2;1.0;CI;Côte d’Ivoire;Abidjan;0;350000;450000;XOF;open;2026-11-26;0;2;0
+6;2;Banque;Comptable junior;Finance / Comptabilité;cdi;bac3;1.0;CI;Côte d’Ivoire;Bouaké;0;400000;550000;XOF;open;2026-11-11;0;2;0
+7;3;Fintech;Product Manager;Management / Entrepreneuriat;cdi;bac5;4.0;SN;Sénégal;Dakar;0;1200000;1800000;XOF;open;2026-11-21;0;1;0
+8;3;Fintech;Ingénieur Backend;Informatique / Développement;cdi;bac5;3.0;SN;Sénégal;Dakar;1;1000000;1500000;XOF;open;2026-11-26;0;2;0
+9;3;Fintech;Agent support client;Administration / Secrétariat;cdd;bac;0.0;SN;Sénégal;Dakar;0;200000;280000;XOF;open;2026-11-25;0;1;0
+10;4;E-commerce;Responsable logistique e-commerce;Logistique / Transport;cdi;bac4;4.0;CI;Côte d’Ivoire;Abidjan;0;800000;1100000;XOF;open;2026-11-14;0;1;0
+11;4;E-commerce;Community Manager;Journalisme / Communication;cdi;bac3;2.0;CI;Côte d’Ivoire;Abidjan;0;350000;500000;XOF;open;2026-11-14;0;2;0
+12;5;Design & communication;UX/UI Designer;Design graphique / UX;cdi;bac5;2.0;FR;France;Paris;1;3000;3800;EUR;open;2026-11-25;0;2;0
+13;5;Design & communication;Graphiste junior;Design graphique / UX;alternance;bac3;0.0;FR;France;Lyon;0;1200;1500;EUR;open;2026-11-20;0;3;0
+14;6;Logistique;Déclarant en douane;Logistique / Transport;cdi;bac2;2.0;CI;Côte d’Ivoire;San-Pédro;0;400000;600000;XOF;open;2026-11-25;0;2;0
+15;6;Logistique;Chef de quai;Logistique / Transport;cdd;bac;3.0;CI;Côte d’Ivoire;Abidjan;0;350000;450000;XOF;open;2026-11-10;0;2;0
+16;1;Télécoms;Technicien réseaux télécoms;Réseaux / Cybersécurité;cdi;bac2;2.0;CI;Côte d’Ivoire;Yamoussoukro;0;400000;600000;XOF;open;2026-11-14;0;2;0
